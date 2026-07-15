@@ -1,0 +1,33 @@
+{
+  "id": "breach_in_the_wall",
+  "title": "The Breach in the Wall",
+  "giver": "herald",
+  "xp": 150,
+  "offer": "The Council calls these walls impregnable, Agent. I've hunted the Shadownet long enough to know better. Will you help me prove them wrong?",
+  "debrief": "Map capabilities to vulnerabilities. Defend against the actor that fits the gap.",
+  "clearanceOnComplete": 4,
+  "steps": [
+    {
+      "objective": "Identify the gate with no Detective Control",
+      "trigger": { "type": "talk_to", "npc": "herald", "requiresFlag": "gate_identified" },
+      "evidence": {
+        "images": [{ "src": "/assets/quest/village_map_mission1.jpeg", "label": "Stronghold Defense Grid" }],
+        "caption": "EVIDENCE — STRONGHOLD DEFENSE GRID",
+        "buttonLabel": "VIEW THE BLUEPRINT"
+      }
+    },
+    {
+      "objective": "Identify the threat actor who fits the gap",
+      "trigger": { "type": "talk_to", "npc": "herald", "requiresFlag": "threat_identified" },
+      "evidence": {
+        "images": [
+          { "src": "/assets/quest/dossier_sorcerer.jpeg", "label": "The Dark Sorcerer" },
+          { "src": "/assets/quest/dossier_goblin.jpeg", "label": "The Goblin Saboteur" },
+          { "src": "/assets/quest/dossier_berserker.jpeg", "label": "Ironhorn Berserker" }
+        ],
+        "caption": "EVIDENCE — THE SHADOWNET DOSSIER",
+        "buttonLabel": "VIEW THE DOSSIER"
+      }
+    }
+  ]
+}
