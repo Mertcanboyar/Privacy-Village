@@ -1,0 +1,13 @@
+{
+  "id": "arrival",
+  "title": "The Welcome",
+  "giver": "hq",
+  "xp": 50,
+  "opener": "HANDLER: Make yourself known, Agent. Then find the Herald — the Division has work.",
+  "debrief": "Cover established.",
+  "clearanceOnComplete": 2,
+  "steps": [
+    { "objective": "Greet Bram at the gates", "trigger": { "type": "talk_to", "npc": "bram" } },
+    { "objective": "Greet Odile at the tavern", "trigger": { "type": "talk_to", "npc": "odile" } }
+  ]
+}

@@ -15,7 +15,7 @@ import { playSound } from "./audio";
 
 // Referenced by Preload.ts to load client/public/data/quests/*.json
 // without duplicating the id list in two places.
-export const QUEST_IDS = ["cover_story", "leaked_dossier", "merchant_oracle", "dead_drops", "whisper_portrait"] as const;
+export const QUEST_IDS = ["arrival", "cover_story", "leaked_dossier", "merchant_oracle", "dead_drops", "whisper_portrait"] as const;
 
 export type QuestState = "locked" | "available" | "active" | "complete";
 

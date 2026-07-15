@@ -154,7 +154,7 @@ export class Room extends Phaser.Scene {
       this.spawnWanderers();
       // Idempotent — only actually unlocks/activates the first time this
       // ever runs across the whole session (see questEngine.ts).
-      questEngine.bootstrapHqQuest("cover_story");
+      questEngine.bootstrapHqQuest("arrival");
     }
 
     this.npcController = new NPCController(this, this.roomName);

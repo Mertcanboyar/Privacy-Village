@@ -137,14 +137,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       idleAnim: "npc-bram-idle",
       dialogue: [
         {
-          if: { questActive: "leaked_dossier" },
+          if: { questActive: "arrival" },
           lines: [
-            "Papers? Aye — a gust took a bundle off a courier's cart near the fountain this morning. Watched them scatter. Didn't touch them. Above my clearance.",
+            "Welcome to Privacy Village, {name}. Festival's on — or so we tell outsiders. The walls keep us safe. Mostly. The Council likes to say 'impregnable.' I've stopped saying it.",
           ],
-        },
-        {
-          if: { questActive: "cover_story" },
-          lines: ["New face. I vet everyone who passes these gates — festival-goers, envoys... agents. Which are you, I wonder. Enjoy the festival, {name}."],
         },
         { lines: ["Keep your eyes open, Agent. The gates never truly close."] },
       ],
@@ -193,18 +189,11 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       texture: "npc-odile",
       baseScale: loreNpcBaseScale("odile"),
       idleAnim: "npc-odile-idle",
-      questGiver: "leaked_dossier",
       dialogue: [
         {
-          if: { questActive: "leaked_dossier" },
+          if: { questActive: "arrival" },
           lines: [
-            "All pages? Good. Henceforth the Division keeps such lists in cipher — or not at all. What one does not write down cannot be leaked. Remember that, Agent.",
-          ],
-        },
-        {
-          if: { questActive: "cover_story" },
-          lines: [
-            "Welcome to my tavern. Fireside gatherings every week — envoys of both factions drink here and pretend not to listen to each other. I pretend not to notice. More profitable that way.",
+            "New face! You've come during the Battle for AI, Agent — two factions under one roof, pretending it's all fireside chats and festival ale. Keep your eyes open. And see the Herald — been pacing the square all morning.",
           ],
         },
         { lines: ["The Griffin's Drink serves secrets alongside the ale, Agent. Drink up."] },
