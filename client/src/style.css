@@ -20,9 +20,12 @@ body {
   justify-content: center;
 }
 
-/* Fixed size matches GAME_WIDTH/GAME_HEIGHT in src/config.ts — the canvas
-   is never scaled, so #ui-root can be positioned in plain px 1:1 with
-   game coordinates. */
+/* Fixed size matches GAME_WIDTH/GAME_HEIGHT in src/config.ts — the box's
+   own layout is never scaled, so #ui-root's children can be positioned
+   in plain px 1:1 with game coordinates. src/scale.ts applies a CSS
+   transform: scale() on top (see that file) to fill the window while
+   preserving aspect ratio — a paint-time transform, not a layout change,
+   so it doesn't affect anything positioned inside. */
 #game-stage {
   position: relative;
   width: 1280px;

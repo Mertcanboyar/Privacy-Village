@@ -1,12 +1,15 @@
 import Phaser from "phaser";
 import "./style.css";
 import { GAME_WIDTH, GAME_HEIGHT } from "./config";
+import { initResponsiveScale } from "./scale";
 import { Boot } from "./scenes/Boot";
 import { Preload } from "./scenes/Preload";
 import { Title } from "./scenes/Title";
 import { CharacterCreate } from "./scenes/CharacterCreate";
 import { Room } from "./scenes/Room";
 import { UIOverlay } from "./scenes/UIOverlay";
+
+initResponsiveScale();
 
 new Phaser.Game({
   type: Phaser.AUTO,
