@@ -29,7 +29,7 @@ function depthScaleFor(y: number): number {
 
 // Referenced by Preload.ts to load/animate these sheets without
 // duplicating the id list in two places.
-export const LORE_NPC_IDS = ["bram", "odile", "quill", "sabine", "fennick", "patron"] as const;
+export const LORE_NPC_IDS = ["bram", "odile", "quill", "sabine"] as const;
 
 // Lore NPC sprite sheets (see CREDITS.md) — each a 4-frame idle strip
 // built from a different CraftPix character pack, frames cropped to
@@ -42,8 +42,6 @@ export const LORE_NPC_FRAME_SIZE: Record<(typeof LORE_NPC_IDS)[number], { frameW
   odile: { frameWidth: 422, frameHeight: 563 },
   quill: { frameWidth: 440, frameHeight: 593 },
   sabine: { frameWidth: 458, frameHeight: 569 },
-  fennick: { frameWidth: 434, frameHeight: 624 },
-  patron: { frameWidth: 400, frameHeight: 553 },
 };
 
 const LORE_NPC_TARGET_HEIGHT = 145;
@@ -275,40 +273,6 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         { lines: ["Keep your eyes open, Agent. The gates never truly close."] },
       ],
     },
-    {
-      id: "fennick",
-      name: "Fennick",
-      x: 280,
-      y: 620,
-      texture: "npc-fennick",
-      baseScale: loreNpcBaseScale("fennick"),
-      idleAnim: "npc-fennick-idle",
-      questGiver: "merchant_oracle",
-      dialogue: [
-        {
-          if: { questComplete: "merchant_oracle" },
-          lines: ["The oracle behaves, now that someone's watching it. Apples, Agent? Name and coin is all I need."],
-        },
-        {
-          if: { questActive: "merchant_oracle" },
-          lines: ["The oracle again? Very well — what do you make of it, Agent?"],
-          choices: [
-            {
-              label: "A machine that judges people must answer to a person. Demand its reasoning — and keep the power to overrule it.",
-              setFlag: "oracle_overseen",
-              response: "...You sound like the Division. Fine. Every verdict, I check myself. Name and coin — perhaps just the coin.",
-            },
-            {
-              label: "It's efficient. Let it judge.",
-              setFlag: "oracle_mistake",
-              response: "My thought exactly! ... Agent, why is everyone leaving? Agent?",
-              toast: "HQ: Unacceptable outcome. Return and correct it.",
-            },
-          ],
-        },
-        { lines: ["Apples, fresh apples! Or trinkets, if you'd rather. The oracle can name your price, if you dare ask it."] },
-      ],
-    },
   ],
   tavern: [
     {
@@ -329,21 +293,6 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         { lines: ["The Griffin's Drink serves secrets alongside the ale, Agent. Drink up."] },
       ],
     },
-    {
-      id: "patron",
-      name: "Frightened Patron",
-      x: 600,
-      y: 550,
-      texture: "npc-patron",
-      baseScale: loreNpcBaseScale("patron"),
-      idleAnim: "npc-patron-idle",
-      questGiver: "whisper_portrait",
-      dialogue: [
-        { if: { questComplete: "whisper_portrait" }, lines: ["They marked it. I feel better already, though I still won't look at it directly."] },
-        { if: { questActive: "whisper_portrait" }, lines: ["Please, Agent — hurry. I keep hearing it clear its throat."] },
-        { lines: ["Something is wrong with that portrait. I can feel it watching."] },
-      ],
-    },
   ],
   courthouse: [
     {
@@ -354,19 +303,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       texture: "npc-quill",
       baseScale: loreNpcBaseScale("quill"),
       idleAnim: "npc-quill-idle",
-      dialogue: [
-        {
-          if: { questActive: "whisper_portrait" },
-          lines: [
-            "A mimic-enchantment. It needs but a few minutes of a voice to wear it like a mask. The craft is old; the boldness is new. Ask Sabine what the law of the village demands of masks.",
-          ],
-        },
-        {
-          if: { questActive: "cover_story" },
-          lines: ["The Archive holds the Summit's proceedings. Classified, naturally. Forty-six Trials also sleep in these files — the Division's training cases. You'll face them soon enough."],
-        },
-        { lines: ["Forty-six Trials, Agent. You've faced but one. Return to the Courthouse when you're ready for the next."] },
-      ],
+      dialogue: [{ lines: ["Forty-six Trials, Agent. You've faced but one. Return to the Courthouse when you're ready for the next."] }],
     },
     {
       id: "sabine",
@@ -376,29 +313,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       texture: "npc-sabine",
       baseScale: loreNpcBaseScale("sabine"),
       idleAnim: "npc-sabine-idle",
-      dialogue: [
-        {
-          if: { questActive: "whisper_portrait" },
-          lines: ["So. If a voice can be worn, Agent — what must every conjured voice be made to do?"],
-          choices: [{ label: "Declare itself.", response: "Correct. Go and make it so." }],
-        },
-        {
-          if: { questActive: "cover_story" },
-          lines: ["A new agent. I train by question alone — answers are for those who've earned them. We will speak again, counselor."],
-        },
-        { lines: ["Sit, if you wish. The bench asks nothing of you but patience."] },
-      ],
+      dialogue: [{ lines: ["Sit, if you wish. The bench asks nothing of you but patience."] }],
     },
   ],
 };
-
-// The Cat (tavern carpet) is written in the spec but not spawned here —
-// no cat sprite exists in the "Village NPC Vol.1" pack (all 6 characters
-// are humanoid; see PLAN.md Phase 2, Day 3 asset note), and Q1 drops to
-// 4 steps (bram/odile/quill/sabine) without it. For whenever art shows
-// up: first talk while cover_story is active — "The cat studies you at
-// length. Both factions trust the cat. The cat trusts no one." Any
-// later talk — "It has not changed its assessment."
 
 interface NPCView {
   def: NPCDef;
@@ -464,7 +382,6 @@ export class NPCController {
     }
 
     if (roomName === "village") {
-      this.spawnOracleProp(scene);
       this.refreshHeraldPulse(scene);
       const onLevelUp = () => this.refreshHeraldPulse(scene);
       questEngine.on("levelUp", onLevelUp);
@@ -558,20 +475,6 @@ export class NPCController {
       this.briefingBackdropEl.remove();
       this.briefingEl.remove();
     });
-  }
-
-  // Fennick's judgment-engine prop (see PLAN.md Phase 2, Day 3) — plain
-  // Graphics, not a sprite: a brass box with a glowing blue lens.
-  private spawnOracleProp(scene: Phaser.Scene) {
-    const x = 335;
-    const y = 605;
-    const g = scene.add.graphics().setDepth(y - 1);
-    g.fillStyle(0x8a6d3a, 1);
-    g.fillRoundedRect(x - 14, y - 34, 28, 34, 3);
-    g.lineStyle(2, 0x4a3a1f, 1);
-    g.strokeRoundedRect(x - 14, y - 34, 28, 34, 3);
-    const lens = scene.add.circle(x, y - 20, 5, 0x4cc9f0, 1).setDepth(y);
-    scene.tweens.add({ targets: lens, alpha: { from: 1, to: 0.4 }, duration: 700, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   }
 
   // "Quest auto-highlights him (subtle gold pulse) once Clearance 2 is

@@ -40,21 +40,22 @@ cropped to its opaque bounds). Used for the Herald NPC. License per
 https://craftpix.net/file-licenses/, not CC0 — **verify licensing before
 any public release.** Location: `client/public/assets/sprites/npc/herald.png`
 
-## Lore NPCs (Bram, Odile, Quill, Sabine, Fennick, Patron)
+## Lore NPCs (Bram, Odile, Quill, Sabine)
 
-Six more CraftPix.net character packs (Artist, Astrologer, Citizen,
-Forest Ranger ×3 recolors), one per lore NPC — replaces the original
+Four CraftPix.net character packs (Citizen, Forest Ranger 3, Artist,
+Forest Ranger 2), one per lore NPC — replaces the original
 "Village NPC Vol.1" pack. Each sprite sheet is a self-built 4-frame idle
 strip: the pack's first 4 "Idle" sequence frames, cropped to their
 shared union bounding box (so the loop doesn't jitter) and laid out
 left-to-right. License per https://craftpix.net/file-licenses/, not
 CC0 — **verify licensing before any public release.** Mapping (a
 curatorial choice, not a hard requirement — swap freely): Bram→Citizen,
-Odile→Forest Ranger 3, Quill→Artist, Sabine→Forest Ranger 2,
-Fennick→Astrologer (hooded/mystical, fits the "oracle" merchant),
-Patron→Forest Ranger 1. No sprite exists yet for "The Cat" (see PLAN.md
-Phase 2, Day 2) — that NPC is deferred until a matching asset is sourced.
-Location: `client/public/assets/sprites/npc-pack/{bram,odile,quill,sabine,fennick,patron}.png`
+Odile→Forest Ranger 3, Quill→Artist, Sabine→Forest Ranger 2. Fennick and
+the Frightened Patron (and their Astrologer/Forest Ranger 1 sprites)
+were removed along with the 5-quest "Battle for AI" content they
+belonged to (see PLAN.md "The Breach in the Wall") — no sprite exists
+for "The Cat" either; that NPC was never built.
+Location: `client/public/assets/sprites/npc-pack/{bram,odile,quill,sabine}.png`
 
 ## Character sprites — unused (Kenney, kept for possible future NPCs)
 

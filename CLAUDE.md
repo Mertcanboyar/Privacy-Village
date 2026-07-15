@@ -75,11 +75,19 @@ below, ready for real SFX once sourced.
 
 ### NPCs, the quest engine, and the Courthouse Trial
 
-The game's narrative is a covert-fiction layer (Phase 2, Day 3): the
-Privacy Village Festival is cover for a secret AI Summit; the player is
-a Division Agent; two factions (`fundamentalist`/`apocalypse`, chosen at
-CharacterCreate) color the player's name tag and gate some dialogue/
-reveal text. XP is called "faction points" in all UI copy.
+The game's narrative is a covert-fiction layer: the Privacy Village
+Festival is cover for a secret "Battle for AI" Summit; the player is a
+Division Agent; two factions (`fundamentalist`/`apocalypse`, chosen at
+CharacterCreate) color the player's name tag. XP is called "faction
+points" in all UI copy. Progress is tracked via **Clearance Levels**
+(C1-C5), advanced by narrative milestones rather than point thresholds
+— see `questEngine.ts` below. Story content is the arrival flow
+("The Welcome") followed by a single two-part quest, "The Breach in the
+Wall" (see PLAN.md) — the earlier 5-quest "Battle for AI" content
+(Cover Story, Leaked Dossier, Merchant's Oracle, Dead Drops, Whisper in
+the Portrait) was deprecated and removed along with the NPCs that only
+existed to serve it (Fennick, Frightened Patron, the ambient "Villager"
+wanderer, `villager_a`/`villager_b`).
 
 `client/src/npc.ts` — static NPCs (`NPC_SPAWNS`, hardcoded per room, same
 pattern as `Room.ts`'s `WANDERER_ROUTES`): a "[E] Talk" proximity prompt
@@ -90,36 +98,60 @@ static frame 0). `NPCDef.dialogue` is a `DialogueSet[]`: each set has an
 optional `if: {flag, faction, questActive, questComplete}` (first match
 wins, the unconditioned entry is the fallback and must be last) and
 either `lines` (sequential, `{name}`-token-aware) or, on the final line,
-`choices` (label/setFlag/response/optional toast — no nested trees, a
-choice always ends the interaction). `NPCDef.questGiver` triggers a
-separate Accept/Not-yet **offer** flow instead of normal dialogue while
-that quest is `available`. Live NPCs: Herald, Bram + Fennick (village
-square), Odile + Frightened Patron (tavern), Quill + Sabine (courthouse)
-— the `villager_a`/`villager_b` one-line Q3 witnesses and the ambient
-"Villager" wanderer were removed per feedback; `merchant_oracle.json`'s
-Q3 is a single step (confront Fennick) now, not three. The 6 lore NPCs
-(`LORE_NPC_IDS`) each get a
-4-frame idle-only sprite sheet built from a different CraftPix character
-pack (see CREDITS.md) — frame size varies per character
-(`LORE_NPC_FRAME_SIZE` in `npc.ts`, consumed by `Preload.ts`'s
-`this.load.spritesheet()` loop), so `baseScale` is computed per NPC via
-`loreNpcBaseScale()` rather than one shared constant. There's still no
-sprite for the planned "Cat" NPC, so Q1 is 4 steps not 5.
+`choices` (label/setFlag/response/optional toast/points/clearance — no
+nested trees, a choice always ends the interaction, falling back to the
+compact dialogue box to show its response even if the question itself
+was asked from the big briefing panel below). `NPCDef.questGiver`
+triggers a separate Accept/Not-yet **offer** flow instead of normal
+dialogue while that quest is `available`. Live NPCs: Herald (village
+square, quest giver for "The Breach in the Wall"), Bram (village
+square), Odile (tavern), Quill + Sabine (courthouse, one ambient flavor
+line each, referencing the Courthouse Trial below). The 4 lore NPCs
+(`LORE_NPC_IDS`: bram/odile/quill/sabine) each get a 4-frame idle-only
+sprite sheet built from a different CraftPix character pack (see
+CREDITS.md) — frame size varies per character (`LORE_NPC_FRAME_SIZE` in
+`npc.ts`, consumed by `Preload.ts`'s `this.load.spritesheet()` loop), so
+`baseScale` is computed per NPC via `loreNpcBaseScale()` rather than one
+shared constant.
+
+A `DialogueSet` can also carry `briefing: {caseLabel, title}` +
+optional `evidence: {images, caption, buttonLabel}` + `ghostChoices`,
+rendering in the big `.panel.panel--glow`/`.briefing` component instead
+of the compact bottom `.dialogue` bar — this is how Herald's two
+multi-paragraph mission texts (with a "VIEW THE BLUEPRINT"/"VIEW THE
+DOSSIER" button) display. That evidence button opens
+`client/src/ui/imageOverlay.ts`'s full-screen viewer (scroll/pinch zoom,
+drag pan, missing-file placeholder card) — the same evidence descriptor
+shape also appears on `QuestStep.evidence` so `hud.ts`'s tracker can
+show a "reopen the blueprint" button independent of the NPC dialogue
+that first showed it.
 
 `client/src/questEngine.ts` — the JSON-driven quest engine (defs in
 `client/public/data/quests/*.json`, loaded via `Preload.ts`'s
 `this.load.json()`, same pattern as room data). Deliberately a separate
 module from `quest.ts` (below) — different concern, different file.
 States are `locked|available|active|complete`, one quest active at a
-time, `talk_to`/`reach_zone` step triggers, flags, and points/levels
-(L1-L5 at 0/200/500/900/1400) — exposed via a `Phaser.Events.EventEmitter`
+time, `talk_to`/`reach_zone` step triggers, flags, and points — exposed
+via a `Phaser.Events.EventEmitter`
 (`toast`/`pointsChanged`/`levelUp`/`questUpdated`/`reveal`/`questCompleted`)
-that both `hud.ts` and `Room.ts` subscribe to. `Room.ts` calls
-`notifyReachZone()` from `update()` for every room-JSON `zones` entry the
-player is standing in (purely proximity-based, no `[E]` prompt, same as
-door transitions) and pulses a glow on whichever zone is the active
-quest's current objective. `npc.ts` calls `notifyTalkTo()` when a
-dialogue interaction closes.
+that both `hud.ts` and `Room.ts` subscribe to. **Clearance Levels**
+(1-5) are milestone-based, not point-threshold-based:
+`questEngine.setClearance(n)` only ever raises the level (never lowers,
+never double-fires), playing the fanfare + "CLEARANCE RAISED" toast +
+`levelUp` event exactly once per real raise. `QuestDef.clearanceOnComplete`
+fires automatically when that quest's final step completes;
+`DialogueChoice.clearance`/`.points` fire immediately when that specific
+choice is picked, for mid-quest milestones (Mission 1's correct answer
+inside "The Breach in the Wall" raises Clearance 3 and pays 150 points
+before the quest itself is done — Mission 2's completes the quest,
+whose own `xp`/`clearanceOnComplete` cover Clearance 4). Points/XP still
+accrue and display on the `.xp-bar` independently of Clearance — the
+bar's fill is cosmetic progress toward the demo path's total possible
+points (750), not a level gate. `Room.ts` calls `notifyReachZone()` from
+`update()` for every room-JSON `zones` entry the player is standing in
+(purely proximity-based, no `[E]` prompt, same as door transitions) and
+pulses a glow on whichever zone is the active quest's current objective.
+`npc.ts` calls `notifyTalkTo()` when a dialogue interaction closes.
 
 `client/src/hud.ts` (`HUDController`) — the first real use of the
 `.xp-bar`/quest-tracker `.panel`/`.toast` components from the earlier
@@ -127,7 +159,8 @@ design-system pass. Instantiated by `UIOverlay.ts`, not `Room.ts` — this
 matters because `UIOverlay` is `scene.launch()`'d once from
 `CharacterCreate` and never `scene.restart()`'d on room transitions
 (unlike `Room.ts`, torn down and rebuilt every door), making it the only
-scene that persists the way a HUD needs to. `Q` toggles the tracker.
+scene that persists the way a HUD needs to. `Q` toggles the tracker; the
+level badge reads "C1" through "C5".
 
 `client/src/quest.ts` — the Courthouse case-file quest (the "Trial").
 Not an iframe (the original plan): a native DOM panel
@@ -140,12 +173,12 @@ Content is the "Personal Data Classification Lab," ported verbatim from
 scenarios, 18 data-field items, each classified via drag-and-drop with
 immediate feedback. Every choice is appended to an in-memory decision
 log and the final result is written to
-`localStorage['pv:badge:personal-data-lab']` (unchanged by Day 3) — its
-completion now also pays a flat 400 points into `questEngine` (was a
-`totalCorrect*45` flavor number pre-Day-3). Both NPC dialogue and the
-quest panel pause player movement and door checks while open
-(`Room.ts`'s `uiOpen` check) — if you add a third interactive system,
-route it through the same pattern rather than inventing a new one.
+`localStorage['pv:badge:personal-data-lab']` — its completion pays a
+flat 400 points into `questEngine` and grants **Clearance 5**, the
+reserved top level. Both NPC dialogue and the quest panel pause player
+movement and door checks while open (`Room.ts`'s `uiOpen` check) — if
+you add a third interactive system, route it through the same pattern
+rather than inventing a new one.
 
 ## Demo rule (read before adding anything)
 

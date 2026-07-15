@@ -71,9 +71,9 @@ export class Preload extends Phaser.Scene {
   }
 
   async create() {
-    // Register quest definitions. Q1 ("cover_story") is bootstrapped
-    // (unlocked + auto-activated) from Room.ts on first village spawn,
-    // not here — this just makes the defs known to the engine.
+    // Register quest definitions. "arrival" is bootstrapped (unlocked +
+    // auto-activated) from Room.ts on first village spawn, not here —
+    // this just makes the defs known to the engine.
     const questDefs = QUEST_IDS.map((id) => this.cache.json.get(`quest-${id}`) as QuestDef);
     questEngine.loadDefs(questDefs);
 

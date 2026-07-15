@@ -3,10 +3,11 @@ import { getSession } from "./session";
 import { playSound } from "./audio";
 import type { EvidenceImage } from "./ui/imageOverlay";
 
-// JSON-driven quest engine (see PLAN.md Phase 2, Day 3). Deliberately a
-// separate module/file from quest.ts, which is specifically the
-// Courthouse Trial (GDPR classification drag-and-drop) — this engine
-// drives the 5 "Battle for AI" village quests instead.
+// JSON-driven quest engine (see PLAN.md "The Breach in the Wall").
+// Deliberately a separate module/file from quest.ts, which is
+// specifically the Courthouse Trial (GDPR classification drag-and-drop)
+// — this engine drives the arrival flow + "The Breach in the Wall"
+// instead.
 //
 // Framework-free module singleton, same style as session.ts, but a
 // separate file since it's a different concern (progress/flags vs.
@@ -16,7 +17,7 @@ import type { EvidenceImage } from "./ui/imageOverlay";
 
 // Referenced by Preload.ts to load client/public/data/quests/*.json
 // without duplicating the id list in two places.
-export const QUEST_IDS = ["arrival", "breach_in_the_wall", "cover_story", "leaked_dossier", "merchant_oracle", "dead_drops", "whisper_portrait"] as const;
+export const QUEST_IDS = ["arrival", "breach_in_the_wall"] as const;
 
 export type QuestState = "locked" | "available" | "active" | "complete";
 

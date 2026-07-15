@@ -258,6 +258,59 @@ brand-new characters) and will need the same call made again per-NPC.
   Revisits the Colyseus sync bug cut back in Week 2; hard fallback is
   more scripted wanderers if it's still not stable by end of Day 5.
 
+## 8. "The Breach in the Wall" — simplified quest rework (replaces Phase 2's 5-quest content)
+
+The 5-quest "Battle for AI" content above (Cover Story, Leaked Dossier,
+Merchant's Oracle, Dead Drops, Whisper in the Portrait) was deprecated
+and removed — kept only the quest **engine** (triggers, flags, tracker,
+toasts, dialogue choices), reused for a much shorter story: a two-beat
+arrival flow followed by one two-mission quest, "The Breach in the
+Wall." Fennick, the Frightened Patron, and the ambient "Villager"
+wanderer/`villager_a`/`villager_b` (which only existed to serve the old
+quests) were removed rather than kept as flavor-only NPCs — simplest
+option, per the task spec's own framing.
+
+**Clearance Levels replace XP-threshold levels entirely.** C1 on
+arrival, C2 after both greeters, C3 after Mission 1, C4 after Mission 2
+(quest complete), C5 reserved for the Courthouse Trial. `questEngine.ts`'s
+`setClearance(n)` is milestone-driven (only ever raises, never
+derives from points) — see CLAUDE.md for the mechanism. Points/XP still
+accrue and show on the `.xp-bar` independently, just no longer gate the
+level.
+
+**Arrival ("The Welcome")** — `arrival.json`, `giver: "hq"`,
+auto-bootstrapped the same way `cover_story` used to be. Two sequential
+`talk_to` steps (Bram, then Odile), +50 pts and Clearance 2 on
+completion, `unlocks: ["breach_in_the_wall"]`.
+
+**The Herald** (new NPC, Village Square by the fountain) is the sole
+quest giver for both missions of "The Breach in the Wall"
+(`breach_in_the_wall.json`) — a grizzled ex-scout, contemptuous of the
+Council. A soft gold pulse (Graphics circle, same pulse technique as
+the earlier oracle-lens prop) highlights him once Clearance 2 is
+reached; before that he has nothing to offer.
+
+Both missions reuse `npc.ts`'s existing choice/flag mechanism exactly
+like the old Fennick oracle branch did — the only new pieces are: (1) a
+`briefing`-mode `DialogueSet` that renders in the big `.panel.panel--glow`/
+`.briefing` component instead of the compact bottom bar, for the long
+mission text; (2) an `evidence` descriptor (images/caption/button label)
+on both the `DialogueSet` and `QuestStep`, opening
+`client/src/ui/imageOverlay.ts`'s full-screen scroll/pinch-zoomable
+viewer — reopenable from the HUD tracker while a mission step is active;
+(3) `DialogueChoice.points`/`.clearance`, letting a single correct
+answer award Mission 1's payout immediately (rather than waiting for
+the whole quest to complete, since Mission 2 continues in the same
+conversation). Wrong answers set no flag and show a hint via the normal
+compact dialogue box — re-opening Herald just re-asks the same question,
+free retries, no point loss.
+
+**Evidence images not yet supplied** — `village_map_mission1.jpeg`,
+`dossier_sorcerer.jpeg`, `dossier_goblin.jpeg`, `dossier_berserker.jpeg`
+belong in `client/public/assets/quest/` (see that folder's README). The
+image overlay shows a clear "EVIDENCE PENDING" placeholder card until
+they exist; every other part of both missions works without them.
+
 ### CLAUDE.md pointer
 
 `session.ts` is now the source of truth for player identity — `Room.ts`
