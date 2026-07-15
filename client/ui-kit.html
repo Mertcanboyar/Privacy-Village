@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Village — UI Kit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/ui/design-system.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: var(--bg-deep);
+      }
+      #kit-root {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--space-5) var(--space-4) var(--space-6);
+      }
+      .kit-section {
+        margin-bottom: var(--space-5);
+      }
+      .kit-section__label {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent-blue);
+        margin-bottom: var(--space-2);
+      }
+      .kit-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        align-items: flex-start;
+      }
+      h1.kit-title {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 32px;
+        color: var(--text-primary);
+        margin: 0 0 var(--space-1);
+      }
+      p.kit-subtitle {
+        font-family: var(--font-body);
+        color: var(--text-muted);
+        margin: 0 0 var(--space-5);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="kit-root" class="ds-root"></div>
+    <script type="module" src="/src/ui-kit.ts"></script>
+  </body>
+</html>

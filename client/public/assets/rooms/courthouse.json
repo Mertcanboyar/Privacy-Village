@@ -1,0 +1,60 @@
+{
+  "room": "courthouse",
+  "background": "courthouse_bg.png",
+  "foreground": "courthouse_fg.png",
+  "walkable": [
+    [
+      140,
+      455
+    ],
+    [
+      1060,
+      455
+    ],
+    [
+      1060,
+      720
+    ],
+    [
+      140,
+      720
+    ]
+  ],
+  "doors": [
+    {
+      "x": 542,
+      "y": 689,
+      "width": 116,
+      "height": 31,
+      "target": "village"
+    }
+  ],
+  "lights": [
+    {
+      "x": 30,
+      "y": 258,
+      "radius": 28
+    },
+    {
+      "x": 1247,
+      "y": 258,
+      "radius": 28
+    },
+    {
+      "x": 223,
+      "y": 155,
+      "radius": 26
+    },
+    {
+      "x": 419,
+      "y": 155,
+      "radius": 26
+    },
+    {
+      "x": 30,
+      "y": 539,
+      "radius": 28
+    }
+  ],
+  "npcSpawns": []
+}

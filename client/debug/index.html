@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Room Debug Tool — Privacy Village</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        display: flex;
+        height: 100vh;
+        background: #16171d;
+        color: #e5e4e7;
+        font: 13px/1.4 ui-monospace, Consolas, monospace;
+      }
+      #canvasWrap {
+        flex: 1;
+        overflow: auto;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+        background: repeating-conic-gradient(#222 0% 25%, #1a1a1a 0% 50%) 50% / 20px 20px;
+        padding: 16px;
+      }
+      canvas { cursor: crosshair; image-rendering: pixelated; border: 1px solid #444; }
+      #panel {
+        width: 340px;
+        flex-shrink: 0;
+        padding: 12px;
+        border-left: 1px solid #2e303a;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+      }
+      h1 { font-size: 15px; margin: 0 0 4px; }
+      h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; margin: 8px 0 4px; }
+      select, button {
+        font: inherit;
+        background: #24252d;
+        color: #e5e4e7;
+        border: 1px solid #3a3c48;
+        border-radius: 4px;
+        padding: 6px 8px;
+        cursor: pointer;
+      }
+      button:hover, select:hover { border-color: #6b6375; }
+      button.active { background: #8a5fff; border-color: #8a5fff; color: #fff; }
+      .modeRow { display: flex; gap: 6px; flex-wrap: wrap; }
+      .list { display: flex; flex-direction: column; gap: 4px; max-height: 140px; overflow-y: auto; }
+      .listItem { display: flex; justify-content: space-between; align-items: center; background: #1e1f26; border-radius: 3px; padding: 4px 6px; }
+      .listItem button { padding: 2px 6px; font-size: 11px; }
+      textarea {
+        flex: 1;
+        min-height: 220px;
+        background: #0e0e12;
+        color: #9ce6a3;
+        border: 1px solid #2e303a;
+        border-radius: 4px;
+        padding: 8px;
+        font: inherit;
+        resize: vertical;
+      }
+      .hint { color: #6b7280; font-size: 11px; }
+      .status { font-size: 11px; color: #6b7280; }
+    </style>
+  </head>
+  <body>
+    <div id="canvasWrap">
+      <canvas id="canvas" width="1280" height="720"></canvas>
+    </div>
+    <div id="panel">
+      <h1>Room Debug Tool</h1>
+      <div class="hint">Loads <code>assets/rooms/&lt;room&gt;_bg.png</code>. Press <b>L</b> in-game to overlay the walkable polygon saved here.</div>
+
+      <h2>Room</h2>
+      <select id="roomSelect">
+        <option value="village">village</option>
+        <option value="tavern">tavern</option>
+        <option value="courthouse">courthouse</option>
+      </select>
+      <div class="status" id="bgStatus"></div>
+
+      <h2>Mode</h2>
+      <div class="modeRow">
+        <button data-mode="walkable" class="modeBtn active">Walkable (click)</button>
+        <button data-mode="doors" class="modeBtn">Doors (drag)</button>
+        <button data-mode="lights" class="modeBtn">Lights (drag)</button>
+      </div>
+
+      <h2>Walkable polygon (<span id="walkableCount">0</span> pts)</h2>
+      <div class="modeRow">
+        <button id="undoPoint">Undo last point</button>
+        <button id="clearPolygon">Clear polygon</button>
+      </div>
+
+      <h2>Doors</h2>
+      <div class="list" id="doorList"></div>
+
+      <h2>Lights</h2>
+      <div class="list" id="lightList"></div>
+
+      <h2>Room JSON</h2>
+      <div class="modeRow">
+        <button id="copyJson">Copy to clipboard</button>
+      </div>
+      <textarea id="output" readonly spellcheck="false"></textarea>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

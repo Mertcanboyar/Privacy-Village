@@ -1,0 +1,61 @@
+{
+  "room": "tavern",
+  "background": "tavern_bg.png",
+  "foreground": "tavern_fg.png",
+  "walkable": [
+    [
+      256,
+      422
+    ],
+    [
+      930,
+      422
+    ],
+    [
+      930,
+      720
+    ],
+    [
+      256,
+      720
+    ]
+  ],
+  "doors": [
+    {
+      "x": 535,
+      "y": 689,
+      "width": 116,
+      "height": 31,
+      "target": "village"
+    }
+  ],
+  "lights": [
+    {
+      "x": 767,
+      "y": 155,
+      "radius": 60
+    },
+    {
+      "x": 270,
+      "y": 122,
+      "radius": 42
+    },
+    {
+      "x": 1000,
+      "y": 131,
+      "radius": 42
+    },
+    {
+      "x": 72,
+      "y": 577,
+      "radius": 19
+    },
+    {
+      "x": 214,
+      "y": 666,
+      "radius": 19
+    }
+  ],
+  "npcSpawns": [],
+  "zones": [{ "id": "portrait", "x": 790, "y": 450, "radius": 60 }]
+}

@@ -1,0 +1,70 @@
+{
+  "room": "village",
+  "background": "village_bg.png",
+  "foreground": "village_fg.png",
+  "walkable": [
+    [
+      47,
+      413
+    ],
+    [
+      1256,
+      413
+    ],
+    [
+      1256,
+      720
+    ],
+    [
+      47,
+      720
+    ]
+  ],
+  "doors": [
+    {
+      "x": 893,
+      "y": 384,
+      "width": 42,
+      "height": 89,
+      "target": "tavern"
+    },
+    {
+      "x": 1126,
+      "y": 389,
+      "width": 69,
+      "height": 103,
+      "target": "courthouse"
+    }
+  ],
+  "lights": [
+    {
+      "x": 440,
+      "y": 286,
+      "radius": 42
+    },
+    {
+      "x": 842,
+      "y": 394,
+      "radius": 33
+    },
+    {
+      "x": 1233,
+      "y": 375,
+      "radius": 47
+    },
+    {
+      "x": 953,
+      "y": 478,
+      "radius": 37
+    }
+  ],
+  "npcSpawns": [],
+  "zones": [
+    { "id": "fountain_search", "x": 640, "y": 600, "radius": 90 },
+    { "id": "drop_1", "x": 150, "y": 500, "radius": 50 },
+    { "id": "drop_2", "x": 450, "y": 460, "radius": 50 },
+    { "id": "drop_3", "x": 950, "y": 460, "radius": 50 },
+    { "id": "drop_4", "x": 1050, "y": 650, "radius": 50 },
+    { "id": "drop_5", "x": 550, "y": 690, "radius": 50 }
+  ]
+}

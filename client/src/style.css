@@ -1,0 +1,54 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: #0a0a0f;
+  overflow: hidden;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Fixed size matches GAME_WIDTH/GAME_HEIGHT in src/config.ts — the canvas
+   is never scaled, so #ui-root can be positioned in plain px 1:1 with
+   game coordinates. */
+#game-stage {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+}
+
+#game-stage canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  image-rendering: pixelated;
+}
+
+/* DOM UI layer, floats above the canvas. Off by default for pointer
+   events so it never blocks player movement/desk-proximity clicks —
+   individual components opt back in with pointer-events: auto.
+   Explicit z-index (rather than relying on DOM order) because Phaser
+   appends the canvas into #game-stage at runtime, landing it after
+   #ui-root in the DOM and, without this, painting over it. */
+#ui-root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 10;
+}

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Village — Professor Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="ui/design-system.css" />
+  <style>
+    html, body {
+      margin: 0;
+      background: var(--bg-deep);
+      min-height: 100%;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-4) var(--space-4) var(--space-6);
+    }
+
+    /* Header */
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .wordmark {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 30px;
+      color: var(--text-primary);
+      margin: var(--space-1) 0 0;
+    }
+
+    .page-subtitle {
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Stat cards */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+
+    .stat-card {
+      padding: var(--space-2) var(--space-3);
+    }
+
+    .stat-card__label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .stat-card__value {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 32px;
+      color: var(--text-primary);
+      margin-top: 4px;
+    }
+
+    .stat-card__value--gold { color: var(--accent-gold); }
+    .stat-card__value--blue { color: var(--accent-blue); }
+    .stat-card__value--green { color: var(--accent-green); }
+
+    /* Roster panel + table */
+    .roster-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-2);
+    }
+
+    .roster-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text-primary);
+    }
+
+    .roster-count {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .roster-panel {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    table.roster {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table.roster thead th {
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 14px var(--space-2);
+      border-bottom: 2px solid var(--border-strong);
+      background: var(--bg-raised);
+    }
+
+    table.roster tbody td {
+      padding: 12px var(--space-2);
+      border-bottom: 1px solid var(--border-strong);
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    table.roster tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    table.roster tbody tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .student-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .student-avatar {
+      flex: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: var(--bg-raised);
+      border: 2px solid var(--border-strong);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .completion-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 160px;
+    }
+
+    .completion-track {
+      flex: 1;
+      height: 10px;
+      background: var(--bg-deep);
+      border: 1.5px solid var(--border-strong);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .completion-fill {
+      height: 100%;
+      background: var(--accent-blue);
+      border-radius: 999px;
+    }
+
+    .completion-value {
+      flex: none;
+      width: 38px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    /* Decision-quality / capstone chips (dashboard-specific semantics,
+       layered on top of the shared .chip base from design-system.css). */
+    .chip--good { color: var(--accent-gold-ink); background: var(--accent-green); border-color: #1f7a4c; }
+    .chip--ok { color: var(--accent-gold-ink); background: var(--accent-gold); border-color: #b8860f; }
+    .chip--risk { color: var(--text-primary); background: rgba(239, 71, 111, 0.18); border-color: var(--accent-red); }
+    .chip--progress { color: var(--text-primary); background: rgba(76, 201, 240, 0.18); border-color: var(--accent-blue); }
+
+    .last-active {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .page-footer {
+      margin-top: var(--space-3);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body class="ds-root">
+  <div class="page">
+    <div class="topbar">
+      <div>
+        <div class="wordmark">Privacy Village</div>
+        <h1 class="page-title">Professor Dashboard</h1>
+        <p class="page-subtitle">AI Governance — Track B · Fall 2026 Cohort</p>
+      </div>
+      <button class="btn btn--gold" id="export-btn">Export grades (CSV)</button>
+    </div>
+
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="panel roster-panel">
+      <div style="padding: var(--space-2) var(--space-2) 0;" class="roster-header">
+        <div class="roster-title">Class roster</div>
+        <div class="roster-count" id="roster-count"></div>
+      </div>
+      <table class="roster">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Module completion</th>
+            <th>Decision quality</th>
+            <th>Capstone status</th>
+            <th>Last active</th>
+          </tr>
+        </thead>
+        <tbody id="roster-body"></tbody>
+      </table>
+    </div>
+
+    <p class="page-footer">Decision-log data shown is illustrative — Privacy Village demo build. Nothing on this page is wired to a live backend.</p>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

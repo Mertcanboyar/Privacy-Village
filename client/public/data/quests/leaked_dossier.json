@@ -1,0 +1,13 @@
+{
+  "id": "leaked_dossier",
+  "title": "The Leaked Dossier",
+  "giver": "odile",
+  "xp": 150,
+  "offer": "Agent — quietly. A Division dossier is missing from my back room. Names of every summit attendee... beside their true allegiances. Names alone are nothing. Names beside allegiances end careers — or worse. Find it before the other side does.",
+  "debrief": "Dossier secured. Lesson logged: linked names are weapons. Write less.",
+  "steps": [
+    { "objective": "Ask Bram about the dossier", "trigger": { "type": "talk_to", "npc": "bram" } },
+    { "objective": "Search near the fountain", "trigger": { "type": "reach_zone", "zone": "fountain_search" } },
+    { "objective": "Return the dossier to Odile", "trigger": { "type": "talk_to", "npc": "odile" } }
+  ]
+}

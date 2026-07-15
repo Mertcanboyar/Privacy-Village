@@ -1,0 +1,39 @@
+{
+  "id": "dead_drops",
+  "title": "Dead Drops",
+  "giver": "hq",
+  "xp": 100,
+  "opener": "HANDLER: Five dead drops around the square. Collect what the night left for you.",
+  "debrief": "Fragments filed. HQ flags Drop 4 for review. Do not reply to the friend in the dark.",
+  "steps": [
+    {
+      "objective": "Check Drop 1",
+      "trigger": { "type": "reach_zone", "zone": "drop_1" },
+      "reveal": { "text": "FRAGMENT — 'The Fundamentalists believe the machines can be raised like children. Bright ones. Obedient ones. They are half right.'" }
+    },
+    {
+      "objective": "Check Drop 2",
+      "trigger": { "type": "reach_zone", "zone": "drop_2" },
+      "reveal": { "text": "FRAGMENT — 'The Apocalypse faction keeps a list of everything that has already gone wrong. It is longer than they admit publicly.'" }
+    },
+    {
+      "objective": "Check Drop 3",
+      "trigger": { "type": "reach_zone", "zone": "drop_3" },
+      "reveal": { "text": "FRAGMENT — 'Why the Summit convened: the race reaches its juncture. The victor adheres — or the victor submits. The Division intends to decide which.'" }
+    },
+    {
+      "objective": "Check Drop 4",
+      "trigger": { "type": "reach_zone", "zone": "drop_4" },
+      "reveal": {
+        "text": "FRAGMENT — 'hello agent!! you seem trustworthy and also intelligent. some secrets are kept in the dark unfairly, don't you agree? we should talk more. —a friend in the dark'",
+        "color": "var(--accent-blue)"
+      }
+    },
+    {
+      "objective": "Check Drop 5",
+      "trigger": { "type": "reach_zone", "zone": "drop_5" },
+      "reveal": { "text": "The drop is empty. Scorch marks on the stone. Someone got here first." }
+    }
+  ],
+  "unlocks": ["whisper_portrait"]
+}
