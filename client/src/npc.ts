@@ -112,19 +112,15 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
     {
       id: "herald",
       name: "Herald",
-      // Stands just south of the Courthouse door (see village.json).
-      x: 1160,
-      y: 520,
+      // North of the fountain, Village Square (see village.json).
+      x: 640,
+      y: 500,
       texture: "npc-herald",
       baseScale: 145 / 558,
+      questGiver: "breach_in_the_wall",
       dialogue: [
-        {
-          lines: [
-            "Hear ye! The Courthouse has urgent business today.",
-            "An AI chatbot vendor awaits judgment within its walls.",
-            "Seek the Courthouse doors if you wish to serve as arbiter.",
-          ],
-        },
+        { if: { questComplete: "breach_in_the_wall" }, lines: ["Well met, Ranger. The Council will never know how close the breach came."] },
+        { lines: ["Not yet, Agent. Get your bearings first — the Division's business can wait a moment longer."] },
       ],
     },
     {
@@ -294,6 +290,7 @@ export class NPCController {
   private offerQuestId: string | null = null;
   private lineIndex = 0;
   private currentTypewriter: TypewriterHandle | null = null;
+  private heraldPulse: Phaser.GameObjects.Arc | null = null;
 
   constructor(scene: Phaser.Scene, roomName: RoomName) {
     this.eKey = scene.input.keyboard!.addKey("E");
@@ -318,7 +315,13 @@ export class NPCController {
       this.npcs.push({ def, image, nameText });
     }
 
-    if (roomName === "village") this.spawnOracleProp(scene);
+    if (roomName === "village") {
+      this.spawnOracleProp(scene);
+      this.refreshHeraldPulse(scene);
+      const onLevelUp = () => this.refreshHeraldPulse(scene);
+      questEngine.on("levelUp", onLevelUp);
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
+    }
 
     this.promptText = scene.add
       .text(0, 0, "[E] Talk", {
@@ -372,6 +375,20 @@ export class NPCController {
     g.strokeRoundedRect(x - 14, y - 34, 28, 34, 3);
     const lens = scene.add.circle(x, y - 20, 5, 0x4cc9f0, 1).setDepth(y);
     scene.tweens.add({ targets: lens, alpha: { from: 1, to: 0.4 }, duration: 700, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+  }
+
+  // "Quest auto-highlights him (subtle gold pulse) once Clearance 2 is
+  // reached" (see PLAN.md "The Breach in the Wall") — a soft pulsing
+  // circle under the Herald, same Graphics-pulse technique as the oracle
+  // lens above. Checked once at construction and again on every future
+  // "levelUp" (covers reaching Clearance 2 while already standing here).
+  private refreshHeraldPulse(scene: Phaser.Scene) {
+    if (this.heraldPulse || questEngine.getClearance() < 2) return;
+    const herald = this.npcs.find((n) => n.def.id === "herald");
+    if (!herald) return;
+    const g = scene.add.circle(herald.def.x, herald.def.y - 20, 34, 0xf0b429, 0.22).setDepth(herald.def.y - 1);
+    scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.heraldPulse = g;
   }
 
   get dialogueOpen(): boolean {

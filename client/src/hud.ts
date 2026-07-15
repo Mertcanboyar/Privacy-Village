@@ -78,7 +78,10 @@ export class HUDController {
 
     questEngine.on("toast", (message: string) => this.showToast(message));
     questEngine.on("pointsChanged", (points: number, delta: number) => this.onPointsChanged(points, delta));
-    questEngine.on("levelUp", () => this.flashLevelUp());
+    questEngine.on("levelUp", () => {
+      this.refreshXpBar();
+      this.flashLevelUp();
+    });
     questEngine.on("questUpdated", () => this.refreshTracker());
     questEngine.on("reveal", (reveal: QuestStepReveal) => this.showReveal(reveal));
 
