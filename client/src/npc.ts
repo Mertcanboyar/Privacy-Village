@@ -44,7 +44,10 @@ export const LORE_NPC_FRAME_SIZE: Record<(typeof LORE_NPC_IDS)[number], { frameW
   sabine: { frameWidth: 458, frameHeight: 569 },
 };
 
-const LORE_NPC_TARGET_HEIGHT = 145;
+// Half of the original ~145px convention — sprites read too large at
+// that size, per feedback (see session.ts's AVATAR_OPTIONS, halved the
+// same way).
+const LORE_NPC_TARGET_HEIGHT = 72.5;
 
 function loreNpcBaseScale(id: (typeof LORE_NPC_IDS)[number]): number {
   return LORE_NPC_TARGET_HEIGHT / LORE_NPC_FRAME_SIZE[id].frameHeight;
@@ -192,7 +195,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       x: 640,
       y: 500,
       texture: "npc-herald",
-      baseScale: 145 / 558,
+      baseScale: 72.5 / 558,
       questGiver: "breach_in_the_wall",
       dialogue: [
         { if: { questComplete: "breach_in_the_wall" }, lines: ["Well met, Ranger. The Council will never know how close the breach came."] },

@@ -5,7 +5,7 @@
 //
 // Placeholder avatars: 5 static painted character sprites (no animation
 // frames), used as the avatar picker options until real animated
-// variants exist. baseScale targets the same ~150px-tall on-screen
+// variants exist. baseScale targets the same ~75px-tall on-screen
 // height already established for these sprites elsewhere (Room.ts's
 // wizard and the Herald NPC's own sprite) — each option's source PNG
 // is a different pixel height
@@ -22,12 +22,15 @@ export interface AvatarOption {
   baseScale: number;
 }
 
+// Target on-screen heights below are half of the original ~145-150px
+// convention (now ~72-75px) — sprites read too large at that size,
+// per feedback.
 export const AVATAR_OPTIONS: AvatarOption[] = [
-  { id: "wizard", label: "Wizard", texture: "player", imageSrc: "/assets/sprites/player/wizard.png", baseScale: 150 / 514 },
-  { id: "knight", label: "Knight", texture: "npc-knight", imageSrc: "/assets/sprites/npc/knight.png", baseScale: 145 / 475 },
-  { id: "paladin", label: "Paladin", texture: "player-paladin", imageSrc: "/assets/sprites/player/paladin.png", baseScale: 150 / 481 },
-  { id: "archer", label: "Archer", texture: "player-archer", imageSrc: "/assets/sprites/player/archer.png", baseScale: 150 / 515 },
-  { id: "viking", label: "Viking", texture: "player-viking", imageSrc: "/assets/sprites/player/viking.png", baseScale: 150 / 413 },
+  { id: "wizard", label: "Wizard", texture: "player", imageSrc: "/assets/sprites/player/wizard.png", baseScale: 75 / 514 },
+  { id: "knight", label: "Knight", texture: "npc-knight", imageSrc: "/assets/sprites/npc/knight.png", baseScale: 72.5 / 475 },
+  { id: "paladin", label: "Paladin", texture: "player-paladin", imageSrc: "/assets/sprites/player/paladin.png", baseScale: 75 / 481 },
+  { id: "archer", label: "Archer", texture: "player-archer", imageSrc: "/assets/sprites/player/archer.png", baseScale: 75 / 515 },
+  { id: "viking", label: "Viking", texture: "player-viking", imageSrc: "/assets/sprites/player/viking.png", baseScale: 75 / 413 },
 ];
 
 export type Faction = "fundamentalist" | "apocalypse";
