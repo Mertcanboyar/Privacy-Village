@@ -60,29 +60,18 @@ export interface QuestDef {
   steps: QuestStep[];
   /** Quest ids to flip locked -> available once this quest completes. */
   unlocks?: string[];
+  /** Clearance level to raise to (if higher than current) on full completion —
+   * see setClearance(). Milestone-based, not point-threshold-based. */
+  clearanceOnComplete?: number;
 }
 
+/** Clearance Levels (replaces the old XP-threshold levels — see PLAN.md
+ * "The Breach in the Wall") — advanced by explicit narrative milestones
+ * via setClearance(), not derived from points. Points still accrue and
+ * display on the .xp-bar independently. */
 export interface LevelInfo {
   level: number;
   points: number;
-  /** Threshold this level started at (0 for L1) — for HUD progress-bar math. */
-  levelStart: number;
-  next: number | null; // null once at max level
-}
-
-const LEVEL_THRESHOLDS = [0, 200, 500, 900, 1400];
-
-function levelFor(points: number): LevelInfo {
-  let level = 1;
-  for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (points >= LEVEL_THRESHOLDS[i]) {
-      level = i + 1;
-      break;
-    }
-  }
-  const levelStart = LEVEL_THRESHOLDS[level - 1];
-  const next = level < LEVEL_THRESHOLDS.length ? LEVEL_THRESHOLDS[level] : null;
-  return { level, points, levelStart, next };
 }
 
 class QuestManager extends Phaser.Events.EventEmitter {
@@ -91,6 +80,7 @@ class QuestManager extends Phaser.Events.EventEmitter {
   private stepIndex = new Map<string, number>();
   private flags: Record<string, boolean> = {};
   private points = 0;
+  private clearance = 1;
   private activeQuestId: string | null = null;
 
   loadDefs(defs: QuestDef[]) {
@@ -144,7 +134,23 @@ class QuestManager extends Phaser.Events.EventEmitter {
   }
 
   getLevelInfo(): LevelInfo {
-    return levelFor(this.points);
+    return { level: this.clearance, points: this.points };
+  }
+
+  getClearance(): number {
+    return this.clearance;
+  }
+
+  /** Raises Clearance to `level` if higher than the current one — a no-op
+   * otherwise (milestones can fire out of the "expected" order without
+   * double-counting, e.g. re-triggering the same step). Fires the flash +
+   * fanfare + "CLEARANCE RAISED" toast exactly once per real raise. */
+  setClearance(level: number) {
+    if (level <= this.clearance) return;
+    this.clearance = level;
+    playSound("fanfare");
+    this.emit("levelUp", level);
+    this.emit("toast", `CLEARANCE RAISED — LEVEL ${level}`);
   }
 
   /** Giver NPCs offer a quest via dialogue when this is true. */
@@ -227,10 +233,14 @@ class QuestManager extends Phaser.Events.EventEmitter {
     this.states.set(quest.id, "complete");
     this.activeQuestId = null;
     this.addPoints(xp);
-    playSound("fanfare");
     this.emit("toast", `INTEL FILED — ${quest.debrief} (+${xp} faction points)`);
     this.emit("questCompleted", quest.id);
     this.emit("questUpdated");
+    // setClearance() plays its own fanfare when it actually raises the
+    // level; fall back to a plain completion fanfare otherwise so every
+    // quest still gets one, milestone or not.
+    if (quest.clearanceOnComplete) this.setClearance(quest.clearanceOnComplete);
+    else playSound("fanfare");
 
     for (const unlockId of quest.unlocks ?? []) {
       if (this.getState(unlockId) !== "locked") continue;
@@ -244,14 +254,8 @@ class QuestManager extends Phaser.Events.EventEmitter {
   }
 
   addPoints(amount: number) {
-    const before = levelFor(this.points);
     this.points += amount;
-    const after = levelFor(this.points);
     this.emit("pointsChanged", this.points, amount);
-    if (after.level > before.level) {
-      this.emit("levelUp", after.level);
-      this.emit("toast", `CLEARANCE RAISED — LEVEL ${after.level}`);
-    }
   }
 }
 

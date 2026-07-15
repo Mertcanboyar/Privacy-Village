@@ -13,6 +13,12 @@ import { getSession } from "./session";
 const TOAST_DISMISS_MS = 3000;
 const REVEAL_DISMISS_MS = 5000;
 
+// Cosmetic only — the .xp-bar fill is just points/TOTAL_POINTS, it no
+// longer gates Clearance (see questEngine.ts's setClearance()). Sum of
+// every payout in the demo path: Welcome 50 + Mission 1 150 +
+// Mission 2 150 + Trial 400.
+const TOTAL_POINTS = 750;
+
 function factionAccent(): string {
   return getSession().faction === "apocalypse" ? "var(--accent-red)" : "var(--accent-gold)";
 }
@@ -36,9 +42,9 @@ export class HUDController {
     const root = document.getElementById("ui-root")!;
 
     // --- XP bar (bottom-left, always visible) ---
-    this.levelBadgeEl = el("div", { className: "level-badge", text: "L1" });
+    this.levelBadgeEl = el("div", { className: "level-badge", text: "C1" });
     this.xpFillEl = el("div", { className: "xp-bar__fill", style: { width: "0%" } });
-    this.xpValueEl = el("div", { className: "xp-bar__value", text: "0/200 PTS" });
+    this.xpValueEl = el("div", { className: "xp-bar__value", text: "0 PTS" });
     this.xpBarEl = el(
       "div",
       { className: "xp-bar ds-root", style: { position: "absolute", left: "24px", bottom: "24px", width: "300px" } },
@@ -88,11 +94,11 @@ export class HUDController {
   }
 
   private refreshXpBar() {
-    const { level, points, levelStart, next } = questEngine.getLevelInfo();
-    this.levelBadgeEl.textContent = `L${level}`;
-    const pct = next === null ? 100 : Phaser.Math.Clamp(((points - levelStart) / (next - levelStart)) * 100, 0, 100);
+    const { level, points } = questEngine.getLevelInfo();
+    this.levelBadgeEl.textContent = `C${level}`;
+    const pct = Phaser.Math.Clamp((points / TOTAL_POINTS) * 100, 0, 100);
     this.xpFillEl.style.width = `${pct}%`;
-    this.xpValueEl.textContent = next === null ? `${points} PTS — MAX` : `${points}/${next} PTS`;
+    this.xpValueEl.textContent = `${points} PTS`;
   }
 
   private refreshTracker() {

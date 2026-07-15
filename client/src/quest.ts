@@ -621,6 +621,7 @@ export class QuestController {
 
     questEngine.addPoints(TRIAL_XP);
     questEngine.toast(`INTEL FILED — Case closed, Agent. (+${TRIAL_XP} faction points)`);
+    questEngine.setClearance(5);
 
     localStorage.setItem(
       BADGE_STORAGE_KEY,
