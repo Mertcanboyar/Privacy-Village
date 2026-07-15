@@ -57,6 +57,21 @@ belonged to (see PLAN.md "The Breach in the Wall") — no sprite exists
 for "The Cat" either; that NPC was never built.
 Location: `client/public/assets/sprites/npc-pack/{bram,odile,quill,sabine}.png`
 
+## Quest evidence — "The Breach in the Wall"
+
+Blueprint + 3 character dossiers shown in the full-screen evidence
+overlay (`client/src/ui/imageOverlay.ts`) for Herald's two missions.
+Source/license not confirmed — came from the user's Downloads folder
+(`Village Map Mission 1.jpeg`, `Dark Sorcerer.jpeg`, `goblin.jpeg`,
+`URuk hai.jpeg`), no marketplace/attribution metadata attached.
+**Verify licensing before any public release.** The berserker artwork
+still reads "Uruk-Hai Berserker" and the blueprint's river is still
+labeled "River Isen" — both are pixels baked into the source image, not
+game-rendered text, so per the task spec ("build against the filename,
+not the label") they're used as-is; only the filenames and in-game
+strings follow the Ironhorn/River Veil renames.
+Location: `client/public/assets/quest/{village_map_mission1,dossier_sorcerer,dossier_goblin,dossier_berserker}.jpeg`
+
 ## Character sprites — unused (Kenney, kept for possible future NPCs)
 
 **RPG Urban Pack** by Kenney (kenney.nl). 16×16 grid, 6 characters with

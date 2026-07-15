@@ -83,8 +83,11 @@ export function showImageOverlay(images: EvidenceImage[], caption: string) {
       el("img", {
         attrs: { src: img.src, alt: img.label ?? caption, draggable: "false" },
         style: {
-          maxHeight: "70vh",
-          maxWidth: images.length > 1 ? "30vw" : "80vw",
+          // #ui-root is a fixed 1280x720px box (see style.css), not scaled
+          // to the true browser viewport, so vh/vw here would size against
+          // the wrong frame of reference — plain px instead.
+          maxHeight: "560px",
+          maxWidth: images.length > 1 ? "380px" : "1000px",
           objectFit: "contain",
           borderRadius: "var(--radius-sm)",
           border: "2px solid var(--border-strong)",

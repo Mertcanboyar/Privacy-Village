@@ -305,11 +305,25 @@ conversation). Wrong answers set no flag and show a hint via the normal
 compact dialogue box — re-opening Herald just re-asks the same question,
 free retries, no point loss.
 
-**Evidence images not yet supplied** — `village_map_mission1.jpeg`,
-`dossier_sorcerer.jpeg`, `dossier_goblin.jpeg`, `dossier_berserker.jpeg`
-belong in `client/public/assets/quest/` (see that folder's README). The
-image overlay shows a clear "EVIDENCE PENDING" placeholder card until
-they exist; every other part of both missions works without them.
+**Evidence images** — `village_map_mission1.jpeg`, `dossier_sorcerer.jpeg`,
+`dossier_goblin.jpeg`, `dossier_berserker.jpeg` live in
+`client/public/assets/quest/`, sourced from Downloads (`Village Map
+Mission 1.jpeg`, `Dark Sorcerer.jpeg`, `goblin.jpeg`, `URuk hai.jpeg`).
+The berserker file still reads "Uruk-Hai Berserker" in the artwork
+itself, per the task spec's own note ("build against the filename, not
+the label") — that's baked-in image content, not a rendered string, so
+it doesn't violate the Uruk-Hai/Isen/Orc rename sweep. The blueprint
+image likewise still labels the river "River Isen" (same caveat — a
+pixel label, not game-rendered text). `imageOverlay.ts`'s "EVIDENCE
+PENDING" placeholder card only shows if a file goes missing again.
+
+Both missions' text is paginated into 3 short screens each (intro /
+evidence / question) rather than one long scroll — the briefing panel
+and the evidence overlay are both sized in fixed px tuned to the game's
+1280x720 canvas, not `vh`/`vw` (see CLAUDE.md — `#ui-root` is a static
+box, not scaled to the true browser viewport, so viewport units there
+size against the wrong frame of reference and can push buttons off the
+visible game area on a browser window taller than the game canvas).
 
 ### CLAUDE.md pointer
 

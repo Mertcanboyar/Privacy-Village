@@ -133,15 +133,19 @@ interface NPCDef {
 // --- "The Breach in the Wall" — Herald's mission briefings -----------
 // Verbatim mission text (see PLAN.md), pulled out of NPC_SPAWNS below
 // only because it's long enough to make the NPCDef literal unreadable
-// inline.
+// inline. Split into 3 short pages per mission (intro / evidence /
+// question) rather than one long scrolling wall of text — the briefing
+// panel is a fixed-height box sized to the game's 1280x720 canvas (see
+// its style comment below), so each page needs to fit without relying
+// on scroll to reach the answer buttons.
 
-const MISSION_1_TEXT = `The Council sits in their high tower, boasting that the Privacy Village is impregnable. "The walls are high," they say. "The wards are ancient." But they look only at what they built, not what they forgot.
+const MISSION_1_PAGES = [
+  `The Council sits in their high tower, boasting that the Privacy Village is impregnable. "The walls are high," they say. "The wards are ancient." But they look only at what they built, not what they forgot.
 
 I have spent my life hunting the Shadownet. I know that a raider doesn't strike where the armor is thickest; he strikes where the leather is worn. I stole the architect's blueprints from the archives last night. The ink is faded, but the truth is there if you know how to look.
 
-To defend a system, you must first map the Attack Surface. You cannot secure what you do not see. The Council has layered defenses upon the main roads, creating a "Defense-in-Depth" strategy — multiple layers of preventative and detective controls. But my eyes are drawn to the shadows, to the forgotten paths used by servants and smugglers.
-
-💾 THE EVIDENCE: STRONGHOLD DEFENSE GRID
+To defend a system, you must first map the Attack Surface. You cannot secure what you do not see. The Council has layered defenses upon the main roads — but my eyes are drawn to the shadows, to the forgotten paths used by servants and smugglers.`,
+  `💾 THE EVIDENCE: STRONGHOLD DEFENSE GRID
 Analyze the controls deployed at each gate:
 
 NORTH GATE (The King's Road)
@@ -157,25 +161,27 @@ EAST GATE (The Sea Wall)
 WEST GATE (The Service Entry)
 ✅ Preventative: Rusted Padlock (Physical Barrier)
 ❌ Deterrent: None.
-❌ Detective: None (No Watchtower, No Logs).
+❌ Detective: None (No Watchtower, No Logs).`,
+  `A security system fails when it relies solely on prevention without detection. If a lock is picked in the dark, and no one is watching, is the gate truly shut?
 
-A security system fails when it relies solely on prevention without detection. If a lock is picked in the dark, and no one is watching, is the gate truly shut?
+🔍 Which Gate lacks a Detective Control and relies on a single point of failure?`,
+];
 
-🔍 Which Gate lacks a Detective Control and relies on a single point of failure?`;
-
-const MISSION_2_TEXT = `Good work, Ranger. But knowing where they will strike is only half the battle. We must know who is coming. Not every beast in the Shadownet can exploit this breach.
+const MISSION_2_PAGES = [
+  `Good work, Ranger. But knowing where they will strike is only half the battle. We must know who is coming. Not every beast in the Shadownet can exploit this breach.
 
 The West Gate sits atop the treacherous "Cliff of Crows."
 — An Army cannot march there; the path is too narrow.
 — A Wizard cannot strike there; their magic flares would be spotted by the distant Main Tower.
 — A Troll is too heavy; the cliff ledge would crumble.
 
-To build a valid Threat Model, we must map the Attacker's Capabilities to the System's Vulnerabilities. We are looking for a threat actor with high Stealth (to avoid the tower) and high Dexterity (to pick the rusted padlock we found).
-
-💾 THE EVIDENCE: THE SHADOWNET DOSSIER
+To build a valid Threat Model, we must map the Attacker's Capabilities to the System's Vulnerabilities.`,
+  `💾 THE EVIDENCE: THE SHADOWNET DOSSIER
 My scouts have intercepted a missive from the enemy camp. Three lieutenants have volunteered for the mission. Analyze their character sheets to see who has the right stats for the job.
 
-🔍 In cybersecurity, you don't defend against "everyone." You defend against the specific actors capable of exploiting your specific gaps. Which Threat Actor can exploit the West Gate without raising the alarm?`;
+We are looking for a threat actor with high Stealth (to avoid the tower) and high Dexterity (to pick the rusted padlock we found).`,
+  `🔍 In cybersecurity, you don't defend against "everyone." You defend against the specific actors capable of exploiting your specific gaps. Which Threat Actor can exploit the West Gate without raising the alarm?`,
+];
 
 const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
   village: [
@@ -203,7 +209,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
             buttonLabel: "VIEW THE DOSSIER",
           },
           ghostChoices: true,
-          lines: [MISSION_2_TEXT],
+          lines: MISSION_2_PAGES,
           choices: [
             {
               label: "THE DARK SORCERER",
@@ -231,7 +237,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
             buttonLabel: "VIEW THE BLUEPRINT",
           },
           ghostChoices: true,
-          lines: [MISSION_1_TEXT],
+          lines: MISSION_1_PAGES,
           choices: [
             {
               label: "NORTH GATE",
@@ -442,12 +448,18 @@ export class NPCController {
       {
         className: "panel panel--glow ds-root",
         style: {
+          // Fixed px, not vh — #ui-root is a static 1280x720 box (see
+          // style.css), not scaled to the true browser viewport, so a
+          // percentage/vh-based height here would size against the wrong
+          // frame of reference and can push the choice buttons below the
+          // visible game area. Mission text is paginated into short
+          // screens (see MISSION_1_PAGES/MISSION_2_PAGES) specifically so
+          // this fits without needing the overflow scroll as a crutch.
           position: "absolute",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "720px",
-          maxHeight: "80vh",
+          left: "240px",
+          top: "60px",
+          width: "800px",
+          maxHeight: "600px",
           overflowY: "auto",
           pointerEvents: "auto",
           display: "none",
@@ -592,7 +604,9 @@ export class NPCController {
     playBlip(this.activeNpc.id);
 
     this.currentTypewriter = typewriter(bodyEl, line, 18, () => {
-      if (isLast && isBriefing && this.activeSet!.evidence) this.renderEvidenceButton(this.activeSet!.evidence);
+      // Evidence button appears from page 2 onward (not the intro page)
+      // and persists through the question page too.
+      if (isBriefing && this.activeSet!.evidence && this.lineIndex >= 1) this.renderEvidenceButton(this.activeSet!.evidence);
       if (isLast && this.activeSet!.choices) {
         this.renderChoices(
           this.activeSet!.choices.map((choice) => ({ label: choice.label, onClick: () => this.pickChoice(choice) })),
