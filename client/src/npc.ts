@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { GAME_HEIGHT } from "./config";
 import type { RoomName } from "./rooms";
 import { el, typewriter, type TypewriterHandle } from "./ui/dom";
+import { showImageOverlay, type EvidenceImage } from "./ui/imageOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine } from "./questEngine";
 import { playSound, playBlip } from "./audio";
@@ -64,8 +65,21 @@ interface DialogueChoice {
   label: string;
   setFlag?: string;
   response: string;
-  /** Extra toast beyond the response line itself (Q3's "wrong" branch). */
+  /** Extra toast beyond the response line itself. */
   toast?: string;
+  /** Immediate points/clearance award for picking this specific choice —
+   * mid-quest milestones that fire before the quest's own completion
+   * payout (e.g. Mission 1's correct answer inside "The Breach in the
+   * Wall" — Mission 2's correct answer instead completes the quest,
+   * whose own xp/clearanceOnComplete cover the payout generically). */
+  points?: number;
+  clearance?: number;
+}
+
+interface EvidenceRef {
+  images: EvidenceImage[];
+  caption: string;
+  buttonLabel: string;
 }
 
 interface DialogueSet {
@@ -74,6 +88,17 @@ interface DialogueSet {
   /** Shown after the last line instead of "[E] Close". No nested trees —
    * picking one always ends the interaction after showing its response. */
   choices?: DialogueChoice[];
+  /** Render this set in the big `.briefing`-styled panel instead of the
+   * compact bottom dialogue bar — Herald's multi-paragraph mission text
+   * (see PLAN.md "The Breach in the Wall"). A choice's response always
+   * falls back to the compact box regardless of how the set itself was
+   * shown, so this only needs to cover the mission text + its choices. */
+  briefing?: { caseLabel: string; title: string };
+  /** Evidence button shown inside a `briefing` set's panel. */
+  evidence?: EvidenceRef;
+  /** Render every choice as .btn--ghost (no "recommended" gold pick) —
+   * for genuine multiple-choice quizzes where all options are live. */
+  ghostChoices?: boolean;
 }
 
 function conditionMatches(cond: DialogueCondition | undefined): boolean {
@@ -272,7 +297,7 @@ interface NPCView {
   nameText: Phaser.GameObjects.Text;
 }
 
-type DialogueMode = "closed" | "dialogue" | "offer";
+type DialogueMode = "closed" | "dialogue" | "offer" | "briefing";
 
 export class NPCController {
   private npcs: NPCView[] = [];
@@ -282,6 +307,20 @@ export class NPCController {
   private dialogueBodyEl: HTMLElement;
   private dialogueHintEl: HTMLElement;
   private choiceRowEl: HTMLElement | null = null;
+
+  // Big `.briefing`-styled panel — Herald's mission text (see the
+  // DialogueSet.briefing doc comment above). Built once, hidden by
+  // default; open()/showLine() switch which of these two DOM structures
+  // is visible based on activeSet.briefing.
+  private briefingBackdropEl: HTMLElement;
+  private briefingEl: HTMLElement;
+  private briefingCaseEl: HTMLElement;
+  private briefingTitleEl: HTMLElement;
+  private briefingBodyEl: HTMLElement;
+  private briefingEvidenceRowEl: HTMLElement;
+  private briefingHintEl: HTMLElement;
+  private briefingChoiceRowEl: HTMLElement | null = null;
+
   private eKey: Phaser.Input.Keyboard.Key;
 
   private mode: DialogueMode = "closed";
@@ -356,11 +395,60 @@ export class NPCController {
 
     document.getElementById("ui-root")!.appendChild(this.dialogueEl);
 
+    this.briefingCaseEl = el("span", { className: "briefing__case" });
+    this.briefingTitleEl = el("h2", { className: "briefing__title" });
+    this.briefingBodyEl = el("p", { className: "briefing__body" });
+    this.briefingEvidenceRowEl = el("div", { style: { marginTop: "16px" } });
+    this.briefingHintEl = el("div", {
+      style: {
+        textAlign: "right",
+        fontFamily: "var(--font-mono)",
+        fontSize: "13px",
+        fontWeight: "700",
+        letterSpacing: "0.08em",
+        color: "var(--accent-gold)",
+        marginTop: "var(--space-2)",
+      },
+    });
+    this.briefingBackdropEl = el("div", { className: "ui-backdrop", style: { pointerEvents: "auto", display: "none" } });
+    this.briefingEl = el(
+      "div",
+      {
+        className: "panel panel--glow ds-root",
+        style: {
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "720px",
+          maxHeight: "80vh",
+          overflowY: "auto",
+          pointerEvents: "auto",
+          display: "none",
+        },
+      },
+      [
+        el("div", { className: "briefing" }, [
+          el("div", { className: "briefing__header" }, [this.briefingCaseEl, this.briefingTitleEl]),
+          el("hr", { className: "briefing__divider" }),
+          this.briefingBodyEl,
+          this.briefingEvidenceRowEl,
+        ]),
+        this.briefingHintEl,
+      ],
+    );
+    document.getElementById("ui-root")!.appendChild(this.briefingBackdropEl);
+    document.getElementById("ui-root")!.appendChild(this.briefingEl);
+
     // scene.restart() (room transitions) tears down this controller and
-    // builds a fresh one — without this, the old instance's DOM node would
+    // builds a fresh one — without this, the old instance's DOM nodes would
     // never be removed from #ui-root and orphaned dialogue boxes would pile
     // up on every transition.
-    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.dialogueEl.remove());
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.dialogueEl.remove();
+      this.briefingBackdropEl.remove();
+      this.briefingEl.remove();
+    });
   }
 
   // Fennick's judgment-engine prop (see PLAN.md Phase 2, Day 3) — plain
@@ -423,19 +511,27 @@ export class NPCController {
   private open(def: NPCDef) {
     this.activeNpc = def;
     this.promptText.setVisible(false);
-    this.dialogueEl.style.display = "block";
     this.clearChoices();
 
     if (def.questGiver && questEngine.isAvailable(def.questGiver)) {
       this.mode = "offer";
       this.offerQuestId = def.questGiver;
+      this.dialogueEl.style.display = "block";
       this.showOffer();
+      return;
+    }
+
+    this.activeSet = pickDialogueSet(def.dialogue);
+    this.lineIndex = 0;
+    if (this.activeSet.briefing) {
+      this.mode = "briefing";
+      this.briefingBackdropEl.style.display = "block";
+      this.briefingEl.style.display = "block";
     } else {
       this.mode = "dialogue";
-      this.activeSet = pickDialogueSet(def.dialogue);
-      this.lineIndex = 0;
-      this.showLine();
+      this.dialogueEl.style.display = "block";
     }
+    this.showLine();
   }
 
   private showOffer() {
@@ -466,60 +562,97 @@ export class NPCController {
 
   private showLine() {
     if (!this.activeNpc || !this.activeSet) return;
-    this.dialogueNameEl.textContent = this.activeNpc.name;
-    this.dialogueHintEl.textContent = "";
+    const isBriefing = this.mode === "briefing";
+    const bodyEl = isBriefing ? this.briefingBodyEl : this.dialogueBodyEl;
+    const hintEl = isBriefing ? this.briefingHintEl : this.dialogueHintEl;
+
+    if (isBriefing && this.activeSet.briefing) {
+      this.briefingCaseEl.textContent = this.activeSet.briefing.caseLabel;
+      this.briefingTitleEl.textContent = this.activeSet.briefing.title;
+      this.briefingEvidenceRowEl.innerHTML = "";
+    } else {
+      this.dialogueNameEl.textContent = this.activeNpc.name;
+    }
+    hintEl.textContent = "";
+
     const isLast = this.lineIndex === this.activeSet.lines.length - 1;
     const line = this.activeSet.lines[this.lineIndex].replace("{name}", getSession().name);
     playBlip(this.activeNpc.id);
 
-    this.currentTypewriter = typewriter(this.dialogueBodyEl, line, 18, () => {
+    this.currentTypewriter = typewriter(bodyEl, line, 18, () => {
+      if (isLast && isBriefing && this.activeSet!.evidence) this.renderEvidenceButton(this.activeSet!.evidence);
       if (isLast && this.activeSet!.choices) {
         this.renderChoices(
-          this.activeSet!.choices.map((choice) => ({
-            label: choice.label,
-            onClick: () => this.pickChoice(choice),
-          })),
+          this.activeSet!.choices.map((choice) => ({ label: choice.label, onClick: () => this.pickChoice(choice) })),
+          this.activeSet!.ghostChoices ?? false,
         );
       } else {
-        this.dialogueHintEl.textContent = isLast ? "[E] ▸ CLOSE" : "[E] ▸ CONTINUE";
+        hintEl.textContent = isLast ? "[E] ▸ CLOSE" : "[E] ▸ CONTINUE";
       }
     });
   }
 
+  private renderEvidenceButton(evidence: EvidenceRef) {
+    this.briefingEvidenceRowEl.innerHTML = "";
+    this.briefingEvidenceRowEl.appendChild(
+      el("button", {
+        className: "btn btn--gold",
+        text: evidence.buttonLabel,
+        on: { click: () => showImageOverlay(evidence.images, evidence.caption) },
+      }),
+    );
+  }
+
   private pickChoice(choice: DialogueChoice) {
     if (choice.setFlag) questEngine.setFlag(choice.setFlag);
+    if (choice.points) questEngine.addPoints(choice.points);
+    if (choice.clearance) questEngine.setClearance(choice.clearance);
     if (choice.toast) questEngine.toast(choice.toast);
     this.clearChoices();
+    // The response always falls back to the compact dialogue box, even
+    // when the question itself was asked from the big briefing panel.
+    this.briefingEl.style.display = "none";
+    this.briefingBackdropEl.style.display = "none";
     this.mode = "dialogue";
+    this.dialogueEl.style.display = "block";
     this.activeSet = { lines: [choice.response] };
     this.lineIndex = 0;
     this.showLine();
   }
 
-  private renderChoices(choices: { label: string; onClick: () => void }[]) {
+  private renderChoices(choices: { label: string; onClick: () => void }[], ghost = false) {
     this.clearChoices();
-    this.choiceRowEl = el(
+    const isBriefing = this.mode === "briefing";
+    const row = el(
       "div",
-      { style: { display: "flex", gap: "12px", marginTop: "12px" } },
+      { style: { display: "flex", flexDirection: isBriefing ? "column" : "row", gap: "12px", marginTop: "12px" } },
       choices.map((choice, i) =>
         el("button", {
-          className: `btn ${i === 0 ? "btn--gold" : "btn--ghost"}`,
+          className: `btn ${!ghost && i === 0 ? "btn--gold" : "btn--ghost"}`,
           text: choice.label,
           on: { click: choice.onClick },
         }),
       ),
     );
-    this.dialogueEl.appendChild(this.choiceRowEl);
+    if (isBriefing) {
+      this.briefingChoiceRowEl = row;
+      this.briefingEl.appendChild(row);
+    } else {
+      this.choiceRowEl = row;
+      this.dialogueEl.appendChild(row);
+    }
   }
 
   private clearChoices() {
     this.choiceRowEl?.remove();
     this.choiceRowEl = null;
+    this.briefingChoiceRowEl?.remove();
+    this.briefingChoiceRowEl = null;
   }
 
   private advance() {
     if (!this.activeNpc) return;
-    if (this.choiceRowEl) return; // must click a button
+    if (this.choiceRowEl || this.briefingChoiceRowEl) return; // must click a button
     if (this.mode === "offer") return; // must click Accept/Not yet
 
     if (this.currentTypewriter && !this.currentTypewriter.finished) {
@@ -543,6 +676,8 @@ export class NPCController {
     this.activeSet = null;
     this.offerQuestId = null;
     this.dialogueEl.style.display = "none";
+    this.briefingEl.style.display = "none";
+    this.briefingBackdropEl.style.display = "none";
     this.clearChoices();
     if (npcId) questEngine.notifyTalkTo(npcId);
   }

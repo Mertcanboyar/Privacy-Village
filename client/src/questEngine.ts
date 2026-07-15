@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { getSession } from "./session";
 import { playSound } from "./audio";
+import type { EvidenceImage } from "./ui/imageOverlay";
 
 // JSON-driven quest engine (see PLAN.md Phase 2, Day 3). Deliberately a
 // separate module/file from quest.ts, which is specifically the
@@ -39,10 +40,21 @@ export interface QuestStepReveal {
   color?: string;
 }
 
+export interface QuestStepEvidence {
+  images: EvidenceImage[];
+  caption: string;
+  buttonLabel: string;
+}
+
 export interface QuestStep {
   objective: string;
   trigger: Trigger;
   reveal?: QuestStepReveal;
+  /** Reopenable evidence button shown in the HUD tracker while this is
+   * the active step — "Player can reopen the blueprint anytime from the
+   * tracker while the mission is active" (see PLAN.md "The Breach in
+   * the Wall"). */
+  evidence?: QuestStepEvidence;
 }
 
 export interface QuestDef {

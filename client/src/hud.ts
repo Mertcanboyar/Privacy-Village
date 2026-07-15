@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { el } from "./ui/dom";
+import { showImageOverlay } from "./ui/imageOverlay";
 import { questEngine, type QuestStepReveal } from "./questEngine";
 import { getSession } from "./session";
 
@@ -33,6 +34,7 @@ export class HUDController {
   private trackerTitleEl: HTMLElement;
   private trackerObjectiveEl: HTMLElement;
   private trackerCounterEl: HTMLElement;
+  private trackerEvidenceRowEl: HTMLElement;
   private trackerVisible = true;
 
   private toastStackEl: HTMLElement;
@@ -60,10 +62,11 @@ export class HUDController {
     this.trackerCounterEl = el("div", {
       style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)", marginTop: "8px", textAlign: "right" },
     });
+    this.trackerEvidenceRowEl = el("div", { style: { marginTop: "8px" } });
     this.trackerEl = el(
       "div",
       { className: "panel ds-root", style: { position: "absolute", top: "24px", right: "24px", width: "280px", display: "none" } },
-      [this.trackerTitleEl, this.trackerObjectiveEl, this.trackerCounterEl],
+      [this.trackerTitleEl, this.trackerObjectiveEl, this.trackerEvidenceRowEl, this.trackerCounterEl],
     );
     root.appendChild(this.trackerEl);
 
@@ -116,6 +119,19 @@ export class HUDController {
     this.trackerTitleEl.textContent = quest.title;
     this.trackerObjectiveEl.textContent = step?.objective ?? "";
     this.trackerCounterEl.textContent = `${idx + 1}/${quest.steps.length}`;
+
+    this.trackerEvidenceRowEl.innerHTML = "";
+    if (step?.evidence) {
+      const evidence = step.evidence;
+      this.trackerEvidenceRowEl.appendChild(
+        el("button", {
+          className: "btn btn--ghost",
+          text: evidence.buttonLabel,
+          style: { width: "100%" },
+          on: { click: () => showImageOverlay(evidence.images, evidence.caption) },
+        }),
+      );
+    }
   }
 
   private onPointsChanged(_points: number, delta: number) {
