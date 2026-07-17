@@ -3,6 +3,7 @@ import { el } from "./ui/dom";
 import { showImageOverlay } from "./ui/imageOverlay";
 import { questEngine, type QuestStepReveal } from "./questEngine";
 import { getSession } from "./session";
+import { academy } from "./academy";
 
 // Persistent HUD (see PLAN.md Phase 2, Day 3) — .xp-bar, quest tracker,
 // and toast stack from design-system.css, wired to questEngine's events
@@ -42,6 +43,15 @@ export class HUDController {
 
   constructor(scene: Phaser.Scene) {
     const root = document.getElementById("ui-root")!;
+
+    // --- Academy button (top-left, always visible) ---
+    const academyBtnEl = el("button", {
+      className: "btn btn--ghost ds-root",
+      text: "\u{1F4D6} ACADEMY",
+      style: { position: "absolute", top: "24px", left: "24px" },
+      on: { click: () => academy.toggle() },
+    });
+    root.appendChild(academyBtnEl);
 
     // --- XP bar (bottom-left, always visible) ---
     this.levelBadgeEl = el("div", { className: "level-badge", text: "C1" });

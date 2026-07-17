@@ -17,3 +17,9 @@ export function playSound(_id: SoundId) {
 export function playBlip(_npcId: string) {
   // No-op until audio assets are sourced.
 }
+
+// Ducks background/ambient audio to 30% while a full-screen overlay (the
+// Academy) is open. No-op for the same reason as playSound/playBlip.
+export function duckAudio(_active: boolean) {
+  // No-op until audio assets are sourced.
+}

@@ -5,6 +5,7 @@ import { NPCController } from "../npc";
 import { QuestController } from "../quest";
 import { getAvatarOption, getFactionColor, getSession } from "../session";
 import { questEngine } from "../questEngine";
+import { academy } from "../academy";
 import type { RoomName } from "../rooms";
 
 const PLAYER_SPEED = 160;
@@ -97,6 +98,12 @@ export class Room extends Phaser.Scene {
   private zones: RoomZone[] = [];
   private zoneMarker: Phaser.GameObjects.Graphics | null = null;
   private transitioning = false;
+  // Edge-detected rather than level-triggered: unlike a room door (which
+  // warps the player away from the hotspot on trigger), the Academy door
+  // opens an overlay in place, so the player is still standing in the
+  // hotspot the instant they close it — without this, closing while
+  // still inside the doorway would immediately reopen it.
+  private wasInsideAcademyDoor = false;
   private wanderers: Wanderer[] = [];
   private npcController!: NPCController;
   private questController!: QuestController;
@@ -143,6 +150,24 @@ export class Room extends Phaser.Scene {
 
     if (this.textures.exists(fgKey)) {
       this.add.image(0, 0, fgKey).setOrigin(0, 0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT).setDepth(1000);
+    }
+
+    // The Academy building's doorway is partly obscured by foreground
+    // market-stall art, so it gets a floating label (same convention as
+    // NPC name tags — high depth so it reads above the foreground PNG)
+    // in addition to the door hotspot itself.
+    const academyDoor = this.doors.find((d) => d.target === "academy");
+    if (academyDoor) {
+      this.add
+        .text(academyDoor.x + academyDoor.width / 2, academyDoor.y - 8, "\u{1F3DB} ACADEMY", {
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: "14px",
+          color: "#f0b429",
+          stroke: "#000000",
+          strokeThickness: 3,
+        })
+        .setOrigin(0.5, 1)
+        .setDepth(100000);
     }
 
     this.cursors = this.input.keyboard!.createCursorKeys();
@@ -259,7 +284,7 @@ export class Room extends Phaser.Scene {
     // the player or a wanderer warp straight through several waypoints.
     const dt = Math.min(this.game.loop.delta, 50) / 1000;
 
-    const uiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen;
+    const uiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen;
 
     if (!uiOpen) {
       const left = this.cursors.left.isDown || this.wasd.A.isDown;
@@ -313,6 +338,16 @@ export class Room extends Phaser.Scene {
         this.player.x <= door.x + door.width &&
         this.player.y >= door.y &&
         this.player.y <= door.y + door.height;
+
+      // The Academy overlay IS the interior — no separate room to
+      // restart into, so the player never leaves the hotspot on open.
+      // Trigger only on the rising edge (see wasInsideAcademyDoor).
+      if (door.target === "academy") {
+        if (inside && !this.wasInsideAcademyDoor) academy.open();
+        this.wasInsideAcademyDoor = inside;
+        continue;
+      }
+
       if (inside) {
         this.transitioning = true;
         this.scene.restart({ room: door.target as RoomName });
