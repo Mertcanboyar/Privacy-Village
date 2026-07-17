@@ -112,6 +112,16 @@ export class Room extends Phaser.Scene {
     super("Room");
   }
 
+  // Read by AcademyOverlay's "IN THE VILLAGE →" pip to decide whether it
+  // needs a full room transition or can just ping the Herald in place.
+  get currentRoom(): RoomName {
+    return this.roomName;
+  }
+
+  pingHerald() {
+    this.npcController.pingHerald(this);
+  }
+
   init(data: RoomInitData) {
     this.roomName = data.room ?? "village";
     this.transitioning = false;

@@ -506,6 +506,16 @@ export class NPCController {
     this.heraldPulse = g;
   }
 
+  // One-shot bright flash on the Herald, distinct from the steady
+  // ambient pulse above — used when the Academy's "IN THE VILLAGE →"
+  // pip sends the player back to find him (see academy.ts).
+  pingHerald(scene: Phaser.Scene) {
+    const herald = this.npcs.find((n) => n.def.id === "herald");
+    if (!herald) return;
+    const g = scene.add.circle(herald.def.x, herald.def.y - 20, 10, 0xf0b429, 0.9).setDepth(herald.def.y + 1);
+    scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
+  }
+
   get dialogueOpen(): boolean {
     return this.mode !== "closed";
   }
