@@ -1,8 +1,9 @@
 import Phaser from "phaser";
 import { el } from "./ui/dom";
-import { academy, type AcademyTrack, type AcademyModuleSummary } from "./academy";
+import { academy, type AcademyTrack, type AcademyModuleSummary, type LessonBlock } from "./academy";
 import { questEngine } from "./questEngine";
 import { getSession } from "./session";
+import { showImageOverlay, isImageOverlayOpen } from "./ui/imageOverlay";
 import type { Room } from "./scenes/Room";
 
 // Full-screen DOM overlay for the Academy learning hub (see PLAN.md "The
@@ -31,7 +32,6 @@ export class AcademyOverlay {
   private hideTimeout: number | undefined;
 
   private aKey: Phaser.Input.Keyboard.Key;
-  private escKey: Phaser.Input.Keyboard.Key;
 
   private currentView: AcademyView = "hub";
   private currentTrackId: string | null = null;
@@ -82,12 +82,27 @@ export class AcademyOverlay {
     academy.on("progressChanged", () => this.render());
 
     this.aKey = scene.input.keyboard!.addKey("A");
-    this.escKey = scene.input.keyboard!.addKey("ESC");
+
+    // Raw DOM listener rather than Phaser's polled JustDown(): the
+    // evidence-image overlay (opened from the lesson view) closes
+    // itself synchronously on its own "keydown" listener, and by the
+    // time Phaser's next update() tick would poll JustDown() that
+    // overlay has already reported itself closed — isImageOverlayOpen()
+    // would read stale/false and academy.close() would fire right
+    // behind it, closing both in one keypress. Registering here in the
+    // constructor (i.e. before any evidence overlay has ever opened)
+    // guarantees this listener runs before imageOverlay's later,
+    // dynamically-added one for the same "keydown" event, so the check
+    // below still sees it as open.
+    document.addEventListener("keydown", this.onKeydown);
   }
+
+  private onKeydown = (e: KeyboardEvent) => {
+    if (e.key === "Escape" && academy.isOpen && !isImageOverlayOpen()) academy.close();
+  };
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.aKey)) academy.toggle();
-    if (academy.isOpen && Phaser.Input.Keyboard.JustDown(this.escKey)) academy.close();
   }
 
   private render() {
@@ -112,6 +127,12 @@ export class AcademyOverlay {
   private goToLesson(moduleId: string) {
     this.currentModuleId = moduleId;
     this.currentView = "lesson";
+    this.render();
+  }
+
+  private goToQuiz(moduleId: string) {
+    this.currentModuleId = moduleId;
+    this.currentView = "quiz";
     this.render();
   }
 
@@ -236,15 +257,62 @@ export class AcademyOverlay {
     ]);
   }
 
-  // Placeholder — real lesson content lands in the next section.
   private renderLesson() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    this.bodyEl.appendChild(
-      el("div", { className: "panel panel--glow", style: { width: "680px" } }, [
-        el("button", { className: "btn btn--ghost", text: "← BACK", on: { click: () => this.goToModuleList(this.currentTrackId!) } }),
-        el("p", { text: `Lesson content for "${module?.title ?? ""}" lands in the next section.`, style: { marginTop: "var(--space-3)", color: "var(--text-muted)" } }),
-      ]),
+    if (!module) {
+      this.goToHub();
+      return;
+    }
+
+    const header = el("div", { style: { display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-3)" } }, [
+      el("button", { className: "btn btn--ghost", text: "← BACK", on: { click: () => this.goToModuleList(module.track) } }),
+      el("h2", { text: module.title.toUpperCase(), style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px" } }),
+    ]);
+
+    const blocks = el(
+      "div",
+      { className: "briefing" },
+      module.lesson.map((block) => this.renderLessonBlock(block)),
     );
+
+    const assessmentBtn = el("button", {
+      className: "btn btn--gold",
+      text: "TAKE THE ASSESSMENT",
+      style: { marginTop: "var(--space-3)" },
+      on: { click: () => this.goToQuiz(module.id) },
+    });
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "720px", maxHeight: "640px", overflowY: "auto" } }, [header, blocks, assessmentBtn]));
+  }
+
+  private renderLessonBlock(block: LessonBlock): HTMLElement {
+    if (block.type === "heading") {
+      return el("h3", { text: block.text, style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "20px", margin: "var(--space-2) 0" } });
+    }
+    if (block.type === "paragraph") {
+      return el("p", { className: "briefing__body", text: block.text, style: { marginBottom: "var(--space-2)" } });
+    }
+    if (block.type === "callout") {
+      const accent = block.variant === "gold" ? "var(--accent-gold)" : "var(--accent-blue)";
+      return el("div", {
+        text: block.text,
+        style: {
+          borderLeft: `4px solid ${accent}`,
+          background: "var(--bg-raised)",
+          padding: "var(--space-2)",
+          borderRadius: "var(--radius-sm)",
+          margin: "var(--space-2) 0",
+          fontFamily: "var(--font-body)",
+          fontSize: "14px",
+          color: "var(--text-primary)",
+        },
+      });
+    }
+    // evidence-image — same full-screen zoomable viewer the Herald's
+    // mission briefings use.
+    return el("div", { style: { margin: "var(--space-2) 0" } }, [
+      el("button", { className: "btn btn--ghost", text: block.buttonLabel, on: { click: () => showImageOverlay(block.images, block.caption) } }),
+    ]);
   }
 
   // Placeholder — real quiz content lands in a later section.

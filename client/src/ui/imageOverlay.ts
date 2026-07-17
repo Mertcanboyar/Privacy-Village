@@ -56,7 +56,19 @@ function placeholderCard(label: string, src: string): HTMLElement {
   );
 }
 
+// Lets other ESC handlers (e.g. AcademyOverlay's) check whether this
+// overlay is the one that should consume the keypress — without this,
+// opening evidence from inside the Academy would let a single ESC
+// close both the evidence viewer and the Academy overlay underneath it
+// in the same keypress.
+let openCount = 0;
+
+export function isImageOverlayOpen(): boolean {
+  return openCount > 0;
+}
+
 export function showImageOverlay(images: EvidenceImage[], caption: string) {
+  openCount++;
   let scale = 1;
   let panX = 0;
   let panY = 0;
@@ -142,6 +154,7 @@ export function showImageOverlay(images: EvidenceImage[], caption: string) {
   document.getElementById("ui-root")!.appendChild(wrapper);
 
   function close() {
+    openCount--;
     document.removeEventListener("keydown", onKeydown);
     wrapper.remove();
   }
