@@ -312,7 +312,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       texture: "npc-quill",
       baseScale: loreNpcBaseScale("quill"),
       idleAnim: "npc-quill-idle",
-      dialogue: [{ lines: ["Forty-six Trials, Agent. You've faced but one. Return to the Courthouse when you're ready for the next."] }],
+      dialogue: [{ lines: ["Forty-six Trials, Agent. The tome on the desk once held one — the Academy holds all of them now."] }],
     },
     {
       id: "sabine",

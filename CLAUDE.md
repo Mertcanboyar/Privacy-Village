@@ -73,7 +73,7 @@ Archer, Viking) are static painted/cutout sprites reused as placeholders
 wired at every interaction point across this flow and the quest engine
 below, ready for real SFX once sourced.
 
-### NPCs, the quest engine, and the Courthouse Trial
+### NPCs, the quest engine, and the Courthouse desk
 
 The game's narrative is a covert-fiction layer: the Privacy Village
 Festival is cover for a secret "Battle for AI" Summit; the player is a
@@ -106,7 +106,7 @@ triggers a separate Accept/Not-yet **offer** flow instead of normal
 dialogue while that quest is `available`. Live NPCs: Herald (village
 square, quest giver for "The Breach in the Wall"), Bram (village
 square), Odile (tavern), Quill + Sabine (courthouse, one ambient flavor
-line each, referencing the Courthouse Trial below). The 4 lore NPCs
+line each — Quill's nods at the Academy, see below). The 4 lore NPCs
 (`LORE_NPC_IDS`: bram/odile/quill/sabine) each get a 4-frame idle-only
 sprite sheet built from a different CraftPix character pack (see
 CREDITS.md) — frame size varies per character (`LORE_NPC_FRAME_SIZE` in
@@ -162,23 +162,53 @@ matters because `UIOverlay` is `scene.launch()`'d once from
 scene that persists the way a HUD needs to. `Q` toggles the tracker; the
 level badge reads "C1" through "C5".
 
-`client/src/quest.ts` — the Courthouse case-file quest (the "Trial").
-Not an iframe (the original plan): a native DOM panel
-(`client/public/ui/design-system.css`'s `.panel`/`.briefing` components)
-appended to `#ui-root`, floating over the Phaser canvas — same
-DOM-over-Phaser split used everywhere in this game (`npc.ts`'s dialogue,
-`hud.ts`). Interacting with the desk in the Courthouse room opens it.
-Content is the "Personal Data Classification Lab," ported verbatim from
-`~/Desktop/Cursor/DPIA Protocol/src/modules/personal-data-lab` — 3 GDPR
-scenarios, 18 data-field items, each classified via drag-and-drop with
-immediate feedback. Every choice is appended to an in-memory decision
-log and the final result is written to
-`localStorage['pv:badge:personal-data-lab']` — its completion pays a
-flat 400 points into `questEngine` and grants **Clearance 5**, the
-reserved top level. Both NPC dialogue and the quest panel pause player
-movement and door checks while open (`Room.ts`'s `uiOpen` check) — if
-you add a third interactive system, route it through the same pattern
-rather than inventing a new one.
+`client/src/quest.ts` — the Courthouse desk. Used to run the "Personal
+Data Classification Lab" in-world (a drag-and-drop GDPR trial that paid
+400 points and granted Clearance 5 — see git history on this file); that
+content moved to the Academy's "Personal Data or Not?" card drill (see
+below), and the desk is now a pure signpost: an `[E]`-triggered flavor
+line pointing the player to the Academy, no quest state, no points.
+Both NPC dialogue and this signpost pause player movement and door
+checks while open (`Room.ts`'s `uiOpen` check) — if you add a third
+interactive system, route it through the same pattern rather than
+inventing a new one.
+
+### The Academy (learning hub overlay)
+
+A full-screen DOM overlay layered over the village — the structured
+"classroom" half of the experience, as opposed to the Village's
+narrative/gameplay half. Opens via the HUD's `.btn--ghost` button
+(top-left) or the Village Square door hotspot (no hotkey — `A` collides
+with WASD movement); ESC or "RETURN TO VILLAGE" closes it. `client/src/academy.ts`
+is a framework-free `Phaser.Events.EventEmitter` singleton (same pattern
+as `questEngine.ts`) holding 3 tracks and their modules, each loaded
+from `client/public/data/academy/*.json` via `Preload.ts`. `client/src/academyOverlay.ts`
+is the Scene-bound DOM UI (constructed once from `UIOverlay.ts`,
+alongside `HUDController`) — a view-switch state machine (hub → module
+list → lesson/card-drill → quiz) rendering `.panel`/`.briefing`/
+`.quest-card`/`.badge-popup` design-system components.
+
+Two module content types (`AcademyModule` is a `type`-discriminated
+union; a JSON file with no `type` field is a lesson module by default):
+`lesson` (heading/paragraph/callout/evidence-image blocks, then a
+3-question mastery quiz — wrong picks shake/explain/retry, right picks
+flash gold/explain/advance) and `card_drill` (one card at a time,
+binary PERSONAL DATA / NOT PERSONAL DATA choice; wrong answers re-queue
+to the end of the deck rather than retrying immediately, so the deck
+only completes once every card has been answered correctly once — no
+score is ever shown, just progress dots).
+
+A module's `fieldWork?: {questId, room, label}` is optional — most
+modules are theory-only (no linked in-game activity, module list shows
+just a THEORY pip) and complete via `academy.markTheoryDone()` alone.
+Where a real quest exists (Threat Modeling Fundamentals ↔ "The Breach in
+the Wall"), the module list also shows a FIELD WORK pip that closes the
+overlay and routes the player to `fieldWork.room`, syncing `fieldDone`
+from `questEngine.isComplete(questId)` both live (on `questCompleted`)
+and retroactively (every time the Academy opens, in case the quest
+finished first). A module completes — badge-popup modal, +100 points,
+its track's credential bar animates, a toast — the first time both
+`theoryDone` and `fieldDone` are true, guarded against double-firing.
 
 ## Demo rule (read before adding anything)
 

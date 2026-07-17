@@ -17,9 +17,11 @@ const REVEAL_DISMISS_MS = 5000;
 
 // Cosmetic only — the .xp-bar fill is just points/TOTAL_POINTS, it no
 // longer gates Clearance (see questEngine.ts's setClearance()). Sum of
-// every payout in the demo path: Welcome 50 + Mission 1 150 +
-// Mission 2 150 + Trial 400.
-const TOTAL_POINTS = 750;
+// every payout in the village demo path: Welcome 50 + Mission 1 150 +
+// Mission 2 150. (The Courthouse Trial's 400 used to be part of this —
+// its content moved to the Academy, a parallel points source with its
+// own per-track credential bars, not counted here.)
+const TOTAL_POINTS = 350;
 
 function factionAccent(): string {
   return getSession().faction === "apocalypse" ? "var(--accent-red)" : "var(--accent-gold)";
