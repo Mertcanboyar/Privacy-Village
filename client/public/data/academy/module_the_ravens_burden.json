@@ -5,14 +5,8 @@
   "clearanceRequired": 2,
   "type": "data_sieve",
   "aiGoal": "Predict which patrol will reach an alarm bell fastest, based on records of past alarms.",
-  "brief": "The Division's artificers are training a Watch-Bell Responder — a charm that learns from six months of alarm records to predict the fastest patrol for any new alarm. Before the training records are locked in, sieve out anything the charm doesn't actually need. The law calls this \"data minimisation\": keep only what serves the stated purpose, nothing more.",
+  "brief": "A Watch-Bell Responder charm is being trained on six months of alarm records. Sieve out anything it doesn't need — \"data minimisation\" means keeping only what serves the stated purpose.",
   "cards": [
-    {
-      "id": "weather",
-      "label": "Weather conditions during each alarm",
-      "shouldRemove": false,
-      "reason": "Weather directly affects how fast a patrol can move — rain and ice slow a response. A genuine predictive signal with no privacy cost."
-    },
     {
       "id": "patrol_times",
       "label": "Historic patrol response times by route",
@@ -20,22 +14,16 @@
       "reason": "Aggregated response-time history is exactly what the charm needs to learn from. No individual is identified by it."
     },
     {
-      "id": "caller_identity",
-      "label": "The alarm-caller's full name and house number",
-      "shouldRemove": true,
-      "reason": "The charm needs to know WHERE the alarm was, not WHO rang it. A ward or district is enough — a name and house number identifies a person for no predictive gain."
-    },
-    {
-      "id": "caller_purse",
-      "label": "The caller's coin-purse contents",
-      "shouldRemove": true,
-      "reason": "Has no bearing on how fast a patrol can respond. Irrelevant personal detail is pure liability if the training records are ever read by the wrong eyes."
-    },
-    {
       "id": "nearest_gate",
       "label": "Which watch-gate is nearest the alarm",
       "shouldRemove": false,
       "reason": "Directly relevant geography — which gate is closest changes the prediction. This describes a place, not a person."
+    },
+    {
+      "id": "caller_identity",
+      "label": "The alarm-caller's full name and house number",
+      "shouldRemove": true,
+      "reason": "The charm needs to know WHERE the alarm was, not WHO rang it. A ward or district is enough — a name and house number identifies a person for no predictive gain."
     },
     {
       "id": "caller_faith",
@@ -45,7 +33,7 @@
     },
     {
       "id": "caller_tracking",
-      "label": "The caller's exact position, tracked continuously for a week by a charm",
+      "label": "The caller's exact position, tracked continuously for a week",
       "shouldRemove": true,
       "reason": "Nothing about a single alarm justifies a week of continuous tracking. This is surveillance dressed up as training data."
     }

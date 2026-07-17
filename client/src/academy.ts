@@ -15,16 +15,14 @@ import type { RoomName } from "./rooms";
 // without duplicating the id list in two places.
 export const ACADEMY_TRACK_IDS = ["ai_governance", "privacy_ops", "cyber_security_law"] as const;
 // Demo rule: only these have real content (lesson+quiz, card drill, or
-// data sieve — see AcademyModule below) — two per track. Every other
-// module named in a track JSON's `modules` array is a locked stub card
-// (name + clearance tag only, no separate file).
+// data sieve — see AcademyModule below). Every other module named in a
+// track JSON's `modules` array is a locked stub card (name + clearance
+// tag only, no separate file).
 export const ACADEMY_MODULE_IDS = [
   "threat_modeling",
   "ai_pipeline_mapping",
-  "governing_the_oracle",
   "personal_data_or_not",
   "the_ravens_burden",
-  "malware_incident_triage",
   "the_three_locks",
 ] as const;
 

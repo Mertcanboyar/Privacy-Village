@@ -680,18 +680,18 @@ export class AcademyOverlay {
 
     const goalBox = el(
       "div",
-      { style: { borderLeft: "4px solid var(--accent-blue)", background: "var(--bg-raised)", padding: "var(--space-2)", borderRadius: "var(--radius-sm)", marginBottom: "var(--space-2)" } },
+      { style: { borderLeft: "4px solid var(--accent-blue)", background: "var(--bg-raised)", padding: "8px 12px", borderRadius: "var(--radius-sm)", marginBottom: "var(--space-2)" } },
       [
-        el("div", { text: "STATED GOAL", style: { fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.08em", color: "var(--accent-blue)", fontWeight: "700", marginBottom: "4px" } }),
-        el("div", { text: module.aiGoal, style: { fontFamily: "var(--font-body)", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" } }),
+        el("span", { text: "GOAL: ", style: { fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.06em", color: "var(--accent-blue)", fontWeight: "700" } }),
+        el("span", { text: module.aiGoal, style: { fontFamily: "var(--font-body)", fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" } }),
       ],
     );
 
-    const briefP = el("p", { className: "briefing__body", text: module.brief, style: { marginBottom: "var(--space-3)" } });
+    const briefP = el("p", { className: "briefing__body", text: module.brief, style: { fontSize: "13px", marginBottom: "var(--space-2)" } });
 
     const cardsList = el(
       "div",
-      { style: { display: "flex", flexDirection: "column", gap: "8px" } },
+      { style: { display: "flex", flexDirection: "column", gap: "6px" } },
       module.cards.map((card) => this.renderSieveCard(card)),
     );
 
@@ -699,7 +699,7 @@ export class AcademyOverlay {
 
     if (!this.sieveValidated) {
       children.push(
-        el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "var(--space-3)" } }, [
+        el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "var(--space-2)" } }, [
           el("span", {
             text: `${this.sieveRemoved.size} of ${module.cards.length} marked for removal`,
             style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" },
@@ -709,69 +709,61 @@ export class AcademyOverlay {
       );
     } else {
       children.push(
-        el(
-          "div",
-          { style: { display: "flex", flexDirection: "column", gap: "8px", marginTop: "var(--space-3)" } },
-          module.cards.map((card) => this.renderSieveExplanation(card)),
-        ),
-      );
-      children.push(
         el("button", {
           className: "btn btn--gold",
           text: "COMPLETE",
-          style: { marginTop: "var(--space-3)" },
+          style: { marginTop: "var(--space-2)" },
           on: { click: () => this.completeDataSieve(module) },
         }),
       );
     }
 
-    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "720px", maxHeight: "640px", overflowY: "auto" } }, children));
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "680px" } }, children));
   }
 
+  // Single row per card, doing double duty: before validation it's a
+  // toggle; after validation it's the SAME row with a correct/wrong
+  // border and its reason appended inline, rather than a second full
+  // list repeating every card underneath (the original layout scrolled
+  // badly because it showed each card twice).
   private renderSieveCard(card: DataSieveCard): HTMLElement {
     const isRemoved = this.sieveRemoved.has(card.id);
-    const style: Partial<CSSStyleDeclaration> = { cursor: this.sieveValidated ? "default" : "pointer" };
+    const style: Partial<CSSStyleDeclaration> = {
+      display: "flex",
+      flexDirection: "column",
+      gap: "4px",
+      padding: "8px 12px",
+      borderRadius: "var(--radius-sm)",
+      border: "2px solid var(--border-strong)",
+      background: "var(--bg-panel)",
+      cursor: this.sieveValidated ? "default" : "pointer",
+    };
     if (this.sieveValidated) {
       style.borderColor = isRemoved === card.shouldRemove ? "var(--accent-gold)" : "var(--accent-red)";
     } else if (isRemoved) {
       style.opacity = "0.55";
     }
 
-    const titleStyle: Partial<CSSStyleDeclaration> =
-      isRemoved && !this.sieveValidated ? { textDecoration: "line-through", color: "var(--text-muted)" } : {};
-
-    return el(
-      "div",
-      { className: "quest-card", style, on: this.sieveValidated ? {} : { click: () => this.toggleSieveCard(card.id) } },
-      [
-        el("div", { className: "quest-card__icon" }),
-        el("div", { className: "quest-card__info" }, [el("div", { className: "quest-card__title", text: card.label, style: titleStyle })]),
-        el("div", { className: "quest-card__meta" }, [el("span", { className: isRemoved ? "chip" : "chip chip--gold", text: isRemoved ? "SIEVE OUT" : "KEEP" })]),
-      ],
-    );
-  }
-
-  private renderSieveExplanation(card: DataSieveCard): HTMLElement {
-    const isRemoved = this.sieveRemoved.has(card.id);
-    const correct = isRemoved === card.shouldRemove;
-    return el(
-      "div",
-      {
+    const titleRow = el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" } }, [
+      el("span", {
+        text: card.label,
         style: {
-          borderLeft: `4px solid ${correct ? "var(--accent-gold)" : "var(--accent-red)"}`,
-          background: "var(--bg-raised)",
-          padding: "var(--space-2)",
-          borderRadius: "var(--radius-sm)",
+          fontFamily: "var(--font-body)",
+          fontSize: "13px",
+          fontWeight: "600",
+          textDecoration: isRemoved && !this.sieveValidated ? "line-through" : "none",
+          color: isRemoved && !this.sieveValidated ? "var(--text-muted)" : "var(--text-primary)",
         },
-      },
-      [
-        el("div", { style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" } }, [
-          el("span", { text: card.label, style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "13px" } }),
-          el("span", { className: card.shouldRemove ? "chip" : "chip chip--gold", text: card.shouldRemove ? "SHOULD SIEVE OUT" : "SHOULD KEEP" }),
-        ]),
-        el("p", { text: card.reason, style: { fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" } }),
-      ],
-    );
+      }),
+      el("span", { className: isRemoved ? "chip" : "chip chip--gold", text: isRemoved ? "SIEVE OUT" : "KEEP" }),
+    ]);
+
+    const rowChildren: HTMLElement[] = [titleRow];
+    if (this.sieveValidated) {
+      rowChildren.push(el("p", { text: card.reason, style: { fontFamily: "var(--font-body)", fontSize: "12px", color: "var(--text-muted)", margin: "0" } }));
+    }
+
+    return el("div", { style, on: this.sieveValidated ? {} : { click: () => this.toggleSieveCard(card.id) } }, rowChildren);
   }
 
   private toggleSieveCard(id: string) {
