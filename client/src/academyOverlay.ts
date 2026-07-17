@@ -1,12 +1,18 @@
 import Phaser from "phaser";
 import { el, countUp } from "./ui/dom";
-import { academy, type AcademyTrack, type AcademyModuleSummary, type AcademyModule, type LessonBlock, type QuizQuestion } from "./academy";
+import { academy, type AcademyTrack, type AcademyModuleSummary, type AcademyModule, type AcademyFieldWork, type LessonBlock, type QuizQuestion } from "./academy";
 import { questEngine } from "./questEngine";
 import { getSession } from "./session";
 import { showImageOverlay, isImageOverlayOpen } from "./ui/imageOverlay";
 import type { Room } from "./scenes/Room";
 
 const MODULE_COMPLETE_XP = 100;
+
+function roomCallToAction(room: AcademyFieldWork["room"]): string {
+  if (room === "courthouse") return "IN THE COURTHOUSE →";
+  if (room === "tavern") return "IN THE TAVERN →";
+  return "IN THE VILLAGE →";
+}
 
 // Full-screen DOM overlay for the Academy learning hub (see PLAN.md "The
 // Academy"). Opens via the HUD button or the Village Square door hotspot
@@ -160,18 +166,21 @@ export class AcademyOverlay {
     this.render();
   }
 
-  // Closes the overlay and either flashes the Herald (already in the
-  // village) or takes the player there first — used by the module
-  // list's "IN THE VILLAGE →" field-work pip.
-  private goToHerald() {
+  // Closes the overlay and sends the player to wherever a module's field
+  // work happens — used by the module list's field-work pip. The Herald
+  // ping is village-specific flourish (the only room with a ping
+  // mechanism); other rooms just get a plain room switch, since the
+  // desk/NPC prompt there is already visible once you arrive.
+  private goToFieldWork(fieldWork: AcademyFieldWork) {
     academy.close();
     const manager = this.scene.scene.manager;
     const roomScene = manager.getScene("Room") as Room | null;
     if (!roomScene) return;
-    if (roomScene.currentRoom === "village") {
-      roomScene.pingHerald();
+    const alreadyThere = roomScene.currentRoom === fieldWork.room;
+    if (alreadyThere) {
+      if (fieldWork.room === "village") roomScene.pingHerald();
     } else {
-      manager.start("Room", { room: "village" });
+      manager.start("Room", { room: fieldWork.room });
     }
   }
 
@@ -263,13 +272,32 @@ export class AcademyOverlay {
       ]);
     }
 
+    const module = academy.getModule(summary.id);
     const progress = academy.getProgress(summary.id);
-    const fieldPip = progress.fieldDone
-      ? el("span", { className: "chip chip--gold", text: "FIELD WORK ✓" })
-      : el("button", { className: "btn btn--ghost", text: "FIELD WORK: IN THE VILLAGE →", style: { fontSize: "11px", padding: "8px 12px" }, on: { click: () => this.goToHerald() } });
-    const theoryPip = progress.theoryDone
-      ? el("span", { className: "chip chip--gold", text: "THEORY ✓" })
-      : el("button", { className: "btn btn--gold", text: "THEORY: BEGIN", style: { fontSize: "11px", padding: "8px 12px" }, on: { click: () => this.goToLesson(summary.id) } });
+    const pips: HTMLElement[] = [];
+
+    // Theory-only modules (no fieldWork at all) skip this pip entirely
+    // rather than showing a misleading "FIELD WORK ✓" for something
+    // that was never a real requirement.
+    if (module?.fieldWork) {
+      const fieldWork = module.fieldWork;
+      pips.push(
+        progress.fieldDone
+          ? el("span", { className: "chip chip--gold", text: "FIELD WORK ✓" })
+          : el("button", {
+              className: "btn btn--ghost",
+              text: `FIELD WORK: ${roomCallToAction(fieldWork.room)}`,
+              style: { fontSize: "11px", padding: "8px 12px" },
+              on: { click: () => this.goToFieldWork(fieldWork) },
+            }),
+      );
+    }
+
+    pips.push(
+      progress.theoryDone
+        ? el("span", { className: "chip chip--gold", text: "THEORY ✓" })
+        : el("button", { className: "btn btn--gold", text: "THEORY: BEGIN", style: { fontSize: "11px", padding: "8px 12px" }, on: { click: () => this.goToLesson(summary.id) } }),
+    );
 
     return el("div", { className: "quest-card" }, [
       el("div", { className: "quest-card__icon" }),
@@ -277,7 +305,7 @@ export class AcademyOverlay {
         el("div", { className: "quest-card__title", text: summary.title }),
         el("div", { className: "quest-card__desc", text: `Clearance ${summary.clearanceRequired} required` }),
       ]),
-      el("div", { className: "quest-card__meta", style: { gap: "8px" } }, [fieldPip, theoryPip]),
+      el("div", { className: "quest-card__meta", style: { gap: "8px" } }, pips),
     ]);
   }
 

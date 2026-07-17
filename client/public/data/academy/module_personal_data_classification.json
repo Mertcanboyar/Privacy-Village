@@ -1,0 +1,60 @@
+{
+  "id": "personal_data_classification",
+  "track": "privacy_data_protection",
+  "title": "Personal Data Classification",
+  "clearanceRequired": 2,
+  "fieldWork": { "label": "The Personal Data Classification Lab", "storageKey": "pv:badge:personal-data-lab", "room": "courthouse" },
+  "lesson": [
+    { "type": "heading", "text": "Three buckets, and the boundary between them is where the real work is." },
+    {
+      "type": "paragraph",
+      "text": "GDPR sorts data into three tiers. Not Personal Data cannot identify a natural person and sits outside GDPR's scope entirely. Personal Data (Art. 4(1)) directly or indirectly identifies someone. Special Category Data (Art. 9/10) — health, ethnicity, religion, political opinion, and similar — identifies someone AND reveals something about them that demands heightened protection."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "Pseudonymised data is still personal data. A hospital record labeled only \"Patient #K9R21\" looks anonymous, but if the hospital holds a registry mapping that code back to a name, re-identification is possible — and Recital 26 says that's enough to keep it inside GDPR."
+    },
+    {
+      "type": "paragraph",
+      "text": "Special-category data doesn't have to be stated outright to count. An ad platform that tags a user \"interested in left-wing politics\" purely from browsing and click patterns — never a word the user typed — is still processing political-opinion data under Art. 9. The EDPB has confirmed that inferred sensitive data is still sensitive data."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "The opposite mistake also happens: \"78% ICU bed occupancy this week\" looks like it's about patients, but it's an aggregate figure with no link back to any identifiable individual — not personal data at all, regardless of how sensitive the underlying topic (health) sounds."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "A hospital's patient portal refers to a record only as \"Patient #K9R21\" — the real name is kept in a separate secure registry accessible only to records staff. Is this personal data under GDPR?",
+      "choices": ["No — it's anonymised, so GDPR doesn't apply", "Yes — pseudonymised data is still personal data", "Only once the patient's name is also shown on screen"],
+      "answer": 1,
+      "explain": [
+        "Anonymisation means re-identification is impossible even for the controller. Here the hospital holds the mapping table — that's pseudonymisation, not anonymisation.",
+        "Correct — Recital 26 GDPR treats pseudonymised data as personal data whenever the controller can reasonably re-identify it, which the hospital clearly can via its own registry.",
+        "The identifying link already exists the moment the mapping table does — showing the name on screen isn't what makes it personal data, it already was."
+      ]
+    },
+    {
+      "q": "An ad platform automatically tags a user as \"interested in left-wing politics\" based on browsing and ad-click patterns — the user never stated a political view. How should this be classified?",
+      "choices": ["Not personal data — it's inferred, not stated by the user", "Personal data, but not special category", "Special category (sensitive) data"],
+      "answer": 2,
+      "explain": [
+        "Being algorithmically inferred doesn't put it outside GDPR — it's still information tied to an identifiable user.",
+        "Political opinion is one of the categories Art. 9(1) lists explicitly — inference doesn't downgrade it.",
+        "Correct — the EDPB has confirmed inferred sensitive data is still sensitive data. Data revealing political opinions is Art. 9 special-category data whether stated or inferred."
+      ]
+    },
+    {
+      "q": "A hospital's weekly management report states \"78% bed occupancy in ICU this week, 62% in Paediatrics.\" Is this personal data?",
+      "choices": ["Yes — it describes what's happening to patients", "No — it's an aggregate figure with no link to any identifiable individual", "Only if the hospital is small enough that patients could be guessed"],
+      "answer": 1,
+      "explain": [
+        "It's about hospital operations in aggregate, not any one patient's record — nothing here identifies a person.",
+        "Correct — aggregate statistics with no link to an identifiable individual fall outside GDPR's definition of personal data, however sensitive the underlying topic sounds.",
+        "Small-sample re-identification risk is a real DPIA consideration elsewhere, but a bare occupancy percentage like this one isn't reasoning about individuals at all."
+      ]
+    }
+  ]
+}

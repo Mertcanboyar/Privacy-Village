@@ -1,0 +1,59 @@
+{
+  "id": "ai_pipeline_mapping",
+  "track": "ai_governance",
+  "title": "AI Pipeline Risk Mapping",
+  "clearanceRequired": 2,
+  "lesson": [
+    { "type": "heading", "text": "Every AI system has three moments: before, during, and after." },
+    {
+      "type": "paragraph",
+      "text": "Training is building the model — collecting examples, labeling them, fitting weights. Inference is using the model — a live request runs through the network right now. Output is what comes out the other side — a reply, a score, a diagnosis, a decision."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "The three phases carry different obligations. Bias mitigation is a training-phase fix — you correct the data before the model ever learns from it. Explainability requirements attach to output — they travel with the decision, not the dataset."
+    },
+    {
+      "type": "paragraph",
+      "text": "Governance mistakes usually come from misrouting a step to the wrong phase. \"Loading the trained model's weights into GPU memory\" sounds like setup, but it happens every time the server starts serving requests — that makes it inference infrastructure, not training. Get the phase wrong and you audit the wrong control."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "A credit-scoring model that returns \"approved, score 740\" alongside \"top reasons: stable income, low debt, long history\" is producing two outputs at once — a decision and its explanation. Both are auditable outputs; neither is training data."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "RetailMax gathers 18 months of real customer support chats to teach their new chatbot what good answers look like. Which phase is this?",
+      "choices": ["Training", "Inference", "Output"],
+      "answer": 0,
+      "explain": [
+        "Correct — training data is collected before the model is built. These conversations become the examples the AI learns from.",
+        "Inference is what happens when a live user sends the finished chatbot a new question — this step happens before the chatbot even exists.",
+        "Output is what the finished model produces for a user — this is raw material for building the model, not a result it generated."
+      ]
+    },
+    {
+      "q": "A server reads the trained model file from disk and loads it into GPU memory so it can start answering requests. Which phase?",
+      "choices": ["Training", "Inference", "Output"],
+      "answer": 1,
+      "explain": [
+        "It sounds like setup, but the weights were already trained — nothing is being learned here, just prepared to serve.",
+        "Correct — loading weights to serve predictions is inference infrastructure. It happens every time the server starts up, not when the model is built.",
+        "Nothing has been produced yet at this point — the model hasn't processed any input."
+      ]
+    },
+    {
+      "q": "A credit-scoring system returns \"Loan approved, score 740\" plus \"Top reasons: stable income, low debt, long history.\" What is the explanation list?",
+      "choices": ["Training data", "An inference-time optimization", "Output"],
+      "answer": 2,
+      "explain": [
+        "The explanation is generated per applicant, at decision time — it isn't an example fed to the model beforehand.",
+        "It isn't about processing efficiency — it's a result the model hands back alongside the decision.",
+        "Correct — explainability features are outputs. They accompany the prediction to help a human understand why the model decided what it did."
+      ]
+    }
+  ]
+}
