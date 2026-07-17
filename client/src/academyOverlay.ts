@@ -9,17 +9,16 @@ import type { Room } from "./scenes/Room";
 const MODULE_COMPLETE_XP = 100;
 
 // Full-screen DOM overlay for the Academy learning hub (see PLAN.md "The
-// Academy"). Section 1 ("Entrances") built the open/close shell — dim
-// +fade backdrop, movement lock (via Room.ts reading academy.isOpen),
-// audio duck (via academy.ts itself). Section 3a-b replaces the
-// placeholder body with the real hub (3 track cards) and module list
-// (field/theory pips) views; lesson/quiz are still placeholders here,
-// filled in by the sections that follow.
+// Academy"). Opens via the HUD button or the Village Square door hotspot
+// (no hotkey — a bare "A" would collide with WASD movement) — dim+fade
+// backdrop, movement lock (via Room.ts reading academy.isOpen), audio
+// duck (via academy.ts itself). Hub (3 track cards), module list
+// (field/theory pips), lesson, and quiz views all live in one
+// view-switch state machine below.
 //
 // Scene-bound (constructed with UIOverlay, the one persistent scene,
-// same reasoning as HUDController) both for its Key objects and so the
-// module list's "IN THE VILLAGE →" pip can reach the Room scene via the
-// shared SceneManager.
+// same reasoning as HUDController) so the module list's "IN THE VILLAGE
+// →" pip can reach the Room scene via the shared SceneManager.
 const FADE_MS = 200;
 
 type AcademyView = "hub" | "moduleList" | "lesson" | "quiz";
@@ -32,8 +31,6 @@ export class AcademyOverlay {
   private stageEl: HTMLElement;
   private bodyEl: HTMLElement;
   private hideTimeout: number | undefined;
-
-  private aKey: Phaser.Input.Keyboard.Key;
 
   private currentView: AcademyView = "hub";
   private currentTrackId: string | null = null;
@@ -111,8 +108,6 @@ export class AcademyOverlay {
     academy.on("progressChanged", () => this.render());
     academy.on("moduleCompleted", (moduleId: string) => this.showBadge(moduleId));
 
-    this.aKey = scene.input.keyboard!.addKey("A");
-
     // Raw DOM listener rather than Phaser's polled JustDown(): the
     // evidence-image overlay (opened from the lesson view) closes
     // itself synchronously on its own "keydown" listener, and by the
@@ -130,10 +125,6 @@ export class AcademyOverlay {
   private onKeydown = (e: KeyboardEvent) => {
     if (e.key === "Escape" && academy.isOpen && !isImageOverlayOpen()) academy.close();
   };
-
-  update() {
-    if (Phaser.Input.Keyboard.JustDown(this.aKey)) academy.toggle();
-  }
 
   private render() {
     this.bodyEl.innerHTML = "";

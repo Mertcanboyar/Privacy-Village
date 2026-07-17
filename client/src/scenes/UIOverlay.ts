@@ -9,7 +9,6 @@ import { AcademyOverlay } from "../academyOverlay";
 // rather than in Room.ts.
 export class UIOverlay extends Phaser.Scene {
   private hud!: HUDController;
-  private academyOverlay!: AcademyOverlay;
 
   constructor() {
     super("UIOverlay");
@@ -25,11 +24,13 @@ export class UIOverlay extends Phaser.Scene {
       .setScrollFactor(0);
 
     this.hud = new HUDController(this);
-    this.academyOverlay = new AcademyOverlay(this);
+    // No stored reference — its constructor self-sufficiently wires up
+    // all the DOM/event listeners it needs (see academyOverlay.ts); there
+    // is no per-frame update() to call on it anymore.
+    new AcademyOverlay(this);
   }
 
   update() {
     this.hud.update();
-    this.academyOverlay.update();
   }
 }
