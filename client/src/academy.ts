@@ -13,12 +13,12 @@ import type { RoomName } from "./rooms";
 
 // Referenced by Preload.ts to load client/public/data/academy/*.json
 // without duplicating the id list in two places.
-export const ACADEMY_TRACK_IDS = ["ai_governance", "privacy_data_protection", "cyber_security_law"] as const;
-// Demo rule: only these have real lesson/quiz content — one per track,
-// plus a second in AI Governance. Every other module named in a track
-// JSON's `modules` array is a locked stub card (name + clearance tag
-// only, no separate file).
-export const ACADEMY_MODULE_IDS = ["threat_modeling", "ai_pipeline_mapping", "personal_data_classification", "malware_incident_triage"] as const;
+export const ACADEMY_TRACK_IDS = ["ai_governance", "privacy_ops", "cyber_security_law"] as const;
+// Demo rule: only these have real lesson/quiz/card-drill content — one
+// per track, plus a second in AI Governance. Every other module named
+// in a track JSON's `modules` array is a locked stub card (name +
+// clearance tag only, no separate file).
+export const ACADEMY_MODULE_IDS = ["threat_modeling", "ai_pipeline_mapping", "personal_data_or_not", "malware_incident_triage"] as const;
 
 export interface AcademyModuleSummary {
   id: string;
@@ -58,32 +58,54 @@ export interface QuizQuestion {
   explain: string[];
 }
 
-// Completion signal is one of two kinds: a real questEngine quest
-// (Threat Modeling ↔ the village's "Breach in the Wall"), or a
-// standalone in-game activity that predates the Academy and never
-// registered itself as a quest (Personal Data Classification ↔ the
-// Courthouse Trial, whose completion is only recorded in localStorage —
-// see quest.ts's BADGE_STORAGE_KEY). `room` drives the module list's
-// "IN THE VILLAGE/COURTHOUSE/TAVERN →" pip: where to send the player.
-// Modules with no matching in-game activity at all (the two brand-new
-// theory-only modules below) simply omit fieldWork — completing the
-// theory alone completes the module.
+export interface CardDrillCard {
+  item: string;
+  /** true = personal data, false = not personal data. */
+  answer: boolean;
+  explain: string;
+}
+
+// A module's field work is a real questEngine quest — Threat Modeling ↔
+// the village's "Breach in the Wall" is the only current example. `room`
+// drives the module list's "IN THE VILLAGE/COURTHOUSE/TAVERN →" pip:
+// where to send the player. Most modules have no matching in-game
+// activity at all and simply omit fieldWork — completing the theory
+// (a lesson+quiz, or a card drill — see AcademyModule below) alone
+// completes the module.
 export interface AcademyFieldWork {
   label: string;
-  questId?: string;
-  storageKey?: string;
+  questId: string;
   room: RoomName;
 }
 
-export interface AcademyModule {
+interface AcademyModuleBase {
   id: string;
   track: string;
   title: string;
   clearanceRequired: number;
   fieldWork?: AcademyFieldWork;
+}
+
+// Lesson content blocks + a 3-question mastery quiz. `type` is omittable
+// (absent = lesson) so existing module JSON files don't need a field
+// that was never load-bearing before card drills existed.
+export interface AcademyLessonModule extends AcademyModuleBase {
+  type?: "lesson";
   lesson: LessonBlock[];
   quiz: QuizQuestion[];
 }
+
+// One card at a time, binary judgment (see academyOverlay.ts's
+// renderCardDrill()) — wrong answers re-queue to the end of the deck
+// rather than retrying immediately, so the deck only clears once every
+// card has been answered correctly once.
+export interface AcademyCardDrillModule extends AcademyModuleBase {
+  type: "card_drill";
+  intro: string;
+  cards: CardDrillCard[];
+}
+
+export type AcademyModule = AcademyLessonModule | AcademyCardDrillModule;
 
 export interface ModuleProgress {
   theoryDone: boolean;
@@ -136,15 +158,8 @@ class AcademyManager extends Phaser.Events.EventEmitter {
   }
 
   // No fieldWork at all = trivially satisfied (theory-only module).
-  // Otherwise checks whichever completion signal that module's
-  // fieldWork declares — a questEngine quest, or a localStorage badge
-  // key for older in-game activities that predate the quest system.
   private isFieldWorkDone(module: AcademyModule): boolean {
-    const fieldWork = module.fieldWork;
-    if (!fieldWork) return true;
-    if (fieldWork.questId) return questEngine.isComplete(fieldWork.questId);
-    if (fieldWork.storageKey) return !!localStorage.getItem(fieldWork.storageKey);
-    return true;
+    return !module.fieldWork || questEngine.isComplete(module.fieldWork.questId);
   }
 
   getTrack(id: string): AcademyTrack | undefined {
@@ -191,7 +206,7 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     p.fieldDone = true;
     this.emit("progressChanged", moduleId);
     if (!p.theoryDone) {
-      this.emit("toast", "The Academy has recorded your field work. Complete the theory to seal the module. [A]");
+      this.emit("toast", "The Academy has recorded your field work. Complete the theory to seal the module.");
     }
     this.tryCompleteModule(moduleId);
   }
@@ -202,13 +217,10 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     }
   }
 
-  // Belt-and-suspenders re-sync for the demo path: catches two cases
-  // whenever the Academy opens rather than relying only on a live event
-  // — a quest that completed before this manager's questCompleted
-  // listener was attached, and storageKey-based field work (the
-  // Courthouse Trial), which has no live event of its own to push a
-  // completion — its localStorage badge is the only signal, so it can
-  // only ever be picked up here, on next open.
+  // Belt-and-suspenders re-sync for the demo path: catches a quest that
+  // completed before this manager's questCompleted listener was
+  // attached, by re-checking on every Academy open rather than relying
+  // solely on the live event.
   private checkRetroactiveFieldWork() {
     for (const module of this.modules.values()) {
       const p = this.progress.get(module.id);

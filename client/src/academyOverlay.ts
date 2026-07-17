@@ -1,6 +1,16 @@
 import Phaser from "phaser";
 import { el, countUp } from "./ui/dom";
-import { academy, type AcademyTrack, type AcademyModuleSummary, type AcademyModule, type AcademyFieldWork, type LessonBlock, type QuizQuestion } from "./academy";
+import {
+  academy,
+  type AcademyTrack,
+  type AcademyModuleSummary,
+  type AcademyLessonModule,
+  type AcademyCardDrillModule,
+  type AcademyFieldWork,
+  type CardDrillCard,
+  type LessonBlock,
+  type QuizQuestion,
+} from "./academy";
 import { questEngine } from "./questEngine";
 import { getSession } from "./session";
 import { showImageOverlay, isImageOverlayOpen } from "./ui/imageOverlay";
@@ -26,8 +36,9 @@ function roomCallToAction(room: AcademyFieldWork["room"]): string {
 // same reasoning as HUDController) so the module list's "IN THE VILLAGE
 // →" pip can reach the Room scene via the shared SceneManager.
 const FADE_MS = 200;
+const CARD_DRILL_AUTO_ADVANCE_MS = 1500;
 
-type AcademyView = "hub" | "moduleList" | "lesson" | "quiz";
+type AcademyView = "hub" | "moduleList" | "lesson" | "quiz" | "cardDrillIntro" | "cardDrill";
 
 export class AcademyOverlay {
   private scene: Phaser.Scene;
@@ -47,6 +58,18 @@ export class AcademyOverlay {
   private quizIndex = 0;
   private quizRevealedChoice: number | null = null;
   private quizCorrect = false;
+
+  // Card drill state — a working queue (not the original module.cards
+  // array): correct answers shift the front card off, wrong answers
+  // re-queue it to the end, so drillDeck.length === 0 exactly when every
+  // card has been answered correctly once (see answerCardDrill()).
+  private drillDeck: CardDrillCard[] = [];
+  private drillTotalCards = 0;
+  private drillClearedCount = 0;
+  private drillRevealed = false;
+  private drillPicked: boolean | null = null;
+  private drillCorrect = false;
+  private drillAutoAdvanceTimer: number | undefined;
 
   private badgeEl: HTMLElement;
   private badgeNameEl: HTMLElement;
@@ -137,7 +160,9 @@ export class AcademyOverlay {
     if (this.currentView === "hub") this.renderHub();
     else if (this.currentView === "moduleList") this.renderModuleList();
     else if (this.currentView === "lesson") this.renderLesson();
-    else this.renderQuiz();
+    else if (this.currentView === "quiz") this.renderQuiz();
+    else if (this.currentView === "cardDrillIntro") this.renderCardDrillIntro();
+    else this.renderCardDrill();
   }
 
   private goToHub() {
@@ -149,6 +174,14 @@ export class AcademyOverlay {
     this.currentTrackId = trackId;
     this.currentView = "moduleList";
     this.render();
+  }
+
+  // Module list's "THEORY: BEGIN" — routes to the lesson+quiz flow or
+  // the card-drill intro depending on the module's content type.
+  private goToTheory(moduleId: string) {
+    const module = academy.getModule(moduleId);
+    if (module?.type === "card_drill") this.goToCardDrillIntro(moduleId);
+    else this.goToLesson(moduleId);
   }
 
   private goToLesson(moduleId: string) {
@@ -163,6 +196,23 @@ export class AcademyOverlay {
     this.quizIndex = 0;
     this.quizRevealedChoice = null;
     this.quizCorrect = false;
+    this.render();
+  }
+
+  private goToCardDrillIntro(moduleId: string) {
+    this.currentModuleId = moduleId;
+    this.currentView = "cardDrillIntro";
+    this.render();
+  }
+
+  private goToCardDrill(module: AcademyCardDrillModule) {
+    this.currentModuleId = module.id;
+    this.currentView = "cardDrill";
+    this.drillDeck = [...module.cards];
+    this.drillTotalCards = module.cards.length;
+    this.drillClearedCount = 0;
+    this.drillRevealed = false;
+    this.drillPicked = null;
     this.render();
   }
 
@@ -296,7 +346,7 @@ export class AcademyOverlay {
     pips.push(
       progress.theoryDone
         ? el("span", { className: "chip chip--gold", text: "THEORY ✓" })
-        : el("button", { className: "btn btn--gold", text: "THEORY: BEGIN", style: { fontSize: "11px", padding: "8px 12px" }, on: { click: () => this.goToLesson(summary.id) } }),
+        : el("button", { className: "btn btn--gold", text: "THEORY: BEGIN", style: { fontSize: "11px", padding: "8px 12px" }, on: { click: () => this.goToTheory(summary.id) } }),
     );
 
     return el("div", { className: "quest-card" }, [
@@ -311,7 +361,7 @@ export class AcademyOverlay {
 
   private renderLesson() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    if (!module) {
+    if (!module || module.type === "card_drill") {
       this.goToHub();
       return;
     }
@@ -369,8 +419,12 @@ export class AcademyOverlay {
 
   private renderQuiz() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    const question = module?.quiz[this.quizIndex];
-    if (!module || !question) {
+    if (!module || module.type === "card_drill") {
+      this.goToHub();
+      return;
+    }
+    const question = module.quiz[this.quizIndex];
+    if (!question) {
       this.goToHub();
       return;
     }
@@ -438,7 +492,7 @@ export class AcademyOverlay {
     this.render();
   }
 
-  private nextQuizQuestion(module: AcademyModule) {
+  private nextQuizQuestion(module: AcademyLessonModule) {
     const isLast = this.quizIndex >= module.quiz.length - 1;
     if (isLast) {
       academy.markTheoryDone(module.id);
@@ -448,6 +502,149 @@ export class AcademyOverlay {
     this.quizIndex++;
     this.quizRevealedChoice = null;
     this.quizCorrect = false;
+    this.render();
+  }
+
+  private renderCardDrillIntro() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "card_drill") {
+      this.goToHub();
+      return;
+    }
+
+    const header = el("div", { style: { display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-3)" } }, [
+      el("button", { className: "btn btn--ghost", text: "← BACK", on: { click: () => this.goToModuleList(module.track) } }),
+      el("h2", { text: module.title.toUpperCase(), style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px" } }),
+    ]);
+
+    const intro = el("p", { className: "briefing__body", text: module.intro });
+
+    const beginBtn = el("button", {
+      className: "btn btn--gold",
+      text: "BEGIN DRILL",
+      style: { marginTop: "var(--space-3)" },
+      on: { click: () => this.goToCardDrill(module) },
+    });
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "680px" } }, [header, intro, beginBtn]));
+  }
+
+  private renderCardDrill() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "card_drill") {
+      this.goToHub();
+      return;
+    }
+    const card = this.drillDeck[0];
+    if (!card) {
+      // advanceCardDrill() already navigates away the instant the deck
+      // clears — this is just a guard against rendering an empty state.
+      this.goToModuleList(module.track);
+      return;
+    }
+
+    const dots = el(
+      "div",
+      { style: { display: "flex", gap: "6px", justifyContent: "center", marginBottom: "var(--space-4)" } },
+      Array.from({ length: this.drillTotalCards }, (_, i) =>
+        el("span", {
+          style: {
+            width: "10px",
+            height: "10px",
+            borderRadius: "50%",
+            background: i < this.drillClearedCount ? "var(--accent-gold)" : "var(--border-strong)",
+          },
+        }),
+      ),
+    );
+
+    const itemEl = el("p", {
+      text: card.item,
+      style: { fontFamily: "var(--font-body)", fontSize: "20px", textAlign: "center", margin: "var(--space-4) 0" },
+    });
+
+    const children: HTMLElement[] = [dots, itemEl];
+
+    if (!this.drillRevealed) {
+      children.push(
+        el("div", { style: { display: "flex", gap: "var(--space-2)" } }, [
+          el("button", { className: "btn btn--gold", text: "PERSONAL DATA", style: { flex: "1" }, on: { click: () => this.answerCardDrill(true) } }),
+          el("button", { className: "btn btn--ghost", text: "NOT PERSONAL DATA", style: { flex: "1" }, on: { click: () => this.answerCardDrill(false) } }),
+        ]),
+      );
+    } else {
+      // Click-to-advance lives on this wrapper only — it doesn't exist
+      // yet while the two answer buttons above are showing, so there's
+      // no bubbling conflict between "pick an answer" and "tap to
+      // continue" sharing a click zone.
+      children.push(
+        el("div", { style: { cursor: "pointer" }, on: { click: () => this.advanceCardDrill() } }, [
+          this.renderCardDrillFeedbackButtons(),
+          el("p", {
+            text: card.explain,
+            style: { marginTop: "var(--space-3)", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" },
+          }),
+          el("div", {
+            text: this.drillCorrect ? "Advancing…" : "Tap anywhere to continue",
+            style: { marginTop: "var(--space-2)", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" },
+          }),
+        ]),
+      );
+    }
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "680px" } }, children));
+  }
+
+  private renderCardDrillFeedbackButtons(): HTMLElement {
+    const feedbackStyle: Partial<CSSStyleDeclaration> = this.drillCorrect
+      ? { borderColor: "var(--accent-gold)", animation: "ds-quiz-correct 500ms ease-out" }
+      : { borderColor: "var(--accent-red)", animation: "ds-shake 400ms ease-in-out" };
+
+    const personalStyle: Partial<CSSStyleDeclaration> = { flex: "1", pointerEvents: "none" };
+    const notStyle: Partial<CSSStyleDeclaration> = { flex: "1", pointerEvents: "none" };
+    if (this.drillPicked === true) Object.assign(personalStyle, feedbackStyle);
+    else Object.assign(notStyle, feedbackStyle);
+
+    return el("div", { style: { display: "flex", gap: "var(--space-2)" } }, [
+      el("button", { className: "btn btn--gold", text: "PERSONAL DATA", style: personalStyle }),
+      el("button", { className: "btn btn--ghost", text: "NOT PERSONAL DATA", style: notStyle }),
+    ]);
+  }
+
+  // No penalty, no score — wrong picks re-queue to the end of the deck
+  // (see advanceCardDrill()) rather than retrying immediately.
+  private answerCardDrill(picked: boolean) {
+    const card = this.drillDeck[0];
+    if (!card || this.drillRevealed) return;
+    this.drillRevealed = true;
+    this.drillPicked = picked;
+    this.drillCorrect = picked === card.answer;
+    this.render();
+    if (this.drillCorrect) {
+      this.drillAutoAdvanceTimer = window.setTimeout(() => this.advanceCardDrill(), CARD_DRILL_AUTO_ADVANCE_MS);
+    }
+  }
+
+  private advanceCardDrill() {
+    window.clearTimeout(this.drillAutoAdvanceTimer);
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    const card = this.drillDeck.shift();
+    if (!card) return;
+
+    if (this.drillCorrect) this.drillClearedCount++;
+    else this.drillDeck.push(card);
+    this.drillRevealed = false;
+    this.drillPicked = null;
+
+    if (this.drillDeck.length === 0) {
+      if (module) {
+        academy.markTheoryDone(module.id);
+        this.goToModuleList(module.track);
+      } else {
+        this.goToHub();
+      }
+      return;
+    }
     this.render();
   }
 

@@ -1,0 +1,50 @@
+{
+  "id": "personal_data_or_not",
+  "track": "privacy_ops",
+  "title": "Personal Data or Not?",
+  "clearanceRequired": 2,
+  "type": "card_drill",
+  "intro": "Before you can protect data, Agent, you must recognize which of it is PERSONAL. The law's test is not \"does it contain a name?\" — it is \"does it relate to an identified or IDENTIFIABLE living person?\" Identifiable directly, or indirectly, by anyone reasonably likely to try. Judge the following evidence from around the village.",
+  "cards": [
+    {
+      "item": "Odile's ledger entry: \"Bram of the North Gate — owes 3 silver.\"",
+      "answer": true,
+      "explain": "Name plus a fact about him. Directly identified person + information relating to him. The classic case."
+    },
+    {
+      "item": "The tavern sold 44 ales on festival night.",
+      "answer": false,
+      "explain": "An aggregate about the tavern, relating to no individual. Unless the village has one legendary drinker — aggregates over tiny groups can flip."
+    },
+    {
+      "item": "A report: \"A cloaked figure with a limp visits the fountain every dawn.\"",
+      "answer": true,
+      "explain": "No name — but a pattern that singles one person out. Identifiability, not naming, is the test. This is how tracking works."
+    },
+    {
+      "item": "Division file: \"Agent NIGHTINGALE filed three reports this month.\"",
+      "answer": true,
+      "explain": "A codename is a pseudonym. Pseudonymized data is STILL personal data — the Division holds the key linking Nightingale to a person."
+    },
+    {
+      "item": "The census: \"The village counts 312 residents.\"",
+      "answer": false,
+      "explain": "Pure statistic about the village. No individual is identified or identifiable from the number alone."
+    },
+    {
+      "item": "A note: \"The blacksmith's apprentice was seen near the West Gate.\"",
+      "answer": true,
+      "explain": "No name — but the village has exactly ONE blacksmith's apprentice. In small populations, a role identifies a person. Context decides."
+    },
+    {
+      "item": "The Cat's daily patrol route through the tavern.",
+      "answer": false,
+      "explain": "The Cat is magnificent, but not a natural person. Data protection law protects living humans. (The Cat has filed an objection.)"
+    },
+    {
+      "item": "A scroll listing \"households that displayed Apocalypse faction banners.\"",
+      "answer": true,
+      "explain": "Households resolve to identifiable people — and this reveals beliefs/affiliations. Not just personal data: a SPECIAL CATEGORY needing extra care."
+    }
+  ]
+}
