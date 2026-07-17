@@ -4,55 +4,55 @@
   "title": "Governing the Oracle",
   "clearanceRequired": 2,
   "lesson": [
-    { "type": "heading", "text": "Even a well-behaved spell has a life story." },
+    { "type": "heading", "text": "An AI system doesn't get audited once — it gets audited stage by stage." },
     {
       "type": "paragraph",
-      "text": "An enchanted engine isn't judged once, at the unveiling. It has a lifecycle: sourcing (what fed it), training (how it learned), deployment (when villagers start consulting it), and continued use (how it keeps learning from every new question). Governance duties look different at each stage — a flaw caught while sourcing is cheap to fix; the same flaw caught after ten thousand consultations is a crisis."
+      "text": "The Division's applicant-sorting engine — call sign \"the Oracle\" — has a lifecycle: Data Sourcing, Pre-Processing, Model Training, Red Teaming, Live Inference, and Continuous Learning. Each of these six phases needs its own justified legal basis under GDPR Art. 6 and 9 — a basis that covers sourcing does not automatically cover live inference."
     },
     {
       "type": "callout",
       "variant": "gold",
-      "text": "Don't take the artificer's word for it. Verify claims against evidence — apprentices' notes, workshop logs, what was actually done, versus what the guild charter says was done."
+      "text": "Audit method: for every claim (\"the Model Card says human oversight catches every automated rejection\"), find the evidence that proves or disproves it — an internal message, a technical config, a dataset log. A claim without evidence is not a fact."
     },
     {
       "type": "paragraph",
-      "text": "Consider the Oracle built for the village fair. The artificer claims it \"only learned from scrolls villagers freely submitted.\" An apprentice's private note tells a different story — a crate of borrowed archive scrolls, never asked for. The claim and the evidence disagree, and that gap is exactly what an audit exists to find."
+      "text": "Architecture audits check for undocumented APIs, indefinite data retention, and undisclosed vendor transfers. Provenance audits trace every dataset to the model it feeds, certifying pipelines that match their declared purpose and severing the ones that drifted. Policy triage sorts new requests to use the Oracle into Approve, Approve with Conditions, or Reject — based on risk, not convenience."
     },
     {
       "type": "callout",
       "variant": "blue",
-      "text": "The final decision to unveil the Oracle is never purely technical. It's a judgment weighing what's still uncertain against what's gained — and a good governor delays or adds safeguards rather than rubber-stamping a launch because the fair is tomorrow."
+      "text": "Even after every finding is mitigated, the final call is Launch, Conditional Launch (with added safeguards), or Delay — a judgment weighing remaining risk against benefit, not a rubber stamp because the deadline is close."
     }
   ],
   "quiz": [
     {
-      "q": "An artificer claims the Oracle \"only learned from voluntarily submitted scrolls.\" An apprentice's note describes a crate of archive scrolls borrowed without asking. What should you do?",
-      "choices": ["Trust the artificer's claim — it's the official record", "Flag the discrepancy — verify claims against evidence, not documentation alone", "Ignore it, scrolls are scrolls"],
+      "q": "The Oracle's documentation claims a human reviews every automated rejection. An internal message thread shows the review queue has been empty for three months. What should the audit conclude?",
+      "choices": ["The documentation is the official record — trust it", "The claim is unverified against evidence and should be flagged", "Automated rejections don't need human review anyway"],
       "answer": 1,
       "explain": [
-        "Official-sounding documentation isn't the same as verified fact — that's exactly the gap an audit is meant to catch.",
-        "Correct — claims get checked against evidence, not taken on faith. The apprentice's note is exactly the kind of evidence that should override an unverified claim.",
-        "Where the training data came from is precisely the point — provenance isn't a detail you can wave away."
+        "Documentation describes what should happen, not what verifiably does — that gap is exactly what an audit exists to catch.",
+        "Correct — a claim only holds if the evidence backs it up. An empty review queue directly contradicts the human-oversight claim.",
+        "Human oversight of automated decisions is precisely the kind of safeguard GDPR expects for significant automated processing — it isn't optional."
       ]
     },
     {
-      "q": "At which point is it cheapest to fix a problem with the Oracle's training scrolls?",
-      "choices": ["During sourcing, before training begins", "After ten thousand villagers have already consulted it", "After the guild has published a decision based on its answers"],
-      "answer": 0,
+      "q": "The Oracle's developers justified a legal basis for sourcing its training data. Does that same basis automatically justify using the Oracle for live inference on new applicants?",
+      "choices": ["Yes, one legal basis covers the whole lifecycle", "No — each lifecycle phase needs its own justified legal basis", "Only if the developers say so"],
+      "answer": 1,
       "explain": [
-        "Correct — a flaw caught before training starts costs a re-sourced batch of scrolls. The same flaw compounds the longer it goes unnoticed.",
-        "By this point the flaw has already shaped thousands of answers people acted on — far more expensive to unwind.",
-        "Once decisions are already made and published on faulty output, fixing the root cause no longer fixes the harm already done."
+        "Sourcing and live inference are different processing activities with different risks to the people involved — one justification doesn't stretch to cover both.",
+        "Correct — Data Sourcing, Pre-Processing, Model Training, Red Teaming, Live Inference, and Continuous Learning are each assessed and justified on their own.",
+        "The legal basis has to hold up on its own merits for each phase, not because someone declared it does."
       ]
     },
     {
-      "q": "The Oracle keeps \"learning\" from every new question villagers ask it, even after its public unveiling. What does this mean for governance?",
-      "choices": ["Nothing — if it passed review once, it's fine forever", "Someone has to keep watching what it learns after launch, since its behavior can keep shifting", "It doesn't matter, spells don't change"],
+      "q": "Every finding from the Oracle's audit has been mitigated. What are the legitimate options for the launch decision?",
+      "choices": ["Launch — mitigation means done", "Launch, Conditional Launch, or Delay, weighing the risk that remains", "There's only Launch or Cancel, nothing in between"],
       "answer": 1,
       "explain": [
-        "A system that keeps learning can keep drifting — a one-time pass doesn't cover behavior it hasn't shown yet.",
-        "Correct — continuous learning means governance can't stop at the unveiling. Ongoing oversight has to match ongoing change.",
-        "The whole premise of \"continuous learning\" is that it DOES keep changing — that's the thing being governed."
+        "Mitigating known findings doesn't erase all remaining risk — the launch call still has to weigh what's left.",
+        "Correct — a real launch decision has more than one gear: proceed, proceed with added safeguards, or hold until gaps close.",
+        "Delay-with-safeguards is a real, common outcome — treating it as all-or-nothing misses how governance actually works."
       ]
     }
   ]

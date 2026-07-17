@@ -3,50 +3,51 @@
   "track": "privacy_ops",
   "title": "The Raven's Burden",
   "clearanceRequired": 2,
-  "type": "card_drill",
-  "trueLabel": "SEND IT",
-  "falseLabel": "SIEVE IT OUT",
-  "intro": "Agent, before a raven takes wing, its dispatch must be sieved. The law calls this \"data minimisation\" — carry only what serves the purpose, nothing more. A report on the cloaked figure seen at the fountain is being prepared. Judge each piece of intelligence: does it ride with the raven, or stay in the ledger?",
+  "type": "data_sieve",
+  "aiGoal": "Predict which patrol will reach an alarm bell fastest, based on records of past alarms.",
+  "brief": "The Division's artificers are training a Watch-Bell Responder — a charm that learns from six months of alarm records to predict the fastest patrol for any new alarm. Before the training records are locked in, sieve out anything the charm doesn't actually need. The law calls this \"data minimisation\": keep only what serves the stated purpose, nothing more.",
   "cards": [
     {
-      "item": "The direction the figure fled — toward the West Gate.",
-      "answer": true,
-      "explain": "Directly useful for anyone giving chase. This serves the report's actual purpose."
+      "id": "weather",
+      "label": "Weather conditions during each alarm",
+      "shouldRemove": false,
+      "reason": "Weather directly affects how fast a patrol can move — rain and ice slow a response. A genuine predictive signal with no privacy cost."
     },
     {
-      "item": "The witness's full name and house number.",
-      "answer": false,
-      "explain": "The report needs a witness who can be found again if needed — a ward or quarter does that. A house number is more than the raven needs to carry."
+      "id": "patrol_times",
+      "label": "Historic patrol response times by route",
+      "shouldRemove": false,
+      "reason": "Aggregated response-time history is exactly what the charm needs to learn from. No individual is identified by it."
     },
     {
-      "item": "How many coins were in the witness's purse.",
-      "answer": false,
-      "explain": "Has no bearing on a sighting report. Irrelevant detail is still a liability if the raven is intercepted."
+      "id": "caller_identity",
+      "label": "The alarm-caller's full name and house number",
+      "shouldRemove": true,
+      "reason": "The charm needs to know WHERE the alarm was, not WHO rang it. A ward or district is enough — a name and house number identifies a person for no predictive gain."
     },
     {
-      "item": "The color and cut of the figure's cloak.",
-      "answer": true,
-      "explain": "A direct identifying description — exactly what a sighting report exists to carry."
+      "id": "caller_purse",
+      "label": "The caller's coin-purse contents",
+      "shouldRemove": true,
+      "reason": "Has no bearing on how fast a patrol can respond. Irrelevant personal detail is pure liability if the training records are ever read by the wrong eyes."
     },
     {
-      "item": "The witness's private correspondence with a rival guild.",
-      "answer": false,
-      "explain": "Unrelated to the sighting and far more sensitive than anything the report needs. Carrying it only adds risk."
+      "id": "nearest_gate",
+      "label": "Which watch-gate is nearest the alarm",
+      "shouldRemove": false,
+      "reason": "Directly relevant geography — which gate is closest changes the prediction. This describes a place, not a person."
     },
     {
-      "item": "Whether the fountain's watch-lantern was lit that night.",
-      "answer": true,
-      "explain": "Relevant context — it affects how much the witness could actually have seen."
+      "id": "caller_faith",
+      "label": "The caller's religious order",
+      "shouldRemove": true,
+      "reason": "Irrelevant to response time and a special category of sensitive information. Including it risks the charm learning to discriminate, not predict."
     },
     {
-      "item": "The witness's exact position, tracked continuously for a week by a charm.",
-      "answer": false,
-      "explain": "Nothing about a single sighting justifies a week of continuous tracking. This is surveillance creep, not reporting."
-    },
-    {
-      "item": "That the figure walked with a limp.",
-      "answer": true,
-      "explain": "A specific, relevant identifying detail — the kind of thing that actually helps identify who was seen."
+      "id": "caller_tracking",
+      "label": "The caller's exact position, tracked continuously for a week by a charm",
+      "shouldRemove": true,
+      "reason": "Nothing about a single alarm justifies a week of continuous tracking. This is surveillance dressed up as training data."
     }
   ]
 }

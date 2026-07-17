@@ -14,9 +14,10 @@ import type { RoomName } from "./rooms";
 // Referenced by Preload.ts to load client/public/data/academy/*.json
 // without duplicating the id list in two places.
 export const ACADEMY_TRACK_IDS = ["ai_governance", "privacy_ops", "cyber_security_law"] as const;
-// Demo rule: only these have real lesson/quiz/card-drill content — two
-// per track. Every other module named in a track JSON's `modules` array
-// is a locked stub card (name + clearance tag only, no separate file).
+// Demo rule: only these have real content (lesson+quiz, card drill, or
+// data sieve — see AcademyModule below) — two per track. Every other
+// module named in a track JSON's `modules` array is a locked stub card
+// (name + clearance tag only, no separate file).
 export const ACADEMY_MODULE_IDS = [
   "threat_modeling",
   "ai_pipeline_mapping",
@@ -116,7 +117,26 @@ export interface AcademyCardDrillModule extends AcademyModuleBase {
   cards: CardDrillCard[];
 }
 
-export type AcademyModule = AcademyLessonModule | AcademyCardDrillModule;
+export interface DataSieveCard {
+  id: string;
+  label: string;
+  shouldRemove: boolean;
+  reason: string;
+}
+
+// All cards shown at once (unlike the card drill's one-at-a-time
+// queue) — the player toggles each card as "marked for removal," then
+// validates the whole set together and sees every card's correct
+// answer + reason at once. Mirrors the source DPIA Protocol project's
+// Data Sieve lab UX directly (briefing + card grid + "run the sieve").
+export interface AcademyDataSieveModule extends AcademyModuleBase {
+  type: "data_sieve";
+  aiGoal: string;
+  brief: string;
+  cards: DataSieveCard[];
+}
+
+export type AcademyModule = AcademyLessonModule | AcademyCardDrillModule | AcademyDataSieveModule;
 
 export interface ModuleProgress {
   theoryDone: boolean;

@@ -6,8 +6,10 @@ import {
   type AcademyModuleSummary,
   type AcademyLessonModule,
   type AcademyCardDrillModule,
+  type AcademyDataSieveModule,
   type AcademyFieldWork,
   type CardDrillCard,
+  type DataSieveCard,
   type LessonBlock,
   type QuizQuestion,
 } from "./academy";
@@ -38,7 +40,7 @@ function roomCallToAction(room: AcademyFieldWork["room"]): string {
 const FADE_MS = 200;
 const CARD_DRILL_AUTO_ADVANCE_MS = 1500;
 
-type AcademyView = "hub" | "moduleList" | "lesson" | "quiz" | "cardDrillIntro" | "cardDrill";
+type AcademyView = "hub" | "moduleList" | "lesson" | "quiz" | "cardDrillIntro" | "cardDrill" | "dataSieve";
 
 export class AcademyOverlay {
   private scene: Phaser.Scene;
@@ -70,6 +72,11 @@ export class AcademyOverlay {
   private drillPicked: boolean | null = null;
   private drillCorrect = false;
   private drillAutoAdvanceTimer: number | undefined;
+
+  // Data sieve state — all cards shown at once, toggled freely until
+  // validated (see renderDataSieve()/toggleSieveCard()/validateSieve()).
+  private sieveRemoved = new Set<string>();
+  private sieveValidated = false;
 
   private badgeEl: HTMLElement;
   private badgeNameEl: HTMLElement;
@@ -162,7 +169,8 @@ export class AcademyOverlay {
     else if (this.currentView === "lesson") this.renderLesson();
     else if (this.currentView === "quiz") this.renderQuiz();
     else if (this.currentView === "cardDrillIntro") this.renderCardDrillIntro();
-    else this.renderCardDrill();
+    else if (this.currentView === "cardDrill") this.renderCardDrill();
+    else this.renderDataSieve();
   }
 
   private goToHub() {
@@ -176,11 +184,13 @@ export class AcademyOverlay {
     this.render();
   }
 
-  // Module list's "THEORY: BEGIN" — routes to the lesson+quiz flow or
-  // the card-drill intro depending on the module's content type.
+  // Module list's "THEORY: BEGIN" — routes to the lesson+quiz flow, the
+  // card-drill intro, or the data-sieve screen depending on the
+  // module's content type.
   private goToTheory(moduleId: string) {
     const module = academy.getModule(moduleId);
     if (module?.type === "card_drill") this.goToCardDrillIntro(moduleId);
+    else if (module?.type === "data_sieve") this.goToDataSieve(moduleId);
     else this.goToLesson(moduleId);
   }
 
@@ -213,6 +223,14 @@ export class AcademyOverlay {
     this.drillClearedCount = 0;
     this.drillRevealed = false;
     this.drillPicked = null;
+    this.render();
+  }
+
+  private goToDataSieve(moduleId: string) {
+    this.currentModuleId = moduleId;
+    this.currentView = "dataSieve";
+    this.sieveRemoved = new Set();
+    this.sieveValidated = false;
     this.render();
   }
 
@@ -361,7 +379,7 @@ export class AcademyOverlay {
 
   private renderLesson() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    if (!module || module.type === "card_drill") {
+    if (!module || module.type === "card_drill" || module.type === "data_sieve") {
       this.goToHub();
       return;
     }
@@ -419,7 +437,7 @@ export class AcademyOverlay {
 
   private renderQuiz() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    if (!module || module.type === "card_drill") {
+    if (!module || module.type === "card_drill" || module.type === "data_sieve") {
       this.goToHub();
       return;
     }
@@ -646,6 +664,130 @@ export class AcademyOverlay {
       return;
     }
     this.render();
+  }
+
+  private renderDataSieve() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "data_sieve") {
+      this.goToHub();
+      return;
+    }
+
+    const header = el("div", { style: { display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-3)" } }, [
+      el("button", { className: "btn btn--ghost", text: "← BACK", on: { click: () => this.goToModuleList(module.track) } }),
+      el("h2", { text: module.title.toUpperCase(), style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px" } }),
+    ]);
+
+    const goalBox = el(
+      "div",
+      { style: { borderLeft: "4px solid var(--accent-blue)", background: "var(--bg-raised)", padding: "var(--space-2)", borderRadius: "var(--radius-sm)", marginBottom: "var(--space-2)" } },
+      [
+        el("div", { text: "STATED GOAL", style: { fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.08em", color: "var(--accent-blue)", fontWeight: "700", marginBottom: "4px" } }),
+        el("div", { text: module.aiGoal, style: { fontFamily: "var(--font-body)", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" } }),
+      ],
+    );
+
+    const briefP = el("p", { className: "briefing__body", text: module.brief, style: { marginBottom: "var(--space-3)" } });
+
+    const cardsList = el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: "8px" } },
+      module.cards.map((card) => this.renderSieveCard(card)),
+    );
+
+    const children: HTMLElement[] = [header, goalBox, briefP, cardsList];
+
+    if (!this.sieveValidated) {
+      children.push(
+        el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "var(--space-3)" } }, [
+          el("span", {
+            text: `${this.sieveRemoved.size} of ${module.cards.length} marked for removal`,
+            style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" },
+          }),
+          el("button", { className: "btn btn--gold", text: "RUN THE SIEVE", on: { click: () => this.validateSieve() } }),
+        ]),
+      );
+    } else {
+      children.push(
+        el(
+          "div",
+          { style: { display: "flex", flexDirection: "column", gap: "8px", marginTop: "var(--space-3)" } },
+          module.cards.map((card) => this.renderSieveExplanation(card)),
+        ),
+      );
+      children.push(
+        el("button", {
+          className: "btn btn--gold",
+          text: "COMPLETE",
+          style: { marginTop: "var(--space-3)" },
+          on: { click: () => this.completeDataSieve(module) },
+        }),
+      );
+    }
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "720px", maxHeight: "640px", overflowY: "auto" } }, children));
+  }
+
+  private renderSieveCard(card: DataSieveCard): HTMLElement {
+    const isRemoved = this.sieveRemoved.has(card.id);
+    const style: Partial<CSSStyleDeclaration> = { cursor: this.sieveValidated ? "default" : "pointer" };
+    if (this.sieveValidated) {
+      style.borderColor = isRemoved === card.shouldRemove ? "var(--accent-gold)" : "var(--accent-red)";
+    } else if (isRemoved) {
+      style.opacity = "0.55";
+    }
+
+    const titleStyle: Partial<CSSStyleDeclaration> =
+      isRemoved && !this.sieveValidated ? { textDecoration: "line-through", color: "var(--text-muted)" } : {};
+
+    return el(
+      "div",
+      { className: "quest-card", style, on: this.sieveValidated ? {} : { click: () => this.toggleSieveCard(card.id) } },
+      [
+        el("div", { className: "quest-card__icon" }),
+        el("div", { className: "quest-card__info" }, [el("div", { className: "quest-card__title", text: card.label, style: titleStyle })]),
+        el("div", { className: "quest-card__meta" }, [el("span", { className: isRemoved ? "chip" : "chip chip--gold", text: isRemoved ? "SIEVE OUT" : "KEEP" })]),
+      ],
+    );
+  }
+
+  private renderSieveExplanation(card: DataSieveCard): HTMLElement {
+    const isRemoved = this.sieveRemoved.has(card.id);
+    const correct = isRemoved === card.shouldRemove;
+    return el(
+      "div",
+      {
+        style: {
+          borderLeft: `4px solid ${correct ? "var(--accent-gold)" : "var(--accent-red)"}`,
+          background: "var(--bg-raised)",
+          padding: "var(--space-2)",
+          borderRadius: "var(--radius-sm)",
+        },
+      },
+      [
+        el("div", { style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" } }, [
+          el("span", { text: card.label, style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "13px" } }),
+          el("span", { className: card.shouldRemove ? "chip" : "chip chip--gold", text: card.shouldRemove ? "SHOULD SIEVE OUT" : "SHOULD KEEP" }),
+        ]),
+        el("p", { text: card.reason, style: { fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" } }),
+      ],
+    );
+  }
+
+  private toggleSieveCard(id: string) {
+    if (this.sieveRemoved.has(id)) this.sieveRemoved.delete(id);
+    else this.sieveRemoved.add(id);
+    this.render();
+  }
+
+  private validateSieve() {
+    this.sieveValidated = true;
+    this.render();
+  }
+
+  private completeDataSieve(module: AcademyDataSieveModule) {
+    academy.markTheoryDone(module.id);
+    this.goToModuleList(module.track);
   }
 
   private badgeIconSvg(): Node {
