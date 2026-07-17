@@ -1,10 +1,12 @@
 import Phaser from "phaser";
-import { el } from "./ui/dom";
-import { academy, type AcademyTrack, type AcademyModuleSummary, type LessonBlock } from "./academy";
+import { el, countUp } from "./ui/dom";
+import { academy, type AcademyTrack, type AcademyModuleSummary, type AcademyModule, type LessonBlock, type QuizQuestion } from "./academy";
 import { questEngine } from "./questEngine";
 import { getSession } from "./session";
 import { showImageOverlay, isImageOverlayOpen } from "./ui/imageOverlay";
 import type { Room } from "./scenes/Room";
+
+const MODULE_COMPLETE_XP = 100;
 
 // Full-screen DOM overlay for the Academy learning hub (see PLAN.md "The
 // Academy"). Section 1 ("Entrances") built the open/close shell — dim
@@ -37,6 +39,16 @@ export class AcademyOverlay {
   private currentTrackId: string | null = null;
   private currentModuleId: string | null = null;
 
+  // Mastery-model quiz state — one question at a time, reset whenever a
+  // fresh quiz starts or advances (see goToQuiz()/nextQuizQuestion()).
+  private quizIndex = 0;
+  private quizRevealedChoice: number | null = null;
+  private quizCorrect = false;
+
+  private badgeEl: HTMLElement;
+  private badgeNameEl: HTMLElement;
+  private badgeXpEl: HTMLElement;
+
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     const root = document.getElementById("ui-root")!;
@@ -66,7 +78,24 @@ export class AcademyOverlay {
       [this.bodyEl],
     );
 
-    this.rootEl = el("div", { className: "ds-root", style: { position: "absolute", inset: "0", display: "none", pointerEvents: "auto" } }, [this.backdropEl, this.stageEl, closeBtn]);
+    // --- Module-complete badge popup — floats above whichever view is
+    // showing (module list, typically) rather than living inside bodyEl,
+    // since render() rebuilds bodyEl from scratch and would wipe it. ---
+    this.badgeNameEl = el("div", { className: "badge-popup__name" });
+    this.badgeXpEl = el("span", { text: "0" });
+    this.badgeEl = el(
+      "div",
+      { className: "badge-popup ds-root", style: { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", pointerEvents: "auto", display: "none", zIndex: "10" } },
+      [
+        el("div", { className: "badge-popup__icon" }, [this.badgeIconSvg()]),
+        el("div", { className: "badge-popup__label", text: "MODULE COMPLETE" }),
+        this.badgeNameEl,
+        el("div", { className: "badge-popup__xp" }, [this.badgeXpEl, el("span", { text: "XP" })]),
+        el("div", { className: "chip", text: "CLICK TO CONTINUE", style: { marginTop: "20px", cursor: "pointer" }, on: { click: () => this.hideBadge() } }),
+      ],
+    );
+
+    this.rootEl = el("div", { className: "ds-root", style: { position: "absolute", inset: "0", display: "none", pointerEvents: "auto" } }, [this.backdropEl, this.stageEl, closeBtn, this.badgeEl]);
     root.appendChild(this.rootEl);
 
     this.render();
@@ -80,6 +109,7 @@ export class AcademyOverlay {
     });
     academy.on("closed", () => this.hide());
     academy.on("progressChanged", () => this.render());
+    academy.on("moduleCompleted", (moduleId: string) => this.showBadge(moduleId));
 
     this.aKey = scene.input.keyboard!.addKey("A");
 
@@ -133,6 +163,9 @@ export class AcademyOverlay {
   private goToQuiz(moduleId: string) {
     this.currentModuleId = moduleId;
     this.currentView = "quiz";
+    this.quizIndex = 0;
+    this.quizRevealedChoice = null;
+    this.quizCorrect = false;
     this.render();
   }
 
@@ -315,9 +348,113 @@ export class AcademyOverlay {
     ]);
   }
 
-  // Placeholder — real quiz content lands in a later section.
   private renderQuiz() {
-    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "680px" } }, [el("p", { text: "Quiz lands in a later section.", style: { color: "var(--text-muted)" } })]));
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    const question = module?.quiz[this.quizIndex];
+    if (!module || !question) {
+      this.goToHub();
+      return;
+    }
+
+    const header = el("div", {
+      text: `QUESTION ${this.quizIndex + 1} / ${module.quiz.length}`,
+      style: { fontFamily: "var(--font-mono)", fontSize: "12px", letterSpacing: "0.08em", color: "var(--text-muted)", marginBottom: "var(--space-2)" },
+    });
+    const questionEl = el("h3", { text: question.q, style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px", marginBottom: "var(--space-3)" } });
+    const choiceList = el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: "var(--space-2)" } },
+      question.choices.map((choice, i) => this.renderQuizChoice(question, i, choice)),
+    );
+
+    const children: HTMLElement[] = [header, questionEl, choiceList];
+
+    if (this.quizRevealedChoice !== null) {
+      children.push(
+        el("p", {
+          text: question.explain[this.quizRevealedChoice],
+          style: { marginTop: "var(--space-3)", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" },
+        }),
+      );
+    }
+
+    if (this.quizCorrect) {
+      const isLast = this.quizIndex >= module.quiz.length - 1;
+      children.push(
+        el("button", {
+          className: "btn btn--gold",
+          text: isLast ? "FINISH" : "NEXT",
+          style: { marginTop: "var(--space-3)" },
+          on: { click: () => this.nextQuizQuestion(module) },
+        }),
+      );
+    }
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "680px" } }, children));
+  }
+
+  private renderQuizChoice(question: QuizQuestion, index: number, text: string): HTMLElement {
+    const isRevealed = this.quizRevealedChoice === index;
+    const isAnswer = index === question.answer;
+
+    const style: Partial<CSSStyleDeclaration> = { width: "100%", justifyContent: "flex-start", textAlign: "left" };
+    if (isRevealed) {
+      if (isAnswer) {
+        style.borderColor = "var(--accent-gold)";
+        style.animation = "ds-quiz-correct 500ms ease-out";
+      } else {
+        style.borderColor = "var(--accent-red)";
+        style.animation = "ds-shake 400ms ease-in-out";
+      }
+    }
+
+    return el("button", { className: "btn btn--ghost", text, style, on: { click: () => this.answerQuiz(index, question) } });
+  }
+
+  // No penalty, no score — wrong picks just reveal their explanation and
+  // stay retryable (the other choices remain clickable).
+  private answerQuiz(index: number, question: QuizQuestion) {
+    this.quizRevealedChoice = index;
+    this.quizCorrect = index === question.answer;
+    this.render();
+  }
+
+  private nextQuizQuestion(module: AcademyModule) {
+    const isLast = this.quizIndex >= module.quiz.length - 1;
+    if (isLast) {
+      academy.markTheoryDone(module.id);
+      this.goToModuleList(module.track);
+      return;
+    }
+    this.quizIndex++;
+    this.quizRevealedChoice = null;
+    this.quizCorrect = false;
+    this.render();
+  }
+
+  private badgeIconSvg(): Node {
+    const wrapper = el("div");
+    wrapper.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l2.6 5.27 5.82.85-4.21 4.1.99 5.79L12 15.27l-5.2 2.74.99-5.79-4.21-4.1 5.82-.85L12 2z" stroke-linejoin="round"/></svg>';
+    return wrapper.firstElementChild!;
+  }
+
+  // Guarded to only actually pop while the overlay is visible — if the
+  // module completes because the village quest finished second (the
+  // player isn't looking at the Academy at all), the toast academy.ts
+  // already fires is the only notification; there's no modal for the
+  // player to see it land on.
+  private showBadge(moduleId: string) {
+    if (!academy.isOpen) return;
+    const module = academy.getModule(moduleId);
+    if (!module) return;
+    this.badgeNameEl.textContent = module.title;
+    this.badgeEl.style.display = "block";
+    countUp(this.badgeXpEl, 0, MODULE_COMPLETE_XP, 900);
+  }
+
+  private hideBadge() {
+    this.badgeEl.style.display = "none";
   }
 
   private show() {
