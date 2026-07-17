@@ -14,11 +14,18 @@ import type { RoomName } from "./rooms";
 // Referenced by Preload.ts to load client/public/data/academy/*.json
 // without duplicating the id list in two places.
 export const ACADEMY_TRACK_IDS = ["ai_governance", "privacy_ops", "cyber_security_law"] as const;
-// Demo rule: only these have real lesson/quiz/card-drill content — one
-// per track, plus a second in AI Governance. Every other module named
-// in a track JSON's `modules` array is a locked stub card (name +
-// clearance tag only, no separate file).
-export const ACADEMY_MODULE_IDS = ["threat_modeling", "ai_pipeline_mapping", "personal_data_or_not", "malware_incident_triage"] as const;
+// Demo rule: only these have real lesson/quiz/card-drill content — two
+// per track. Every other module named in a track JSON's `modules` array
+// is a locked stub card (name + clearance tag only, no separate file).
+export const ACADEMY_MODULE_IDS = [
+  "threat_modeling",
+  "ai_pipeline_mapping",
+  "governing_the_oracle",
+  "personal_data_or_not",
+  "the_ravens_burden",
+  "malware_incident_triage",
+  "the_three_locks",
+] as const;
 
 export interface AcademyModuleSummary {
   id: string;
@@ -60,7 +67,6 @@ export interface QuizQuestion {
 
 export interface CardDrillCard {
   item: string;
-  /** true = personal data, false = not personal data. */
   answer: boolean;
   explain: string;
 }
@@ -98,10 +104,15 @@ export interface AcademyLessonModule extends AcademyModuleBase {
 // One card at a time, binary judgment (see academyOverlay.ts's
 // renderCardDrill()) — wrong answers re-queue to the end of the deck
 // rather than retrying immediately, so the deck only clears once every
-// card has been answered correctly once.
+// card has been answered correctly once. trueLabel/falseLabel are the
+// two big buttons' text (e.g. "PERSONAL DATA"/"NOT PERSONAL DATA", or
+// "SEND IT"/"SIEVE IT OUT") — every card's `answer` is judged against
+// whichever button the player picks.
 export interface AcademyCardDrillModule extends AcademyModuleBase {
   type: "card_drill";
   intro: string;
+  trueLabel: string;
+  falseLabel: string;
   cards: CardDrillCard[];
 }
 

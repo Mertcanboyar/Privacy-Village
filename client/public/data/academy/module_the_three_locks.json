@@ -1,0 +1,59 @@
+{
+  "id": "the_three_locks",
+  "track": "cyber_security_law",
+  "title": "The Three Locks",
+  "clearanceRequired": 2,
+  "lesson": [
+    { "type": "heading", "text": "Every ward on the vault protects one of three things." },
+    {
+      "type": "paragraph",
+      "text": "Confidentiality means only the right eyes see the ledger. Integrity means no one alters an entry without it being noticed. Availability means the gate opens for those who need it, when they need it. Nearly every security measure the Division uses — seals, locks, backups, watch rotations — serves one or more of these three."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "Real incidents often strain more than one lock at once. For triage and reporting, you still name the HEADLINE harm: did the Division mainly lose secrecy, trust in its records, or access to a resource?"
+    },
+    {
+      "type": "paragraph",
+      "text": "Consider a dismissed clerk who still holds an old key. If they read the ledger out of spite, that's confidentiality. If they quietly change the numbers instead, that's integrity — even though nothing was hidden and nothing was blocked, the ledger can no longer be trusted."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "The law expects safeguards matched to the risk — locks for secrecy, seals and audits for integrity, redundancy for availability. This is the Division's own version of \"appropriate security\": protection sized to what could actually go wrong."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "Only cleared Division agents may read the sealed dispatch. Which lock is this?",
+      "choices": ["Confidentiality", "Integrity", "Availability"],
+      "answer": 0,
+      "explain": [
+        "Correct — this is about who is allowed to see the dispatch at all. Restricting readership to cleared agents is a textbook confidentiality control.",
+        "Integrity is about whether the dispatch's contents have been altered, not who can read it — not the issue here.",
+        "Availability is about access when needed, not secrecy of contents — not what this scenario describes."
+      ]
+    },
+    {
+      "q": "A dismissed Division clerk, still holding an old key, slips into the records hall after hours and quietly changes which household owes what in Odile's ledger — then vanishes before dawn. No one was blocked from reading it; the numbers themselves are now wrong. Which lock took the primary hit?",
+      "choices": ["Confidentiality", "Integrity", "Availability"],
+      "answer": 1,
+      "explain": [
+        "Nothing was read that shouldn't have been — the clerk wasn't leaking secrets, they were changing numbers. Confidentiality wasn't the primary harm here.",
+        "Correct — the ledger's contents were altered without authorization or detection. That's the definition of an integrity failure, even though access itself was never blocked.",
+        "No one was locked out of the ledger — it was still fully reachable, just wrong. Availability wasn't the issue."
+      ]
+    },
+    {
+      "q": "The well's pump breaks and villagers can't draw water for two days, though the water itself is untouched and no one unauthorized ever got near it. Which lock failed?",
+      "choices": ["Confidentiality", "Integrity", "Availability"],
+      "answer": 2,
+      "explain": [
+        "No secrets were exposed — this has nothing to do with who can see what.",
+        "The water itself wasn't altered or corrupted — this isn't a data-accuracy problem.",
+        "Correct — authorized villagers simply couldn't reach the resource when they needed it. That's an availability failure, a textbook outage."
+      ]
+    }
+  ]
+}

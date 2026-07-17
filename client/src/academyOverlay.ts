@@ -568,8 +568,8 @@ export class AcademyOverlay {
     if (!this.drillRevealed) {
       children.push(
         el("div", { style: { display: "flex", gap: "var(--space-2)" } }, [
-          el("button", { className: "btn btn--gold", text: "PERSONAL DATA", style: { flex: "1" }, on: { click: () => this.answerCardDrill(true) } }),
-          el("button", { className: "btn btn--ghost", text: "NOT PERSONAL DATA", style: { flex: "1" }, on: { click: () => this.answerCardDrill(false) } }),
+          el("button", { className: "btn btn--gold", text: module.trueLabel, style: { flex: "1" }, on: { click: () => this.answerCardDrill(true) } }),
+          el("button", { className: "btn btn--ghost", text: module.falseLabel, style: { flex: "1" }, on: { click: () => this.answerCardDrill(false) } }),
         ]),
       );
     } else {
@@ -579,7 +579,7 @@ export class AcademyOverlay {
       // continue" sharing a click zone.
       children.push(
         el("div", { style: { cursor: "pointer" }, on: { click: () => this.advanceCardDrill() } }, [
-          this.renderCardDrillFeedbackButtons(),
+          this.renderCardDrillFeedbackButtons(module),
           el("p", {
             text: card.explain,
             style: { marginTop: "var(--space-3)", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" },
@@ -595,19 +595,19 @@ export class AcademyOverlay {
     this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "680px" } }, children));
   }
 
-  private renderCardDrillFeedbackButtons(): HTMLElement {
+  private renderCardDrillFeedbackButtons(module: AcademyCardDrillModule): HTMLElement {
     const feedbackStyle: Partial<CSSStyleDeclaration> = this.drillCorrect
       ? { borderColor: "var(--accent-gold)", animation: "ds-quiz-correct 500ms ease-out" }
       : { borderColor: "var(--accent-red)", animation: "ds-shake 400ms ease-in-out" };
 
-    const personalStyle: Partial<CSSStyleDeclaration> = { flex: "1", pointerEvents: "none" };
-    const notStyle: Partial<CSSStyleDeclaration> = { flex: "1", pointerEvents: "none" };
-    if (this.drillPicked === true) Object.assign(personalStyle, feedbackStyle);
-    else Object.assign(notStyle, feedbackStyle);
+    const trueStyle: Partial<CSSStyleDeclaration> = { flex: "1", pointerEvents: "none" };
+    const falseStyle: Partial<CSSStyleDeclaration> = { flex: "1", pointerEvents: "none" };
+    if (this.drillPicked === true) Object.assign(trueStyle, feedbackStyle);
+    else Object.assign(falseStyle, feedbackStyle);
 
     return el("div", { style: { display: "flex", gap: "var(--space-2)" } }, [
-      el("button", { className: "btn btn--gold", text: "PERSONAL DATA", style: personalStyle }),
-      el("button", { className: "btn btn--ghost", text: "NOT PERSONAL DATA", style: notStyle }),
+      el("button", { className: "btn btn--gold", text: module.trueLabel, style: trueStyle }),
+      el("button", { className: "btn btn--ghost", text: module.falseLabel, style: falseStyle }),
     ]);
   }
 

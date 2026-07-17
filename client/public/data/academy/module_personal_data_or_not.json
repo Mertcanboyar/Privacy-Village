@@ -4,6 +4,8 @@
   "title": "Personal Data or Not?",
   "clearanceRequired": 2,
   "type": "card_drill",
+  "trueLabel": "PERSONAL DATA",
+  "falseLabel": "NOT PERSONAL DATA",
   "intro": "Before you can protect data, Agent, you must recognize which of it is PERSONAL. The law's test is not \"does it contain a name?\" — it is \"does it relate to an identified or IDENTIFIABLE living person?\" Identifiable directly, or indirectly, by anyone reasonably likely to try. Judge the following evidence from around the village.",
   "cards": [
     {

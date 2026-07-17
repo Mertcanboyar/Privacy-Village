@@ -1,0 +1,52 @@
+{
+  "id": "the_ravens_burden",
+  "track": "privacy_ops",
+  "title": "The Raven's Burden",
+  "clearanceRequired": 2,
+  "type": "card_drill",
+  "trueLabel": "SEND IT",
+  "falseLabel": "SIEVE IT OUT",
+  "intro": "Agent, before a raven takes wing, its dispatch must be sieved. The law calls this \"data minimisation\" — carry only what serves the purpose, nothing more. A report on the cloaked figure seen at the fountain is being prepared. Judge each piece of intelligence: does it ride with the raven, or stay in the ledger?",
+  "cards": [
+    {
+      "item": "The direction the figure fled — toward the West Gate.",
+      "answer": true,
+      "explain": "Directly useful for anyone giving chase. This serves the report's actual purpose."
+    },
+    {
+      "item": "The witness's full name and house number.",
+      "answer": false,
+      "explain": "The report needs a witness who can be found again if needed — a ward or quarter does that. A house number is more than the raven needs to carry."
+    },
+    {
+      "item": "How many coins were in the witness's purse.",
+      "answer": false,
+      "explain": "Has no bearing on a sighting report. Irrelevant detail is still a liability if the raven is intercepted."
+    },
+    {
+      "item": "The color and cut of the figure's cloak.",
+      "answer": true,
+      "explain": "A direct identifying description — exactly what a sighting report exists to carry."
+    },
+    {
+      "item": "The witness's private correspondence with a rival guild.",
+      "answer": false,
+      "explain": "Unrelated to the sighting and far more sensitive than anything the report needs. Carrying it only adds risk."
+    },
+    {
+      "item": "Whether the fountain's watch-lantern was lit that night.",
+      "answer": true,
+      "explain": "Relevant context — it affects how much the witness could actually have seen."
+    },
+    {
+      "item": "The witness's exact position, tracked continuously for a week by a charm.",
+      "answer": false,
+      "explain": "Nothing about a single sighting justifies a week of continuous tracking. This is surveillance creep, not reporting."
+    },
+    {
+      "item": "That the figure walked with a limp.",
+      "answer": true,
+      "explain": "A specific, relevant identifying detail — the kind of thing that actually helps identify who was seen."
+    }
+  ]
+}

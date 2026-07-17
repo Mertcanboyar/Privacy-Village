@@ -1,0 +1,59 @@
+{
+  "id": "governing_the_oracle",
+  "track": "ai_governance",
+  "title": "Governing the Oracle",
+  "clearanceRequired": 2,
+  "lesson": [
+    { "type": "heading", "text": "Even a well-behaved spell has a life story." },
+    {
+      "type": "paragraph",
+      "text": "An enchanted engine isn't judged once, at the unveiling. It has a lifecycle: sourcing (what fed it), training (how it learned), deployment (when villagers start consulting it), and continued use (how it keeps learning from every new question). Governance duties look different at each stage — a flaw caught while sourcing is cheap to fix; the same flaw caught after ten thousand consultations is a crisis."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "Don't take the artificer's word for it. Verify claims against evidence — apprentices' notes, workshop logs, what was actually done, versus what the guild charter says was done."
+    },
+    {
+      "type": "paragraph",
+      "text": "Consider the Oracle built for the village fair. The artificer claims it \"only learned from scrolls villagers freely submitted.\" An apprentice's private note tells a different story — a crate of borrowed archive scrolls, never asked for. The claim and the evidence disagree, and that gap is exactly what an audit exists to find."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "The final decision to unveil the Oracle is never purely technical. It's a judgment weighing what's still uncertain against what's gained — and a good governor delays or adds safeguards rather than rubber-stamping a launch because the fair is tomorrow."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "An artificer claims the Oracle \"only learned from voluntarily submitted scrolls.\" An apprentice's note describes a crate of archive scrolls borrowed without asking. What should you do?",
+      "choices": ["Trust the artificer's claim — it's the official record", "Flag the discrepancy — verify claims against evidence, not documentation alone", "Ignore it, scrolls are scrolls"],
+      "answer": 1,
+      "explain": [
+        "Official-sounding documentation isn't the same as verified fact — that's exactly the gap an audit is meant to catch.",
+        "Correct — claims get checked against evidence, not taken on faith. The apprentice's note is exactly the kind of evidence that should override an unverified claim.",
+        "Where the training data came from is precisely the point — provenance isn't a detail you can wave away."
+      ]
+    },
+    {
+      "q": "At which point is it cheapest to fix a problem with the Oracle's training scrolls?",
+      "choices": ["During sourcing, before training begins", "After ten thousand villagers have already consulted it", "After the guild has published a decision based on its answers"],
+      "answer": 0,
+      "explain": [
+        "Correct — a flaw caught before training starts costs a re-sourced batch of scrolls. The same flaw compounds the longer it goes unnoticed.",
+        "By this point the flaw has already shaped thousands of answers people acted on — far more expensive to unwind.",
+        "Once decisions are already made and published on faulty output, fixing the root cause no longer fixes the harm already done."
+      ]
+    },
+    {
+      "q": "The Oracle keeps \"learning\" from every new question villagers ask it, even after its public unveiling. What does this mean for governance?",
+      "choices": ["Nothing — if it passed review once, it's fine forever", "Someone has to keep watching what it learns after launch, since its behavior can keep shifting", "It doesn't matter, spells don't change"],
+      "answer": 1,
+      "explain": [
+        "A system that keeps learning can keep drifting — a one-time pass doesn't cover behavior it hasn't shown yet.",
+        "Correct — continuous learning means governance can't stop at the unveiling. Ongoing oversight has to match ongoing change.",
+        "The whole premise of \"continuous learning\" is that it DOES keep changing — that's the thing being governed."
+      ]
+    }
+  ]
+}
