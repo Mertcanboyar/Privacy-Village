@@ -1,0 +1,66 @@
+{
+  "id": "threat_modeling",
+  "track": "ai_governance",
+  "title": "Threat Modeling Fundamentals",
+  "clearanceRequired": 2,
+  "fieldWork": { "questId": "breach_in_the_wall", "label": "The Breach in the Wall" },
+  "lesson": [
+    { "type": "heading", "text": "You cannot secure what you do not see." },
+    {
+      "type": "paragraph",
+      "text": "Attack surface defined: every point where an attacker can interact with a system. Village framing — gates, walls, sewer grates, fords — and their digital equivalents: endpoints, APIs, login forms, forgotten admin panels."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "Defense-in-Depth — layered PREVENTATIVE (stop), DETERRENT (discourage), and DETECTIVE (observe & alert) controls. A system relying on prevention alone fails silently."
+    },
+    {
+      "type": "evidence-image",
+      "images": [{ "src": "/assets/quest/village_map_mission1.jpeg", "label": "Stronghold Defense Grid" }],
+      "caption": "EVIDENCE — STRONGHOLD DEFENSE GRID",
+      "buttonLabel": "VIEW THE BLUEPRINT"
+    },
+    {
+      "type": "paragraph",
+      "text": "Capability mapping: real threat modeling defends against the SPECIFIC actors capable of exploiting SPECIFIC gaps, not \"everyone.\" Reference the Saboteur: high dexterity and stealth versus an unwatched lock on a cliff path."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "In the field you saw this as the West Gate. In an audit you will see it as an unlogged service endpoint behind a default password."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "A castle has a moat, guard dogs, and a logbook at the door. Which is the DETECTIVE control?",
+      "choices": ["Moat", "Guard dogs", "Logbook"],
+      "answer": 2,
+      "explain": [
+        "Preventative — it stops the approach before it starts.",
+        "Deterrent — it discourages the attempt without necessarily recording it.",
+        "Detective — a logbook observes and creates an audit trail after the fact."
+      ]
+    },
+    {
+      "q": "Your web app has a login page, a public API, and an old admin panel nobody remembers. Which is part of the attack surface?",
+      "choices": ["Only the login page", "Only the API", "All three"],
+      "answer": 2,
+      "explain": [
+        "The attack surface isn't just the obvious front door.",
+        "The API matters, but it isn't the whole picture.",
+        "Attack surface = every interaction point, ESPECIALLY the forgotten ones — that is your West Gate."
+      ]
+    },
+    {
+      "q": "Why did the Saboteur — not the Sorcerer — threaten the West Gate?",
+      "choices": ["He is the strongest", "His capabilities match the vulnerability", "Goblins hate padlocks"],
+      "answer": 1,
+      "explain": [
+        "Raw strength isn't what mattered here.",
+        "Threat modeling maps actor capability to system gap; strength without fit is noise.",
+        "A colorful guess, but not the actual reasoning."
+      ]
+    }
+  ]
+}

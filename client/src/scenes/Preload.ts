@@ -3,6 +3,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from "../config";
 import { ROOMS } from "../rooms";
 import { LORE_NPC_IDS, LORE_NPC_FRAME_SIZE } from "../npc";
 import { QUEST_IDS, questEngine, type QuestDef } from "../questEngine";
+import { ACADEMY_TRACK_IDS, ACADEMY_MODULE_IDS, academy, type AcademyTrack, type AcademyModule } from "../academy";
 
 export class Preload extends Phaser.Scene {
   constructor() {
@@ -57,6 +58,15 @@ export class Preload extends Phaser.Scene {
       this.load.json(`quest-${id}`, `data/quests/${id}.json`);
     }
 
+    // Academy learning hub (see PLAN.md "The Academy") — track summaries
+    // and the one demo-rule module with real lesson/quiz content.
+    for (const id of ACADEMY_TRACK_IDS) {
+      this.load.json(`academy-track-${id}`, `data/academy/${id}.json`);
+    }
+    for (const id of ACADEMY_MODULE_IDS) {
+      this.load.json(`academy-module-${id}`, `data/academy/module_${id}.json`);
+    }
+
     // Painted-room assets (see CLAUDE.md). Foreground PNGs and room JSON
     // (walkable polygon/doors/lights, authored via /debug) may not exist
     // yet for every room — missing files 404 quietly and Room.ts falls
@@ -76,6 +86,10 @@ export class Preload extends Phaser.Scene {
     // this just makes the defs known to the engine.
     const questDefs = QUEST_IDS.map((id) => this.cache.json.get(`quest-${id}`) as QuestDef);
     questEngine.loadDefs(questDefs);
+
+    const academyTracks = ACADEMY_TRACK_IDS.map((id) => this.cache.json.get(`academy-track-${id}`) as AcademyTrack);
+    const academyModules = ACADEMY_MODULE_IDS.map((id) => this.cache.json.get(`academy-module-${id}`) as AcademyModule);
+    academy.loadData(academyTracks, academyModules);
 
     // Idle loop for each lore NPC — row 0, cols 0-3 (see preload() comment).
     // 6fps per the source pack's suggested speed.

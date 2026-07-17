@@ -1,0 +1,13 @@
+{
+  "id": "ai_governance",
+  "title": "AI Governance, Policy & Licensing",
+  "credential": "Certified AI Governance Lead",
+  "moduleCount": 10,
+  "active": true,
+  "modules": [
+    { "id": "threat_modeling", "title": "Threat Modeling Fundamentals", "clearanceRequired": 2, "hasContent": true },
+    { "id": "annex_iii_risk_categorization", "title": "Annex III Risk Categorization", "clearanceRequired": 5, "hasContent": false },
+    { "id": "human_oversight_by_design", "title": "Human Oversight by Design", "clearanceRequired": 5, "hasContent": false },
+    { "id": "transparency_for_synthetic_media", "title": "Transparency for Synthetic Media", "clearanceRequired": 5, "hasContent": false }
+  ]
+}

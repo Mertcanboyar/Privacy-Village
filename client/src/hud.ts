@@ -97,6 +97,7 @@ export class HUDController {
     });
     questEngine.on("questUpdated", () => this.refreshTracker());
     questEngine.on("reveal", (reveal: QuestStepReveal) => this.showReveal(reveal));
+    academy.on("toast", (message: string) => this.showToast(message));
 
     this.refreshXpBar();
     this.refreshTracker();
