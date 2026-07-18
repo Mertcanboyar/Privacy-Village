@@ -33,6 +33,13 @@ export interface AcademyModuleSummary {
   /** True only for ids in ACADEMY_MODULE_IDS — false renders as a
    * name-only locked stub card with no module-list click-through. */
   hasContent: boolean;
+  /** Cross-link for a stub card that has no lesson/quiz content of its
+   * own yet, but tracks live field-work progress against a real village
+   * quest anyway — "De-identification: Masks & Chains" ↔ "The
+   * Innkeeper's Shards". Renders a FIELD WORK pip (auto-✓ once the
+   * quest completes) and a static "THEORY: IN DEVELOPMENT" tag instead
+   * of the plain clearance-only stub treatment. */
+  fieldWorkQuestId?: string;
 }
 
 export interface AcademyTrack {

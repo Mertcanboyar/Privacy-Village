@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { el } from "./ui/dom";
 import { showImageOverlay } from "./ui/imageOverlay";
+import { showTableOverlay } from "./ui/tableOverlay";
 import { questEngine, type QuestStepReveal } from "./questEngine";
 import { getSession } from "./session";
 import { academy } from "./academy";
@@ -17,11 +18,12 @@ const REVEAL_DISMISS_MS = 5000;
 
 // Cosmetic only — the .xp-bar fill is just points/TOTAL_POINTS, it no
 // longer gates Clearance (see questEngine.ts's setClearance()). Sum of
-// every payout in the village demo path: Welcome 50 + Mission 1 150 +
-// Mission 2 150. (The Courthouse Trial's 400 used to be part of this —
-// its content moved to the Academy, a parallel points source with its
-// own per-track credential bars, not counted here.)
-const TOTAL_POINTS = 350;
+// every payout in the village demo path: Welcome 50 + Breach M1 150 +
+// Breach M2 150 + Shards M1 150 + Shards M2 150. (The Courthouse
+// Trial's 400 used to be part of this — its content moved to the
+// Academy, a parallel points source with its own per-track credential
+// bars, not counted here.)
+const TOTAL_POINTS = 650;
 
 function factionAccent(): string {
   return getSession().faction === "apocalypse" ? "var(--accent-red)" : "var(--accent-gold)";
@@ -142,6 +144,16 @@ export class HUDController {
           text: evidence.buttonLabel,
           style: { width: "100%" },
           on: { click: () => showImageOverlay(evidence.images, evidence.caption) },
+        }),
+      );
+    } else if (step?.evidenceTables) {
+      const evidenceTables = step.evidenceTables;
+      this.trackerEvidenceRowEl.appendChild(
+        el("button", {
+          className: "btn btn--ghost",
+          text: evidenceTables.buttonLabel,
+          style: { width: "100%" },
+          on: { click: () => showTableOverlay(evidenceTables.tabs, evidenceTables.caption) },
         }),
       );
     }

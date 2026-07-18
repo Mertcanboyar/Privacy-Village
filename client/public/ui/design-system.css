@@ -860,3 +860,49 @@
   40% { background: var(--accent-gold); }
   100% { background: var(--bg-raised); }
 }
+
+/* ---------------------------------------------------------------------
+   Supporting: .evidence-table — data-table evidence viewer
+   (client/src/ui/tableOverlay.ts, "The Innkeeper's Shards"). Mono,
+   zebra rows, gold header. Sits inside a .panel.panel--glow.
+
+   <div class="evidence-table">
+     <table>
+       <thead><tr><th>Room #</th><th>Ticket #</th></tr></thead>
+       <tbody><tr><td>Room 7</td><td>T-822</td></tr></tbody>
+     </table>
+   </div>
+--------------------------------------------------------------------- */
+
+.evidence-table {
+  overflow-x: auto;
+}
+
+.evidence-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.evidence-table th {
+  background: var(--accent-gold);
+  color: var(--accent-gold-ink);
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.evidence-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.evidence-table tbody tr:nth-child(even) {
+  background: var(--bg-raised);
+}

@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { getSession } from "./session";
 import { playSound } from "./audio";
 import type { EvidenceImage } from "./ui/imageOverlay";
+import type { EvidenceTableTab } from "./ui/tableOverlay";
 
 // JSON-driven quest engine (see PLAN.md "The Breach in the Wall").
 // Deliberately a separate module/file from quest.ts, which is
@@ -17,7 +18,7 @@ import type { EvidenceImage } from "./ui/imageOverlay";
 
 // Referenced by Preload.ts to load client/public/data/quests/*.json
 // without duplicating the id list in two places.
-export const QUEST_IDS = ["arrival", "breach_in_the_wall"] as const;
+export const QUEST_IDS = ["arrival", "breach_in_the_wall", "innkeepers_shards"] as const;
 
 export type QuestState = "locked" | "available" | "active" | "complete";
 
@@ -47,6 +48,15 @@ export interface QuestStepEvidence {
   buttonLabel: string;
 }
 
+// Table-shaped evidence (see ui/tableOverlay.ts) — "The Innkeeper's
+// Shards"'s sharded logs and sanitized safehouse log, as opposed to
+// the image-based evidence above.
+export interface QuestStepEvidenceTables {
+  tabs: EvidenceTableTab[];
+  caption: string;
+  buttonLabel: string;
+}
+
 export interface QuestStep {
   objective: string;
   trigger: Trigger;
@@ -54,8 +64,9 @@ export interface QuestStep {
   /** Reopenable evidence button shown in the HUD tracker while this is
    * the active step — "Player can reopen the blueprint anytime from the
    * tracker while the mission is active" (see PLAN.md "The Breach in
-   * the Wall"). */
+   * the Wall"). Mutually exclusive with evidenceTables. */
   evidence?: QuestStepEvidence;
+  evidenceTables?: QuestStepEvidenceTables;
 }
 
 export interface QuestDef {

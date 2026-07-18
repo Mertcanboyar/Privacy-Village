@@ -80,14 +80,14 @@ Festival is cover for a secret "Battle for AI" Summit; the player is a
 Division Agent; two factions (`fundamentalist`/`apocalypse`, chosen at
 CharacterCreate) color the player's name tag. XP is called "faction
 points" in all UI copy. Progress is tracked via **Clearance Levels**
-(C1-C5), advanced by narrative milestones rather than point thresholds
+(C1-C6), advanced by narrative milestones rather than point thresholds
 — see `questEngine.ts` below. Story content is the arrival flow
-("The Welcome") followed by a single two-part quest, "The Breach in the
-Wall" (see PLAN.md) — the earlier 5-quest "Battle for AI" content
-(Cover Story, Leaked Dossier, Merchant's Oracle, Dead Drops, Whisper in
-the Portrait) was deprecated and removed along with the NPCs that only
-existed to serve it (Fennick, Frightened Patron, the ambient "Villager"
-wanderer, `villager_a`/`villager_b`).
+("The Welcome") followed by two two-part quests, "The Breach in the
+Wall" and "The Innkeeper's Shards" (see PLAN.md) — the earlier 5-quest
+"Battle for AI" content (Cover Story, Leaked Dossier, Merchant's Oracle,
+Dead Drops, Whisper in the Portrait) was deprecated and removed along
+with the NPCs that only existed to serve it (Fennick, Frightened
+Patron, the ambient "Villager" wanderer, `villager_a`/`villager_b`).
 
 `client/src/npc.ts` — static NPCs (`NPC_SPAWNS`, hardcoded per room, same
 pattern as `Room.ts`'s `WANDERER_ROUTES`): a "[E] Talk" proximity prompt
@@ -135,7 +135,7 @@ time, `talk_to`/`reach_zone` step triggers, flags, and points — exposed
 via a `Phaser.Events.EventEmitter`
 (`toast`/`pointsChanged`/`levelUp`/`questUpdated`/`reveal`/`questCompleted`)
 that both `hud.ts` and `Room.ts` subscribe to. **Clearance Levels**
-(1-5) are milestone-based, not point-threshold-based:
+(1-6) are milestone-based, not point-threshold-based:
 `questEngine.setClearance(n)` only ever raises the level (never lowers,
 never double-fires), playing the fanfare + "CLEARANCE RAISED" toast +
 `levelUp` event exactly once per real raise. `QuestDef.clearanceOnComplete`
@@ -144,10 +144,14 @@ fires automatically when that quest's final step completes;
 choice is picked, for mid-quest milestones (Mission 1's correct answer
 inside "The Breach in the Wall" raises Clearance 3 and pays 150 points
 before the quest itself is done — Mission 2's completes the quest,
-whose own `xp`/`clearanceOnComplete` cover Clearance 4). Points/XP still
-accrue and display on the `.xp-bar` independently of Clearance — the
-bar's fill is cosmetic progress toward the demo path's total possible
-points (750), not a level gate. `Room.ts` calls `notifyReachZone()` from
+whose own `xp`/`clearanceOnComplete` cover Clearance 4; "The Innkeeper's
+Shards" — unlocked by Breach's completion — repeats the same two-mission
+pattern and its own `clearanceOnComplete` covers Clearance 5). Points/XP
+still accrue and display on the `.xp-bar` independently of Clearance —
+the bar's fill is cosmetic progress toward the demo path's total
+possible points (650), not a level gate. Clearance 6 is currently
+unclaimed — reserved for future story content. `Room.ts` calls
+`notifyReachZone()` from
 `update()` for every room-JSON `zones` entry the player is standing in
 (purely proximity-based, no `[E]` prompt, same as door transitions) and
 pulses a glow on whichever zone is the active quest's current objective.
@@ -160,7 +164,7 @@ matters because `UIOverlay` is `scene.launch()`'d once from
 `CharacterCreate` and never `scene.restart()`'d on room transitions
 (unlike `Room.ts`, torn down and rebuilt every door), making it the only
 scene that persists the way a HUD needs to. `Q` toggles the tracker; the
-level badge reads "C1" through "C5".
+level badge reads "C1" through "C6".
 
 `client/src/quest.ts` — the Courthouse desk. Used to run the "Personal
 Data Classification Lab" in-world (a drag-and-drop GDPR trial that paid

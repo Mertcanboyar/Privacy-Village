@@ -1,0 +1,97 @@
+{
+  "id": "innkeepers_shards",
+  "title": "The Innkeeper's Shards",
+  "giver": "odile",
+  "xp": 150,
+  "offer": "Agent — remember when I swore to keep my guest lists in cipher? I did better. I SHARDED them. Three separate logs, three separate drawers. Room list knows no names. Coat check knows no rooms. Only the gate log knows names, and it knows nothing of my inn. Anonymous, yes? ...Why is the Herald laughing. Prove me wrong, then. Room 7. Tell me who sleeps there. You won't manage it.",
+  "debrief": "A mask that fits everyone but one protects everyone but one.",
+  "clearanceOnComplete": 5,
+  "steps": [
+    {
+      "objective": "Trace the guest sleeping in Room 7",
+      "trigger": { "type": "talk_to", "npc": "odile", "requiresFlag": "guest_identified" },
+      "evidenceTables": {
+        "tabs": [
+          {
+            "label": "TABLE A",
+            "columns": ["Room #", "Guest Status", "Coat Check Ticket #"],
+            "rows": [
+              ["Room 1", "Occupied", "T-801"],
+              ["Room 2", "Occupied", "T-805"],
+              ["Room 3", "Occupied", "T-809"],
+              ["Room 4", "Occupied", "T-812"],
+              ["Room 5", "Occupied", "T-815"],
+              ["Room 6", "Occupied", "T-820"],
+              ["Room 7", "Occupied", "T-822"],
+              ["Room 8", "Occupied", "T-825"],
+              ["Room 9", "Occupied", "T-830"],
+              ["Room 10", "Occupied", "T-833"]
+            ]
+          },
+          {
+            "label": "TABLE B",
+            "columns": ["Ticket #", "Item Description", "Check-in Time"],
+            "rows": [
+              ["T-801", "Grey Hooded Cloak", "18:00"],
+              ["T-805", "Brown Travel Cloak", "18:05"],
+              ["T-809", "Black Robe", "18:10"],
+              ["T-812", "Grey Pointed Hat", "19:00"],
+              ["T-815", "Heavy Fur Coat", "19:30"],
+              ["T-820", "Blue Hood", "19:45"],
+              ["T-822", "Green Velvet Cloak", "20:15"],
+              ["T-825", "Grey Wool Cloak", "20:45"],
+              ["T-830", "Leather Vest", "21:00"],
+              ["T-833", "White Cape", "21:30"]
+            ]
+          },
+          {
+            "label": "TABLE C",
+            "columns": ["Name", "Trade", "Appearance", "Entry Time"],
+            "rows": [
+              ["Larkin", "Envoy", "Grey Hooded Cloak", "18:00"],
+              ["Berrin", "Miller", "Brown Travel Cloak", "18:05"],
+              ["Corvin", "Scribe", "Black Robe", "18:10"],
+              ["Alderic", "Sage", "Grey Pointed Hat", "19:00"],
+              ["Grum", "Smith", "Heavy Fur Coat", "19:30"],
+              ["Tobin", "Mason", "Blue Hood", "19:45"],
+              ["Petra", "Courier", "Green Velvet Cloak", "19:50"],
+              ["Wren", "Courier", "Green Velvet Cloak", "20:15"],
+              ["Sable", "Weaver", "Grey Wool Cloak", "20:45"],
+              ["Hollis", "Courier", "Green Velvet Cloak", "21:00"]
+            ]
+          }
+        ],
+        "caption": "EVIDENCE — THE SHARDED LOGS",
+        "buttonLabel": "VIEW THE LOGS"
+      }
+    },
+    {
+      "objective": "Audit the sanitized safehouse log for a k-anonymity flaw",
+      "trigger": { "type": "talk_to", "npc": "herald", "requiresFlag": "mask_flaw_found" },
+      "evidenceTables": {
+        "tabs": [
+          {
+            "label": "SAFEHOUSE LOG",
+            "columns": ["Entry ID", "Trade", "Age Range", "District"],
+            "rows": [
+              ["S-01", "Warden", "> 60", "Northreach"],
+              ["S-02", "Scribe", "30–40", "Lantern Row"],
+              ["S-03", "Smith", "40–50", "* (Suppressed)"],
+              ["S-04", "Courier", "20–30", "Mill Quarter"],
+              ["S-05", "Warden", "> 60", "Northreach"],
+              ["S-06", "Scribe", "30–40", "Lantern Row"],
+              ["S-07", "Smith", "40–50", "* (Suppressed)"],
+              ["S-08", "Courier", "40–50", "Mill Quarter"],
+              ["S-09", "Courier", "20–30", "Mill Quarter"],
+              ["S-10", "Courier", "20–30", "Mill Quarter"],
+              ["S-11", "Weaver", "20–30", "Riverside"],
+              ["S-12", "Weaver", "20–30", "Riverside"]
+            ]
+          }
+        ],
+        "caption": "EVIDENCE — SAFEHOUSE LOG (SANITIZED)",
+        "buttonLabel": "VIEW THE LOG"
+      }
+    }
+  ]
+}

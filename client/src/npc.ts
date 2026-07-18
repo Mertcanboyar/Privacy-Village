@@ -3,6 +3,7 @@ import { GAME_HEIGHT } from "./config";
 import type { RoomName } from "./rooms";
 import { el, typewriter, type TypewriterHandle } from "./ui/dom";
 import { showImageOverlay, type EvidenceImage } from "./ui/imageOverlay";
+import { showTableOverlay, type EvidenceTableTab } from "./ui/tableOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine } from "./questEngine";
 import { playSound, playBlip } from "./audio";
@@ -83,6 +84,15 @@ interface EvidenceRef {
   buttonLabel: string;
 }
 
+// Table-shaped evidence (see ui/tableOverlay.ts) — "The Innkeeper's
+// Shards"'s sharded logs and sanitized safehouse log, as opposed to
+// the image-based EvidenceRef above.
+interface EvidenceTableRef {
+  tabs: EvidenceTableTab[];
+  caption: string;
+  buttonLabel: string;
+}
+
 interface DialogueSet {
   if?: DialogueCondition;
   lines: string[];
@@ -95,11 +105,17 @@ interface DialogueSet {
    * falls back to the compact box regardless of how the set itself was
    * shown, so this only needs to cover the mission text + its choices. */
   briefing?: { caseLabel: string; title: string };
-  /** Evidence button shown inside a `briefing` set's panel. */
+  /** Evidence button shown inside a `briefing` set's panel. Mutually
+   * exclusive with evidenceTables. */
   evidence?: EvidenceRef;
+  evidenceTables?: EvidenceTableRef;
   /** Render every choice as .btn--ghost (no "recommended" gold pick) —
    * for genuine multiple-choice quizzes where all options are live. */
   ghostChoices?: boolean;
+  /** Lay choices out in a compact wrapping grid (mono font) instead of
+   * one-per-row — "The Innkeeper's Shards"'s 10/12-option answer lists,
+   * too many for a column without the briefing panel scrolling badly. */
+  gridChoices?: boolean;
 }
 
 function conditionMatches(cond: DialogueCondition | undefined): boolean {
@@ -186,6 +202,42 @@ We are looking for a threat actor with high Stealth (to avoid the tower) and hig
   `🔍 In cybersecurity, you don't defend against "everyone." You defend against the specific actors capable of exploiting your specific gaps. Which Threat Actor can exploit the West Gate without raising the alarm?`,
 ];
 
+// --- "The Innkeeper's Shards" — Odile's + Herald's mission briefings --
+// Same 3-page pattern as MISSION_1/2_PAGES above (intro / evidence /
+// question).
+
+const SHARDS_MISSION_1_PAGES = [
+  `The innkeeper has "sharded" her data into three isolated logs to prevent anyone from identifying her guests. The Room List knows only a Coat Check Ticket. The Coat Check Log knows only items and timestamps. The City Gate Log knows names and appearances — but nothing of the inn.
+
+She believes separation makes the data anonymous. The Shadownet knows better. By CHAINING these three datasets, anyone can de-anonymize anyone.
+
+Trace the chain. Find the name of the guest in Room 7.`,
+  `💾 THE EVIDENCE: THE SHARDED LOGS
+Three drawers, three logs — but nothing stops you from laying them side by side.
+
+TABLE A links a Room to a Coat Check Ticket.
+TABLE B links a Ticket to an Item and a Check-in Time.
+TABLE C links a Name to an Appearance and an Entry Time.
+
+Chain them: Room → Ticket → Item & Time → Name.`,
+  `A quasi-identifier is rarely one attribute alone. An item description can match more than one person — the hour it was checked in is what breaks the tie.
+
+🔍 Who sleeps in Room 7?`,
+];
+
+const SHARDS_MISSION_2_PAGES = [
+  `Word of your trick reached the Archive. Quill's scribes have "sanitized" the Summit's safehouse log — GENERALIZATION (specifics become ranges) and SUPPRESSION (values become *). They claim the log now satisfies k-anonymity with k=2: every row identical to at least one other. If true, no guest stands alone in the data.
+
+They made a mistake. One entry's remaining attributes are STILL unique. If the Shadownet intercepts this log, it can mathematically prove who that person is. Audit the mask. Find the flaw.`,
+  `💾 THE EVIDENCE: SAFEHOUSE LOG (SANITIZED)
+Quasi-identifiers: Trade | Age Range | District
+
+Twelve entries, generalized and suppressed. Eleven of them should each have at least one identical twin elsewhere in the log. One does not.`,
+  `k-anonymity is a chain of twins, Ranger. Compare every row against every other — a single unmatched row breaks the promise for that one person, even if everyone else is safely hidden in a crowd.
+
+🔍 Which Entry ID violates k=2?`,
+];
+
 const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
   village: [
     {
@@ -198,6 +250,70 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       baseScale: 72.5 / 558,
       questGiver: "breach_in_the_wall",
       dialogue: [
+        {
+          if: { questComplete: "innkeepers_shards" },
+          lines: ["The mask slipped once, Ranger. Quill's scribes will not make that mistake twice — not while you're watching."],
+        },
+        {
+          if: { questActive: "innkeepers_shards", flag: "guest_identified" },
+          briefing: { caseLabel: "MISSION 2", title: "The Flawed Mask" },
+          evidenceTables: {
+            tabs: [
+              {
+                label: "SAFEHOUSE LOG",
+                columns: ["Entry ID", "Trade", "Age Range", "District"],
+                rows: [
+                  ["S-01", "Warden", "> 60", "Northreach"],
+                  ["S-02", "Scribe", "30–40", "Lantern Row"],
+                  ["S-03", "Smith", "40–50", "* (Suppressed)"],
+                  ["S-04", "Courier", "20–30", "Mill Quarter"],
+                  ["S-05", "Warden", "> 60", "Northreach"],
+                  ["S-06", "Scribe", "30–40", "Lantern Row"],
+                  ["S-07", "Smith", "40–50", "* (Suppressed)"],
+                  ["S-08", "Courier", "40–50", "Mill Quarter"],
+                  ["S-09", "Courier", "20–30", "Mill Quarter"],
+                  ["S-10", "Courier", "20–30", "Mill Quarter"],
+                  ["S-11", "Weaver", "20–30", "Riverside"],
+                  ["S-12", "Weaver", "20–30", "Riverside"],
+                ],
+              },
+            ],
+            caption: "EVIDENCE — SAFEHOUSE LOG (SANITIZED)",
+            buttonLabel: "VIEW THE LOG",
+          },
+          ghostChoices: true,
+          gridChoices: true,
+          lines: SHARDS_MISSION_2_PAGES,
+          choices: [
+            { label: "S-01", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
+            { label: "S-02", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
+            {
+              label: "S-03",
+              response: "Suppressed twins are still twins — those two rows are identical, star for star. Look for the row with NO twin.",
+            },
+            { label: "S-04", response: "Three of a kind satisfies k=2 twice over. Find the row that stands alone." },
+            { label: "S-05", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
+            { label: "S-06", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
+            {
+              label: "S-07",
+              response: "Suppressed twins are still twins — those two rows are identical, star for star. Look for the row with NO twin.",
+            },
+            {
+              label: "S-08",
+              setFlag: "mask_flaw_found",
+              response:
+                "The courier of forty-some years from the Mill Quarter. Every other courier there is young; the mask slips on the one who isn't. k-anonymity is a chain of twins, Ranger — ONE unique row and the whole promise breaks for that person.",
+            },
+            { label: "S-09", response: "Three of a kind satisfies k=2 twice over. Find the row that stands alone." },
+            { label: "S-10", response: "Three of a kind satisfies k=2 twice over. Find the row that stands alone." },
+            { label: "S-11", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
+            { label: "S-12", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
+          ],
+        },
+        {
+          if: { questActive: "innkeepers_shards" },
+          lines: ["Odile's waiting on you, Ranger. Room 7 won't identify itself."],
+        },
         { if: { questComplete: "breach_in_the_wall" }, lines: ["Well met, Ranger. The Council will never know how close the breach came."] },
         {
           if: { questActive: "breach_in_the_wall", flag: "gate_identified" },
@@ -292,7 +408,123 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       texture: "npc-odile",
       baseScale: loreNpcBaseScale("odile"),
       idleAnim: "npc-odile-idle",
+      questGiver: "innkeepers_shards",
       dialogue: [
+        {
+          if: { questComplete: "innkeepers_shards" },
+          lines: ["Wren's secret is safe with the Division, at least. My drawers, though... I may need better locks, Agent."],
+        },
+        {
+          if: { questActive: "innkeepers_shards", flag: "guest_identified" },
+          lines: ["Go on, then — the Herald's waiting. I heard him cackling something about masks."],
+        },
+        {
+          if: { questActive: "innkeepers_shards" },
+          briefing: { caseLabel: "MISSION 1", title: "Chains of Identity" },
+          evidenceTables: {
+            tabs: [
+              {
+                label: "TABLE A",
+                columns: ["Room #", "Guest Status", "Coat Check Ticket #"],
+                rows: [
+                  ["Room 1", "Occupied", "T-801"],
+                  ["Room 2", "Occupied", "T-805"],
+                  ["Room 3", "Occupied", "T-809"],
+                  ["Room 4", "Occupied", "T-812"],
+                  ["Room 5", "Occupied", "T-815"],
+                  ["Room 6", "Occupied", "T-820"],
+                  ["Room 7", "Occupied", "T-822"],
+                  ["Room 8", "Occupied", "T-825"],
+                  ["Room 9", "Occupied", "T-830"],
+                  ["Room 10", "Occupied", "T-833"],
+                ],
+              },
+              {
+                label: "TABLE B",
+                columns: ["Ticket #", "Item Description", "Check-in Time"],
+                rows: [
+                  ["T-801", "Grey Hooded Cloak", "18:00"],
+                  ["T-805", "Brown Travel Cloak", "18:05"],
+                  ["T-809", "Black Robe", "18:10"],
+                  ["T-812", "Grey Pointed Hat", "19:00"],
+                  ["T-815", "Heavy Fur Coat", "19:30"],
+                  ["T-820", "Blue Hood", "19:45"],
+                  ["T-822", "Green Velvet Cloak", "20:15"],
+                  ["T-825", "Grey Wool Cloak", "20:45"],
+                  ["T-830", "Leather Vest", "21:00"],
+                  ["T-833", "White Cape", "21:30"],
+                ],
+              },
+              {
+                label: "TABLE C",
+                columns: ["Name", "Trade", "Appearance", "Entry Time"],
+                rows: [
+                  ["Larkin", "Envoy", "Grey Hooded Cloak", "18:00"],
+                  ["Berrin", "Miller", "Brown Travel Cloak", "18:05"],
+                  ["Corvin", "Scribe", "Black Robe", "18:10"],
+                  ["Alderic", "Sage", "Grey Pointed Hat", "19:00"],
+                  ["Grum", "Smith", "Heavy Fur Coat", "19:30"],
+                  ["Tobin", "Mason", "Blue Hood", "19:45"],
+                  ["Petra", "Courier", "Green Velvet Cloak", "19:50"],
+                  ["Wren", "Courier", "Green Velvet Cloak", "20:15"],
+                  ["Sable", "Weaver", "Grey Wool Cloak", "20:45"],
+                  ["Hollis", "Courier", "Green Velvet Cloak", "21:00"],
+                ],
+              },
+            ],
+            caption: "EVIDENCE — THE SHARDED LOGS",
+            buttonLabel: "VIEW THE LOGS",
+          },
+          ghostChoices: true,
+          gridChoices: true,
+          lines: SHARDS_MISSION_1_PAGES,
+          choices: [
+            {
+              label: "LARKIN",
+              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+            },
+            {
+              label: "BERRIN",
+              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+            },
+            {
+              label: "CORVIN",
+              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+            },
+            {
+              label: "ALDERIC",
+              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+            },
+            {
+              label: "GRUM",
+              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+            },
+            {
+              label: "TOBIN",
+              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+            },
+            {
+              label: "PETRA",
+              response: "The cloak matches — the hour does not. A quasi-identifier is rarely one attribute. Chain the TIME as well.",
+            },
+            {
+              label: "WREN",
+              setFlag: "guest_identified",
+              points: 150,
+              toast: "INTEL FILED — Sharding without severing the links is a locked door with the key in the lock.",
+              response:
+                "\"...Wren. Room 7. You chained my drawers together like beads on a string.\" The Herald, listening from the doorway, steps in: \"Three anonymous logs. One identity. That is a LINKAGE ATTACK, Ranger — separation is not anonymization when the links survive.\"",
+            },
+            {
+              label: "SABLE",
+              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+            },
+            {
+              label: "HOLLIS",
+              response: "The cloak matches — the hour does not. A quasi-identifier is rarely one attribute. Chain the TIME as well.",
+            },
+          ],
+        },
         {
           if: { questActive: "arrival" },
           lines: [
@@ -366,6 +598,7 @@ export class NPCController {
   private lineIndex = 0;
   private currentTypewriter: TypewriterHandle | null = null;
   private heraldPulse: Phaser.GameObjects.Arc | null = null;
+  private odilePulse: Phaser.GameObjects.Arc | null = null;
 
   constructor(scene: Phaser.Scene, roomName: RoomName) {
     this.eKey = scene.input.keyboard!.addKey("E");
@@ -393,6 +626,13 @@ export class NPCController {
     if (roomName === "village") {
       this.refreshHeraldPulse(scene);
       const onLevelUp = () => this.refreshHeraldPulse(scene);
+      questEngine.on("levelUp", onLevelUp);
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
+    }
+
+    if (roomName === "tavern") {
+      this.refreshOdilePulse(scene);
+      const onLevelUp = () => this.refreshOdilePulse(scene);
       questEngine.on("levelUp", onLevelUp);
       scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
     }
@@ -504,6 +744,17 @@ export class NPCController {
     const g = scene.add.circle(herald.def.x, herald.def.y - 20, 34, 0xf0b429, 0.22).setDepth(herald.def.y - 1);
     scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.heraldPulse = g;
+  }
+
+  // Same technique, gold-pulsing Odile once Clearance 4 unlocks "The
+  // Innkeeper's Shards" — she's the giver, not Herald, for this quest.
+  private refreshOdilePulse(scene: Phaser.Scene) {
+    if (this.odilePulse || questEngine.getClearance() < 4) return;
+    const odile = this.npcs.find((n) => n.def.id === "odile");
+    if (!odile) return;
+    const g = scene.add.circle(odile.def.x, odile.def.y - 20, 34, 0xf0b429, 0.22).setDepth(odile.def.y - 1);
+    scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.odilePulse = g;
   }
 
   // One-shot bright flash on the Herald, distinct from the steady
@@ -619,11 +870,15 @@ export class NPCController {
     this.currentTypewriter = typewriter(bodyEl, line, 18, () => {
       // Evidence button appears from page 2 onward (not the intro page)
       // and persists through the question page too.
-      if (isBriefing && this.activeSet!.evidence && this.lineIndex >= 1) this.renderEvidenceButton(this.activeSet!.evidence);
+      if (isBriefing && this.lineIndex >= 1) {
+        if (this.activeSet!.evidence) this.renderEvidenceButton(this.activeSet!.evidence);
+        else if (this.activeSet!.evidenceTables) this.renderEvidenceTablesButton(this.activeSet!.evidenceTables);
+      }
       if (isLast && this.activeSet!.choices) {
         this.renderChoices(
           this.activeSet!.choices.map((choice) => ({ label: choice.label, onClick: () => this.pickChoice(choice) })),
           this.activeSet!.ghostChoices ?? false,
+          this.activeSet!.gridChoices ?? false,
         );
       } else {
         hintEl.textContent = isLast ? "[E] ▸ CLOSE" : "[E] ▸ CONTINUE";
@@ -638,6 +893,17 @@ export class NPCController {
         className: "btn btn--gold",
         text: evidence.buttonLabel,
         on: { click: () => showImageOverlay(evidence.images, evidence.caption) },
+      }),
+    );
+  }
+
+  private renderEvidenceTablesButton(evidence: EvidenceTableRef) {
+    this.briefingEvidenceRowEl.innerHTML = "";
+    this.briefingEvidenceRowEl.appendChild(
+      el("button", {
+        className: "btn btn--gold",
+        text: evidence.buttonLabel,
+        on: { click: () => showTableOverlay(evidence.tabs, evidence.caption) },
       }),
     );
   }
@@ -659,16 +925,20 @@ export class NPCController {
     this.showLine();
   }
 
-  private renderChoices(choices: { label: string; onClick: () => void }[], ghost = false) {
+  private renderChoices(choices: { label: string; onClick: () => void }[], ghost = false, grid = false) {
     this.clearChoices();
     const isBriefing = this.mode === "briefing";
+    const rowStyle: Partial<CSSStyleDeclaration> = grid
+      ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: "8px", marginTop: "12px" }
+      : { display: "flex", flexDirection: isBriefing ? "column" : "row", gap: "12px", marginTop: "12px" };
     const row = el(
       "div",
-      { style: { display: "flex", flexDirection: isBriefing ? "column" : "row", gap: "12px", marginTop: "12px" } },
+      { style: rowStyle },
       choices.map((choice, i) =>
         el("button", {
           className: `btn ${!ghost && i === 0 ? "btn--gold" : "btn--ghost"}`,
           text: choice.label,
+          style: grid ? { fontFamily: "var(--font-mono)", fontSize: "12px", padding: "10px 12px" } : {},
           on: { click: choice.onClick },
         }),
       ),

@@ -272,7 +272,12 @@ option, per the task spec's own framing.
 
 **Clearance Levels replace XP-threshold levels entirely.** C1 on
 arrival, C2 after both greeters, C3 after Mission 1, C4 after Mission 2
-(quest complete), C5 reserved for the Courthouse Trial. `questEngine.ts`'s
+(quest complete, which also unlocks "The Innkeeper's Shards"), C5 after
+Innkeeper's Shards' own two missions (see section 9 below). C6 is
+currently unclaimed — reserved for future story content; the
+Courthouse Trial mechanic this level was once earmarked for was
+removed (see `quest.ts` note above) before it ever granted a level.
+`questEngine.ts`'s
 `setClearance(n)` is milestone-driven (only ever raises, never
 derives from points) — see CLAUDE.md for the mechanism. Points/XP still
 accrue and show on the `.xp-bar` independently, just no longer gate the
@@ -331,3 +336,56 @@ visible game area on a browser window taller than the game canvas).
 no longer hardcodes "the player is the wizard." Any new code that needs
 the player's name/sprite should read `getSession()`/`getAvatarOption()`,
 not assume the wizard texture.
+
+## 9. "The Innkeeper's Shards" — de-identification quest (unlocks at C4)
+
+A second two-mission quest, structurally identical to "The Breach in
+the Wall" (briefing panels, mid-quest `DialogueChoice.points`/`.clearance`,
+hint-on-wrong-answer, no point loss on retry) but teaching
+de-identification failure modes instead of AI-pipeline risk categories,
+and using **data tables** rather than images as evidence — this proved
+common enough evidence content (structured rows the player has to
+cross-reference) to warrant its own overlay: `client/src/ui/tableOverlay.ts`
+mirrors `imageOverlay.ts`'s open-count/ESC-conflict pattern exactly, but
+renders styled `.evidence-table` HTML (mono, zebra rows, gold header)
+instead of an image viewer, with an optional tab strip when a step has
+more than one table (`EvidenceTableTab[]`). `npc.ts`'s `DialogueSet`
+gained a matching `evidenceTables` field (mutually exclusive with
+`evidence`) and a `gridChoices` flag — a wrapping CSS grid layout for
+choice buttons, used here because both missions have 10-12 answer
+options that would otherwise force a long one-per-row scroll.
+
+**ODILE** (tavern) is the sole quest giver — a gold pulse (same
+technique as the Herald's) highlights her once Clearance 4 is reached.
+Her offer dialogue plays only past that threshold; before it she has
+nothing new to say. `breach_in_the_wall.json` carries
+`"unlocks": ["innkeepers_shards"]` alongside its existing
+`clearanceOnComplete: 4`, so the new quest becomes `available` at the
+exact moment Clearance 4 is reached — no separate clearance-gate check
+needed in dialogue logic beyond the existing `questActive`/`questComplete`
+conditionals.
+
+**Mission 1, "Chains of Identity" (150 pts)** teaches linkage attacks:
+three tabbed tables (room→ticket, ticket→item/time, name→appearance/time)
+that chain together to re-identify the occupant of Room 7 (WREN) despite
+the innkeeper's belief that "sharding" her logs across three drawers
+made them anonymous. Wrong picks get one of two hint groups — a
+time-quasi-identifier hint for the two names sharing the same coat
+(Petra, Hollis), a generic "start at the room" hint for everyone else.
+
+**Mission 2, "The Flawed Mask" (150 pts)** teaches k-anonymity:
+a single sanitized 12-row safehouse log (generalization + suppression
+applied to Trade/Age Range/District) that the Archive claims satisfies
+k=2, but one row (S-08) has no twin. Wrong picks get one of three hint
+groups — a "suppressed twins are still twins" hint for the two rows
+that share a suppressed District (S-03/S-07), a "three of a kind" hint
+for the three-way match (S-04/S-09/S-10), and a generic compare-every-row
+hint for the six rows that already have a clean twin. Correct answer
+completes the quest: +150 pts, Clearance 5, fanfare.
+
+**Academy cross-link** — Privacy track's `deidentification_masks_and_chains`
+stub card (`clearanceRequired: 5`, `hasContent: false`) carries a new
+`fieldWorkQuestId` pointing at this quest, so it renders a "FIELD WORK"
+pip that auto-✓s on quest completion (via `questEngine.isComplete()`,
+checked fresh on every Academy render) alongside a static
+"THEORY: IN DEVELOPMENT" tag — no lesson/quiz content exists yet.

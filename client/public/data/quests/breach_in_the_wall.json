@@ -6,6 +6,7 @@
   "offer": "The Council calls these walls impregnable, Agent. I've hunted the Shadownet long enough to know better. Will you help me prove them wrong?",
   "debrief": "Map capabilities to vulnerabilities. Defend against the actor that fits the gap.",
   "clearanceOnComplete": 4,
+  "unlocks": ["innkeepers_shards"],
   "steps": [
     {
       "objective": "Identify the gate with no Detective Control",
