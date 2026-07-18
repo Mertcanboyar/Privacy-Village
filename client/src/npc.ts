@@ -377,7 +377,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
             },
           ],
         },
-        { lines: ["Not yet, Agent. Get your bearings first — the Division's business can wait a moment longer."] },
+        { lines: ["Not yet, friend. Get your bearings first — there's plenty of time for puzzles once you've settled in."] },
       ],
     },
     {
@@ -392,10 +392,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questActive: "arrival" },
           lines: [
-            "Welcome to Privacy Village, {name}. Festival's on — or so we tell outsiders. The walls keep us safe. Mostly. The Council likes to say 'impregnable.' I've stopped saying it.",
+            "Welcome to Privacy Village, {name}! The festival's just getting started — workshops, games, and puzzles the whole square through. The walls keep us safe, mostly. The Council likes to say 'impregnable.' I've stopped saying it.",
           ],
         },
-        { lines: ["Keep your eyes open, Agent. The gates never truly close."] },
+        { lines: ["Keep exploring — the gates never truly close, and neither does the fun."] },
       ],
     },
   ],
@@ -528,10 +528,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questActive: "arrival" },
           lines: [
-            "New face! You've come during the Battle for AI, Agent — two factions under one roof, pretending it's all fireside chats and festival ale. Keep your eyes open. And see the Herald — been pacing the square all morning.",
+            "New face! Welcome to the festival — creativity's in the air, and every corner's got a workshop, a game, or a puzzle worth your time. Settle in. And find the Herald — he's been pacing the square all morning, itching to share something.",
           ],
         },
-        { lines: ["The Griffin's Drink serves secrets alongside the ale, Agent. Drink up."] },
+        { lines: ["The Griffin's Drink serves stories alongside the ale. Pull up a stool."] },
       ],
     },
   ],

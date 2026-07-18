@@ -12,8 +12,8 @@ import { AVATAR_OPTIONS, setSession, type Faction } from "../session";
 const NAME_LIST = ["Portia", "Cicero", "Selden", "Themis", "Aurelia", "Marcus"];
 
 const RECRUITER_LINE =
-  "The Division has been expecting you, Agent {name}. The festival is a cover. The Summit is real. Before you pass the gates — choose where you stand.";
-const RECRUITER_CLOSING = "Noted. Your handler will contact you inside. Trust no portrait.";
+  "Welcome to Privacy Village, {name}! Here, ideas spark, creativity flows, and privacy pros gather for workshops, gamified adventures, and real problems worth solving. Before you pass the gates — tell us which spark lights your path.";
+const RECRUITER_CLOSING = "Lovely to have you. Follow the lantern-light in — the village, and all its puzzles, await.";
 
 export class CharacterCreate extends Phaser.Scene {
   private overlayEl!: HTMLElement;
@@ -101,7 +101,7 @@ export class CharacterCreate extends Phaser.Scene {
       { className: "panel", style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 40px" } },
       [
         el("p", {
-          text: "The village gatekeeper records your name.",
+          text: "The village keeper welcomes you and notes your name for the festival roll.",
           style: { fontFamily: "var(--font-body)", color: "var(--text-muted)", margin: "0 0 20px" },
         }),
         avatarRow,
@@ -144,13 +144,13 @@ export class CharacterCreate extends Phaser.Scene {
     this.showRecruiter();
   }
 
-  // --- Recruiter / faction selection (Day 3) ---------------------------
+  // --- Welcome Keeper / path selection (Day 3) --------------------------
 
   private showRecruiter() {
     this.overlayEl.innerHTML = "";
 
     const backdrop = el("div", { className: "ui-backdrop" });
-    const nameTab = el("div", { className: "dialogue__name", text: "Recruiter" });
+    const nameTab = el("div", { className: "dialogue__name", text: "Keeper" });
     const body = el("div", { className: "dialogue__body" });
     const dialogue = el("div", { className: "dialogue", style: { position: "relative", width: "640px" } }, [nameTab, body]);
 
@@ -162,8 +162,8 @@ export class CharacterCreate extends Phaser.Scene {
 
   private showFactionChoices(dialogue: HTMLElement) {
     const buttonRow = el("div", { style: { display: "flex", gap: "16px", marginTop: "20px" } }, [
-      this.buildFactionButton("fundamentalist", "btn--gold", "AI Fundamentalist", "The machines can be taught. The future is bright, if we build it."),
-      this.buildFactionButton("apocalypse", "btn--danger", "AI Apocalypse", "The machines cannot be trusted. Someone must watch the dark."),
+      this.buildFactionButton("fundamentalist", "btn--gold", "AI Optimist", "Machines can be taught — the future is bright, if we build it with care."),
+      this.buildFactionButton("apocalypse", "btn--danger", "AI Skeptic", "Machines must be watched closely — every safeguard matters."),
     ]);
     dialogue.appendChild(buttonRow);
   }
@@ -188,14 +188,14 @@ export class CharacterCreate extends Phaser.Scene {
 
   private showRecruiterClosing() {
     this.overlayEl.innerHTML = "";
-    const nameTab = el("div", { className: "dialogue__name", text: "Recruiter" });
+    const nameTab = el("div", { className: "dialogue__name", text: "Keeper" });
     const body = el("div", { className: "dialogue__body" });
     const hint = el("div", { className: "dialogue__continue" });
     const dialogue = el("div", { className: "dialogue", style: { position: "relative", width: "640px" } }, [nameTab, body, hint]);
     this.overlayEl.appendChild(dialogue);
 
     this.currentTypewriter = typewriter(body, RECRUITER_CLOSING, 18, () => {
-      hint.textContent = "[E] ▸ ENTER THE SUMMIT";
+      hint.textContent = "[E] ▸ ENTER THE VILLAGE";
       this.awaitingSpawn = true;
     });
   }

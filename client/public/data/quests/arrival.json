@@ -3,8 +3,8 @@
   "title": "The Welcome",
   "giver": "hq",
   "xp": 50,
-  "opener": "HANDLER: Make yourself known, Agent. Then find the Herald — the Division has work.",
-  "debrief": "Cover established.",
+  "opener": "Go on — meet Bram at the gates, then Odile at the tavern. The village is yours to discover.",
+  "debrief": "Your welcome is complete — the village opens fully to you.",
   "clearanceOnComplete": 2,
   "unlocks": ["breach_in_the_wall"],
   "steps": [
