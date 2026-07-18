@@ -1,0 +1,83 @@
+{
+  "id": "seventy_two_hour_clock",
+  "track": "cyber_security_law",
+  "title": "The 72-Hour Clock",
+  "clearanceRequired": 5,
+  "_fieldWork_TODO": "questId: night_the_wall_fell — reserved for the planned incident-response quest \"The Night the Wall Fell\", not yet built. Wire as fieldWork: { questId, label, room } once that quest exists.",
+  "lesson": [
+    { "type": "heading", "text": "It happened. The Saboteur came through the West Gate — exactly as you predicted. What the law demands now is not perfection. It is SPEED." },
+    {
+      "type": "paragraph",
+      "text": "At 02:00 the Warden's report reaches the Division: the rusted padlock is picked, the archive annex was entered, scrolls of villager records may have been copied. What you know is partial. What you suspect is worse. The clock does not care."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "AWARENESS STARTS THE CLOCK. The 72 hours to notify the authority run from the moment you are reasonably certain a personal data breach occurred — NOT from the moment your investigation completes. Awaiting full facts is the classic, career-ending mistake."
+    },
+    {
+      "type": "paragraph",
+      "text": "A breach of security leading to destruction, loss, alteration, or unauthorized disclosure of or access to personal data — that is the trigger. Not every incident is a breach (a repelled attack that touched nothing may not be), but the archive annex was ENTERED. The presumption now runs against you."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "NOTIFY IN PHASES. The law expects you to report at 72 hours WITH WHAT YOU HAVE — nature of the breach, categories and approximate numbers, likely consequences, measures taken — and to supplement as you learn more. \"We are still investigating\" is a lawful thing to say inside a notification. It is not a lawful reason to send nothing."
+    },
+    {
+      "type": "paragraph",
+      "text": "Two clocks may run at once. Under the village's critical-services rules — as under NIS2 — significant incidents demand an EARLY WARNING to the authority within 24 hours, a fuller notification by 72, and a final report within a month. If the mill's waterworks or the gate systems are touched, the faster clock governs alongside the breach clock."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "AND THE PEOPLE? When the breach likely brings HIGH RISK to villagers — identities exposed, debts revealed, faction allegiances leaked — they must be told WITHOUT UNDUE DELAY, in plain language: what happened, what it means for them, what to do. Protecting them, not the village's reputation, sets the standard."
+    },
+    {
+      "type": "paragraph",
+      "text": "Last duty, easiest to forget: DOCUMENT EVERYTHING — every breach, even the ones you conclude need no notification, with your reasoning. The authority's first question after any breach is rarely \"what happened.\" It is \"show me your records.\""
+    }
+  ],
+  "quiz": [
+    {
+      "q": "The Warden's 02:00 report is credible but incomplete. When does the 72-hour clock start?",
+      "choices": ["At 02:00 — on awareness", "When the investigation confirms every fact", "When the Council convenes"],
+      "answer": 0,
+      "explain": [
+        "Reasonable certainty a breach occurred = awareness = clock. Investigation continues INSIDE the window, not before it.",
+        "Waiting for full certainty is the classic, career-ending mistake — the clock does not pause for your investigation to finish.",
+        "Convening the Council is a village formality, not a legal trigger — the clock runs on awareness, not on process."
+      ]
+    },
+    {
+      "q": "Hour 70. You still don't know exactly which scrolls were copied. You should:",
+      "choices": ["Wait until you know — accuracy first", "Notify now with what you have, supplement later", "Notify only if villagers complain"],
+      "answer": 1,
+      "explain": [
+        "Silence past 72 hours is the violation, not incompleteness — waiting for full accuracy is exactly the mistake phased notification exists to prevent.",
+        "Phased notification is designed for exactly this; silence past 72 is the violation, incompleteness is not.",
+        "The clock runs on your awareness of the breach, not on whether anyone has complained yet."
+      ]
+    },
+    {
+      "q": "The copied scrolls likely include villagers' debts and faction allegiances. Regarding the villagers themselves:",
+      "choices": ["Tell them without undue delay, in plain language", "Wait for the final report — no need to alarm anyone", "Only the authority ever needs to know"],
+      "answer": 0,
+      "explain": [
+        "Likely high risk to individuals triggers direct notification — and faction allegiance leaking is high risk by any measure in this village.",
+        "Waiting protects the village's reputation, not its people — and that is precisely the standard this duty rejects.",
+        "Notifying the authority does not discharge the separate duty owed to the individuals actually put at risk."
+      ]
+    },
+    {
+      "q": "Three weeks later you conclude a SEPARATE minor incident — a repelled probe at the East Gate that touched no data — needs no notification. You:",
+      "choices": ["Delete the file; it's over", "Record the incident and your reasoning", "Notify anyway to be safe"],
+      "answer": 1,
+      "explain": [
+        "Deleting the record is the one move that guarantees your judgment can never be reviewed — exactly backwards from the duty here.",
+        "The documentation duty covers non-notified breaches and near-misses precisely so your judgment can be audited.",
+        "Notify-everything is not \"safe\" — it buries authorities and dulls real alarms. The duty here is to document, not to over-notify."
+      ]
+    }
+  ]
+}

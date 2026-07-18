@@ -24,7 +24,9 @@ export const ACADEMY_MODULE_IDS = [
   "personal_data_or_not",
   "the_ravens_burden",
   "deidentification_masks_and_chains",
+  "lawful_bases_in_the_wild",
   "the_three_locks",
+  "seventy_two_hour_clock",
 ] as const;
 
 export interface AcademyModuleSummary {
@@ -116,6 +118,28 @@ export interface AcademyCardDrillModule extends AcademyModuleBase {
   cards: CardDrillCard[];
 }
 
+export interface CardDrillMultiCard {
+  item: string;
+  choices: string[];
+  answerIndex: number;
+  /** Explanation per choice, same index as choices — shown whether the
+   * pick was right or wrong, same convention as QuizQuestion.explain. */
+  explain: string[];
+}
+
+// Same one-card-at-a-time mastery re-queue as AcademyCardDrillModule, but
+// each card offers three labeled choices instead of a binary true/false
+// pair (see academyOverlay.ts's renderCardDrillMulti()) — "Lawful Bases in
+// the Wild" is the first module that needs more than two buckets per
+// item. referenceStrip is an optional small collapsible mono strip
+// pinned above the deck (e.g. "THE SIX: CONSENT · CONTRACT · ...").
+export interface AcademyCardDrillMultiModule extends AcademyModuleBase {
+  type: "card_drill_multi";
+  intro: string;
+  referenceStrip?: string;
+  cards: CardDrillMultiCard[];
+}
+
 export interface DataSieveCard {
   id: string;
   label: string;
@@ -135,7 +159,7 @@ export interface AcademyDataSieveModule extends AcademyModuleBase {
   cards: DataSieveCard[];
 }
 
-export type AcademyModule = AcademyLessonModule | AcademyCardDrillModule | AcademyDataSieveModule;
+export type AcademyModule = AcademyLessonModule | AcademyCardDrillModule | AcademyCardDrillMultiModule | AcademyDataSieveModule;
 
 export interface ModuleProgress {
   theoryDone: boolean;

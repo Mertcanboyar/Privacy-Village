@@ -6,8 +6,8 @@
   "active": true,
   "modules": [
     { "id": "the_three_locks", "title": "The Three Locks", "clearanceRequired": 2, "hasContent": true },
-    { "id": "nis2_scope_determination", "title": "NIS2 Scope Determination", "clearanceRequired": 5, "hasContent": false },
-    { "id": "breach_notification_timelines", "title": "Breach Notification Timelines", "clearanceRequired": 5, "hasContent": false },
-    { "id": "supply_chain_security_obligations", "title": "Supply Chain Security Obligations", "clearanceRequired": 5, "hasContent": false }
+    { "id": "seventy_two_hour_clock", "title": "The 72-Hour Clock", "clearanceRequired": 5, "hasContent": true },
+    { "id": "nis2_essential_and_important_entities", "title": "NIS2: Essential & Important Entities", "clearanceRequired": 5, "hasContent": false },
+    { "id": "ransomware_to_pay_or_not", "title": "Ransomware: To Pay or Not", "clearanceRequired": 5, "hasContent": false }
   ]
 }

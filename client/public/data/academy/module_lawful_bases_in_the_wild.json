@@ -1,0 +1,91 @@
+{
+  "id": "lawful_bases_in_the_wild",
+  "track": "privacy_ops",
+  "title": "Lawful Bases in the Wild",
+  "clearanceRequired": 4,
+  "type": "card_drill_multi",
+  "intro": "Recognizing personal data was lesson one, Agent. Failing to anonymize it was lesson two. Now the question that governs everything: by what RIGHT do you process it? The law grants six lawful bases. Most villagers believe the answer is always \"consent.\" Most villagers are wrong. Judge each case.",
+  "referenceStrip": "THE SIX: CONSENT · CONTRACT · LEGAL OBLIGATION · VITAL INTERESTS · PUBLIC TASK · LEGITIMATE INTERESTS",
+  "cards": [
+    {
+      "item": "Odile records which patrons owe silver on their tab.",
+      "choices": ["Consent", "Contract", "Legitimate interests"],
+      "answerIndex": 1,
+      "explain": [
+        "The classic over-use. Consent could be withdrawn at any moment — and a debt cannot simply stop being owed because someone changed their mind about being tracked.",
+        "Running a tab IS an agreement; recording the debt is necessary to perform it. Asking consent here would be absurd — and worse, consent can be withdrawn. Debts cannot.",
+        "Unnecessary when a contract fits squarely — legitimate interests is for cases the other five bases don't cleanly cover, not a shortcut around them."
+      ]
+    },
+    {
+      "item": "Bram logs every entrant at the gates, as the Council's Watch Decree commands.",
+      "choices": ["Legal obligation", "Consent", "Contract"],
+      "answerIndex": 0,
+      "explain": [
+        "A binding decree leaves Bram no choice — that is the basis, and its scope is set by the decree itself, not by Bram's preferences.",
+        "There is no meaningful choice here; a decree is not a request. Consent obtained under compulsion isn't lawful consent at all.",
+        "No agreement exists between Bram and the travelers he logs — only a duty imposed on Bram by the Council."
+      ]
+    },
+    {
+      "item": "A healer treats an unconscious traveler and records his condition.",
+      "choices": ["Consent", "Vital interests", "Public task"],
+      "answerIndex": 1,
+      "explain": [
+        "He cannot consent — he is unconscious. Reaching for this basis anyway is exactly the reflex this lesson exists to break.",
+        "He cannot consent; his life is at stake. Vital interests exists precisely for this — and only while the incapacity does.",
+        "The healer is not exercising an official function of the village; this is emergency care, not administration."
+      ]
+    },
+    {
+      "item": "The Council conducts the village census.",
+      "choices": ["Public task", "Legitimate interests", "Consent"],
+      "answerIndex": 0,
+      "explain": [
+        "An official function laid down in the village's law. Authorities acting as authorities generally cannot lean on legitimate interests — their basis is the task itself.",
+        "Authorities acting as authorities generally cannot lean on legitimate interests — that escape hatch is for everyone else, not for the Council performing its own duties.",
+        "A census does not wait on individual willingness — it is compulsory by nature, which rules consent out."
+      ]
+    },
+    {
+      "item": "The Division keeps a watchlist of suspected Shadownet infiltrators at the festival.",
+      "choices": ["Legitimate interests", "Consent", "Contract"],
+      "answerIndex": 0,
+      "explain": [
+        "Security is a legitimate interest — but this basis is a BALANCING TEST, not a blank warrant: necessity, proportionality, and the suspects' rights weigh against it, and it must survive challenge. The only basis that argues for its life every time it is used.",
+        "No suspect is going to consent to being watchlisted — and a basis that only works when the subject agrees isn't fit for this purpose.",
+        "No agreement exists between the Division and the people on its list — quite the opposite."
+      ]
+    },
+    {
+      "item": "Fennick wants to feed his old sales ledgers to the judgment engine to train its pricing.",
+      "choices": ["Legitimate interests", "He already has the data — no basis needed", "A new purpose needs its own basis AND a compatibility test"],
+      "answerIndex": 2,
+      "explain": [
+        "Legitimate interests might eventually apply — but only after the compatibility question is asked, not as a shortcut around it.",
+        "The trap most merchants fall into. Holding data lawfully for selling apples does not license training an oracle with it.",
+        "Purpose limitation again, Agent — every NEW purpose must find its own lawful basis and pass compatibility with the original one."
+      ]
+    },
+    {
+      "item": "A portrait-painter sells sketches of recognizable festival-goers to a broadsheet.",
+      "choices": ["Consent", "Legitimate interests", "Public task"],
+      "answerIndex": 0,
+      "explain": [
+        "Commercial exploitation of identifiable likenesses, no contract, no duty, no emergency — the balancing test collapses against him. Here, and not everywhere, consent truly is the answer.",
+        "The balancing test collapses against him: a stranger's face sold for profit, with no relationship or necessity to lean on.",
+        "The painter holds no official function whatsoever — he is a private merchant, not the Council."
+      ]
+    },
+    {
+      "item": "The Millers' Guild records members' ailments to assign lighter duties.",
+      "choices": ["Ordinary consent", "Explicit consent — this is special category data", "Contract"],
+      "answerIndex": 1,
+      "explain": [
+        "Ordinary consent is not enough here — health data is SPECIAL CATEGORY data, which needs a stricter Article 9 condition on top of an ordinary basis, not instead of one.",
+        "Health data is SPECIAL CATEGORY — the ordinary six are not enough; an Article 9 condition must ALSO be met, explicit consent being the usual one here. Remember the faction-banner scroll: some data carries double locks.",
+        "Guild membership is a relationship, but membership alone doesn't license collecting health data — special category data needs its own, stricter condition regardless of what other basis might apply."
+      ]
+    }
+  ]
+}

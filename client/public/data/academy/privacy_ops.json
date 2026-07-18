@@ -8,7 +8,7 @@
     { "id": "personal_data_or_not", "title": "Personal Data or Not?", "clearanceRequired": 2, "hasContent": true },
     { "id": "the_ravens_burden", "title": "The Raven's Burden", "clearanceRequired": 2, "hasContent": true },
     { "id": "deidentification_masks_and_chains", "title": "De-identification: Masks & Chains", "clearanceRequired": 4, "hasContent": true },
-    { "id": "lawful_bases_in_the_wild", "title": "Lawful Bases in the Wild", "clearanceRequired": 5, "hasContent": false },
+    { "id": "lawful_bases_in_the_wild", "title": "Lawful Bases in the Wild", "clearanceRequired": 4, "hasContent": true },
     { "id": "consent_in_practice", "title": "Consent in Practice", "clearanceRequired": 5, "hasContent": false },
     { "id": "breach_the_first_72_hours", "title": "Breach! The First 72 Hours", "clearanceRequired": 5, "hasContent": false }
   ]

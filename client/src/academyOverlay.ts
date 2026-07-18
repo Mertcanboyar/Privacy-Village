@@ -6,9 +6,11 @@ import {
   type AcademyModuleSummary,
   type AcademyLessonModule,
   type AcademyCardDrillModule,
+  type AcademyCardDrillMultiModule,
   type AcademyDataSieveModule,
   type AcademyFieldWork,
   type CardDrillCard,
+  type CardDrillMultiCard,
   type DataSieveCard,
   type LessonBlock,
   type QuizQuestion,
@@ -40,7 +42,7 @@ function roomCallToAction(room: AcademyFieldWork["room"]): string {
 const FADE_MS = 200;
 const CARD_DRILL_AUTO_ADVANCE_MS = 1500;
 
-type AcademyView = "hub" | "moduleList" | "lesson" | "quiz" | "cardDrillIntro" | "cardDrill" | "dataSieve";
+type AcademyView = "hub" | "moduleList" | "lesson" | "quiz" | "cardDrillIntro" | "cardDrill" | "cardDrillMultiIntro" | "cardDrillMulti" | "dataSieve";
 
 export class AcademyOverlay {
   private scene: Phaser.Scene;
@@ -72,6 +74,20 @@ export class AcademyOverlay {
   private drillPicked: boolean | null = null;
   private drillCorrect = false;
   private drillAutoAdvanceTimer: number | undefined;
+
+  // Card drill (multi) state — same working-queue mastery pattern as the
+  // binary drill above, generalized to N labeled choices instead of a
+  // true/false pair (see renderCardDrillMulti()/answerCardDrillMulti()).
+  private drillMultiDeck: CardDrillMultiCard[] = [];
+  private drillMultiTotalCards = 0;
+  private drillMultiClearedCount = 0;
+  private drillMultiRevealed = false;
+  private drillMultiPickedIndex: number | null = null;
+  private drillMultiCorrect = false;
+  private drillMultiAutoAdvanceTimer: number | undefined;
+  // Collapsible reference strip (e.g. "THE SIX: ...") — starts collapsed
+  // each time a fresh drill begins (see goToCardDrillMulti()).
+  private referenceExpanded = false;
 
   // Data sieve state — all cards shown at once, toggled freely until
   // validated (see renderDataSieve()/toggleSieveCard()/validateSieve()).
@@ -170,6 +186,8 @@ export class AcademyOverlay {
     else if (this.currentView === "quiz") this.renderQuiz();
     else if (this.currentView === "cardDrillIntro") this.renderCardDrillIntro();
     else if (this.currentView === "cardDrill") this.renderCardDrill();
+    else if (this.currentView === "cardDrillMultiIntro") this.renderCardDrillMultiIntro();
+    else if (this.currentView === "cardDrillMulti") this.renderCardDrillMulti();
     else this.renderDataSieve();
   }
 
@@ -190,6 +208,7 @@ export class AcademyOverlay {
   private goToTheory(moduleId: string) {
     const module = academy.getModule(moduleId);
     if (module?.type === "card_drill") this.goToCardDrillIntro(moduleId);
+    else if (module?.type === "card_drill_multi") this.goToCardDrillMultiIntro(moduleId);
     else if (module?.type === "data_sieve") this.goToDataSieve(moduleId);
     else this.goToLesson(moduleId);
   }
@@ -223,6 +242,24 @@ export class AcademyOverlay {
     this.drillClearedCount = 0;
     this.drillRevealed = false;
     this.drillPicked = null;
+    this.render();
+  }
+
+  private goToCardDrillMultiIntro(moduleId: string) {
+    this.currentModuleId = moduleId;
+    this.currentView = "cardDrillMultiIntro";
+    this.render();
+  }
+
+  private goToCardDrillMulti(module: AcademyCardDrillMultiModule) {
+    this.currentModuleId = module.id;
+    this.currentView = "cardDrillMulti";
+    this.drillMultiDeck = [...module.cards];
+    this.drillMultiTotalCards = module.cards.length;
+    this.drillMultiClearedCount = 0;
+    this.drillMultiRevealed = false;
+    this.drillMultiPickedIndex = null;
+    this.referenceExpanded = false;
     this.render();
   }
 
@@ -379,7 +416,7 @@ export class AcademyOverlay {
 
   private renderLesson() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    if (!module || module.type === "card_drill" || module.type === "data_sieve") {
+    if (!module || module.type === "card_drill" || module.type === "card_drill_multi" || module.type === "data_sieve") {
       this.goToHub();
       return;
     }
@@ -437,7 +474,7 @@ export class AcademyOverlay {
 
   private renderQuiz() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    if (!module || module.type === "card_drill" || module.type === "data_sieve") {
+    if (!module || module.type === "card_drill" || module.type === "card_drill_multi" || module.type === "data_sieve") {
       this.goToHub();
       return;
     }
@@ -655,6 +692,194 @@ export class AcademyOverlay {
     this.drillPicked = null;
 
     if (this.drillDeck.length === 0) {
+      if (module) {
+        academy.markTheoryDone(module.id);
+        this.goToModuleList(module.track);
+      } else {
+        this.goToHub();
+      }
+      return;
+    }
+    this.render();
+  }
+
+  private renderCardDrillMultiIntro() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "card_drill_multi") {
+      this.goToHub();
+      return;
+    }
+
+    const header = el("div", { style: { display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-3)" } }, [
+      el("button", { className: "btn btn--ghost", text: "← BACK", on: { click: () => this.goToModuleList(module.track) } }),
+      el("h2", { text: module.title.toUpperCase(), style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px" } }),
+    ]);
+
+    const intro = el("p", { className: "briefing__body", text: module.intro });
+
+    const beginBtn = el("button", {
+      className: "btn btn--gold",
+      text: "BEGIN DRILL",
+      style: { marginTop: "var(--space-3)" },
+      on: { click: () => this.goToCardDrillMulti(module) },
+    });
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "680px" } }, [header, intro, beginBtn]));
+  }
+
+  // Collapsed by default (see goToCardDrillMulti()) — a one-line mono
+  // label toggles a small block of reference text pinned above the deck
+  // (e.g. "THE SIX: CONSENT · CONTRACT · ..."), so it's available without
+  // permanently eating vertical space every card needs.
+  private renderReferenceStrip(text: string): HTMLElement {
+    const label = text.split(":")[0] ?? "REFERENCE";
+    const children: HTMLElement[] = [
+      el("div", {
+        text: `${this.referenceExpanded ? "▾" : "▸"} ${label}`,
+        style: { cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.06em", color: "var(--text-muted)" },
+        on: {
+          click: () => {
+            this.referenceExpanded = !this.referenceExpanded;
+            this.render();
+          },
+        },
+      }),
+    ];
+    if (this.referenceExpanded) {
+      children.push(el("div", { text, style: { fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-primary)", marginTop: "6px" } }));
+    }
+    return el(
+      "div",
+      { style: { border: "1px solid var(--border-strong)", borderRadius: "var(--radius-sm)", padding: "8px 12px", marginBottom: "var(--space-3)", background: "var(--bg-raised)" } },
+      children,
+    );
+  }
+
+  private renderCardDrillMulti() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "card_drill_multi") {
+      this.goToHub();
+      return;
+    }
+    const card = this.drillMultiDeck[0];
+    if (!card) {
+      // advanceCardDrillMulti() already navigates away the instant the
+      // deck clears — this is just a guard against an empty render.
+      this.goToModuleList(module.track);
+      return;
+    }
+
+    const children: HTMLElement[] = [];
+    if (module.referenceStrip) children.push(this.renderReferenceStrip(module.referenceStrip));
+
+    children.push(
+      el(
+        "div",
+        { style: { display: "flex", gap: "6px", justifyContent: "center", marginBottom: "var(--space-4)" } },
+        Array.from({ length: this.drillMultiTotalCards }, (_, i) =>
+          el("span", {
+            style: {
+              width: "10px",
+              height: "10px",
+              borderRadius: "50%",
+              background: i < this.drillMultiClearedCount ? "var(--accent-gold)" : "var(--border-strong)",
+            },
+          }),
+        ),
+      ),
+    );
+
+    children.push(
+      el("p", { text: card.item, style: { fontFamily: "var(--font-body)", fontSize: "20px", textAlign: "center", margin: "var(--space-4) 0" } }),
+    );
+
+    if (!this.drillMultiRevealed) {
+      children.push(
+        el(
+          "div",
+          { style: { display: "flex", flexDirection: "column", gap: "var(--space-2)" } },
+          card.choices.map((choice, i) =>
+            el("button", {
+              className: "btn btn--ghost",
+              text: choice,
+              style: { width: "100%", justifyContent: "flex-start", textAlign: "left" },
+              on: { click: () => this.answerCardDrillMulti(i) },
+            }),
+          ),
+        ),
+      );
+    } else {
+      // Click-to-advance wrapper, same reasoning as the binary drill:
+      // it doesn't exist while the choice buttons above are live, so
+      // there's no bubbling conflict between "pick an answer" and "tap
+      // to continue" sharing a click zone.
+      children.push(
+        el("div", { style: { cursor: "pointer" }, on: { click: () => this.advanceCardDrillMulti() } }, [
+          this.renderCardDrillMultiFeedbackChoices(card),
+          el("p", {
+            text: card.explain[this.drillMultiPickedIndex!],
+            style: { marginTop: "var(--space-3)", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" },
+          }),
+          el("div", {
+            text: this.drillMultiCorrect ? "Advancing…" : "Tap anywhere to continue",
+            style: { marginTop: "var(--space-2)", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" },
+          }),
+        ]),
+      );
+    }
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "680px" } }, children));
+  }
+
+  private renderCardDrillMultiFeedbackChoices(card: CardDrillMultiCard): HTMLElement {
+    return el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: "var(--space-2)" } },
+      card.choices.map((choice, i) => {
+        // All choices lock during reveal ("disabled for this pass") —
+        // only the picked one gets feedback styling, mirroring the
+        // binary drill's pointerEvents:"none" treatment.
+        const style: Partial<CSSStyleDeclaration> = { width: "100%", justifyContent: "flex-start", textAlign: "left", pointerEvents: "none" };
+        if (i === this.drillMultiPickedIndex) {
+          if (this.drillMultiCorrect) {
+            style.borderColor = "var(--accent-gold)";
+            style.animation = "ds-quiz-correct 500ms ease-out";
+          } else {
+            style.borderColor = "var(--accent-red)";
+            style.animation = "ds-shake 400ms ease-in-out";
+          }
+        }
+        return el("button", { className: "btn btn--ghost", text: choice, style });
+      }),
+    );
+  }
+
+  // No penalty, no score — wrong picks re-queue to the end of the deck
+  // (see advanceCardDrillMulti()) rather than retrying immediately.
+  private answerCardDrillMulti(index: number) {
+    const card = this.drillMultiDeck[0];
+    if (!card || this.drillMultiRevealed) return;
+    this.drillMultiRevealed = true;
+    this.drillMultiPickedIndex = index;
+    this.drillMultiCorrect = index === card.answerIndex;
+    this.render();
+    if (this.drillMultiCorrect) {
+      this.drillMultiAutoAdvanceTimer = window.setTimeout(() => this.advanceCardDrillMulti(), CARD_DRILL_AUTO_ADVANCE_MS);
+    }
+  }
+
+  private advanceCardDrillMulti() {
+    window.clearTimeout(this.drillMultiAutoAdvanceTimer);
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    const card = this.drillMultiDeck.shift();
+    if (!card) return;
+
+    if (this.drillMultiCorrect) this.drillMultiClearedCount++;
+    else this.drillMultiDeck.push(card);
+    this.drillMultiRevealed = false;
+    this.drillMultiPickedIndex = null;
+
+    if (this.drillMultiDeck.length === 0) {
       if (module) {
         academy.markTheoryDone(module.id);
         this.goToModuleList(module.track);
