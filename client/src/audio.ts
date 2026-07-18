@@ -4,7 +4,7 @@
 // trigger points already live in the right places and wiring in real
 // SFX later is a one-line change here, not a hunt through the scenes.
 
-export type SoundId = "select" | "confirm" | "dice" | "quill-scratch" | "chime" | "fanfare";
+export type SoundId = "select" | "confirm" | "dice" | "quill-scratch" | "chime" | "fanfare" | "alarm-bell";
 
 export function playSound(_id: SoundId) {
   // No-op until audio assets are sourced.

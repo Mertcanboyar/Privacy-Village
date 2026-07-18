@@ -72,6 +72,8 @@
     { "id": "drop_2", "x": 450, "y": 460, "radius": 50 },
     { "id": "drop_3", "x": 950, "y": 460, "radius": 50 },
     { "id": "drop_4", "x": 1050, "y": 650, "radius": 50 },
-    { "id": "drop_5", "x": 550, "y": 690, "radius": 50 }
+    { "id": "drop_5", "x": 550, "y": 690, "radius": 50 },
+    { "id": "west_gate_marker", "x": 170, "y": 560, "radius": 60 },
+    { "id": "fountain_crier", "x": 640, "y": 590, "radius": 70 }
   ]
 }

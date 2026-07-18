@@ -3,7 +3,7 @@
   "track": "cyber_security_law",
   "title": "The 72-Hour Clock",
   "clearanceRequired": 5,
-  "_fieldWork_TODO": "questId: night_the_wall_fell — reserved for the planned incident-response quest \"The Night the Wall Fell\", not yet built. Wire as fieldWork: { questId, label, room } once that quest exists.",
+  "fieldWork": { "questId": "night_the_wall_fell", "label": "The Night the Wall Fell (Village Square)", "room": "village", "ping": "courthouseDoor" },
   "lesson": [
     { "type": "heading", "text": "It happened. The Saboteur came through the West Gate — exactly as you predicted. What the law demands now is not perfection. It is SPEED." },
     {

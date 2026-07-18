@@ -5,7 +5,7 @@
   "xp": 50,
   "opener": "Go on — meet Bram at the gates, then Odile at the tavern. The village is yours to discover.",
   "debrief": "Your welcome is complete — the village opens fully to you.",
-  "clearanceOnComplete": 2,
+  "milestone": "welcome",
   "unlocks": ["breach_in_the_wall"],
   "steps": [
     { "objective": "Greet Bram at the gates", "trigger": { "type": "talk_to", "npc": "bram" } },

@@ -5,7 +5,7 @@
   "xp": 150,
   "offer": "Agent — remember when I swore to keep my guest lists in cipher? I did better. I SHARDED them. Three separate logs, three separate drawers. Room list knows no names. Coat check knows no rooms. Only the gate log knows names, and it knows nothing of my inn. Anonymous, yes? ...Why is the Herald laughing. Prove me wrong, then. Room 7. Tell me who sleeps there. You won't manage it.",
   "debrief": "A mask that fits everyone but one protects everyone but one.",
-  "clearanceOnComplete": 5,
+  "milestone": "innkeepers_shards",
   "steps": [
     {
       "objective": "Trace the guest sleeping in Room 7",

@@ -85,6 +85,13 @@ export interface AcademyFieldWork {
   label: string;
   questId: string;
   room: RoomName;
+  /** What the module list's "IN THE VILLAGE →"-style pip visually pings
+   * once the player is where it sent them — an NPC sprite (the default,
+   * "herald", used by Threat Modeling) or the Courthouse door hotspot
+   * ("courthouseDoor", used by "The 72-Hour Clock" — its field work,
+   * "The Night the Wall Fell," auto-triggers on village entry rather
+   * than being offered by any NPC, so there's no sprite to ping). */
+  ping?: "herald" | "courthouseDoor";
 }
 
 interface AcademyModuleBase {

@@ -3,7 +3,7 @@
   "track": "ai_governance",
   "title": "Threat Modeling Fundamentals",
   "clearanceRequired": 2,
-  "fieldWork": { "questId": "breach_in_the_wall", "label": "The Breach in the Wall", "room": "village" },
+  "fieldWork": { "questId": "breach_in_the_wall", "label": "The Breach in the Wall", "room": "village", "ping": "herald" },
   "lesson": [
     { "type": "heading", "text": "You cannot secure what you do not see." },
     {

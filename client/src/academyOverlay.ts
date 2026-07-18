@@ -282,10 +282,12 @@ export class AcademyOverlay {
     const roomScene = manager.getScene("Room") as Room | null;
     if (!roomScene) return;
     const alreadyThere = roomScene.currentRoom === fieldWork.room;
+    const ping = fieldWork.ping ?? "herald";
     if (alreadyThere) {
-      if (fieldWork.room === "village") roomScene.pingHerald();
+      if (fieldWork.room === "village" && ping === "herald") roomScene.pingHerald();
+      else if (fieldWork.room === "village" && ping === "courthouseDoor") roomScene.pingCourthouseDoor();
     } else {
-      manager.start("Room", { room: fieldWork.room });
+      manager.start("Room", { room: fieldWork.room, pingCourthouseDoor: fieldWork.room === "village" && ping === "courthouseDoor" });
     }
   }
 

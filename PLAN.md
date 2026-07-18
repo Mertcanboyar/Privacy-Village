@@ -270,17 +270,20 @@ wanderer/`villager_a`/`villager_b` (which only existed to serve the old
 quests) were removed rather than kept as flavor-only NPCs — simplest
 option, per the task spec's own framing.
 
-**Clearance Levels replace XP-threshold levels entirely.** C1 on
-arrival, C2 after both greeters, C3 after Mission 1, C4 after Mission 2
-(quest complete, which also unlocks "The Innkeeper's Shards"), C5 after
-Innkeeper's Shards' own two missions (see section 9 below). C6 is
-currently unclaimed — reserved for future story content; the
-Courthouse Trial mechanic this level was once earmarked for was
-removed (see `quest.ts` note above) before it ever granted a level.
-`questEngine.ts`'s
-`setClearance(n)` is milestone-driven (only ever raises, never
-derives from points) — see CLAUDE.md for the mechanism. Points/XP still
-accrue and show on the `.xp-bar` independently, just no longer gate the
+**Clearance is `1 + however many narrative milestones are complete`, in
+ANY order** (see CLAUDE.md for the mechanism — this replaced an earlier
+scheme where each quest hardcoded its own absolute target level, which
+only worked because the milestones happened to always complete in a
+fixed sequence). The demo path's five live milestones — Welcome, Breach
+M1, Breach M2, Innkeeper's Shards, The Night the Wall Fell — take a
+fresh player from C1 to C6 however they're reached. A sixth milestone,
+`courthouse_trial`, is reserved in `MILESTONE_IDS` for the Courthouse
+Trial mechanic this level was once earmarked for (removed — see
+`quest.ts` note above — before it ever granted a level); once a real
+quest completes it, C7 becomes reachable with no further engine
+changes. `questEngine.ts`'s `setClearance(n)` itself still only ever
+raises, never derives from points — see CLAUDE.md. Points/XP still
+accrue and show on the `.xp-bar` independently, just don't gate the
 level.
 
 **Arrival ("The Welcome")** — `arrival.json`, `giver: "hq"`,
@@ -359,11 +362,11 @@ options that would otherwise force a long one-per-row scroll.
 technique as the Herald's) highlights her once Clearance 4 is reached.
 Her offer dialogue plays only past that threshold; before it she has
 nothing new to say. `breach_in_the_wall.json` carries
-`"unlocks": ["innkeepers_shards"]` alongside its existing
-`clearanceOnComplete: 4`, so the new quest becomes `available` at the
-exact moment Clearance 4 is reached — no separate clearance-gate check
-needed in dialogue logic beyond the existing `questActive`/`questComplete`
-conditionals.
+`"unlocks": ["innkeepers_shards"]` alongside its `milestone: "breach_m2"`,
+so the new quest becomes `available` at the exact moment that quest
+completes (which, on the demo path, is also the moment Clearance
+reaches 4) — no separate clearance-gate check needed in dialogue logic
+beyond the existing `questActive`/`questComplete` conditionals.
 
 **Mission 1, "Chains of Identity" (150 pts)** teaches linkage attacks:
 three tabbed tables (room→ticket, ticket→item/time, name→appearance/time)
@@ -389,3 +392,81 @@ stub card (`clearanceRequired: 5`, `hasContent: false`) carries a new
 pip that auto-✓s on quest completion (via `questEngine.isComplete()`,
 checked fresh on every Academy render) alongside a static
 "THEORY: IN DEVELOPMENT" tag — no lesson/quiz content exists yet.
+
+## 10. "The Night the Wall Fell" — incident-response quest + the milestone clearance refactor
+
+Field work for the Academy's "The 72-Hour Clock" module (Cyber Security
+Law track) — this is the demo path's first quest with no NPC offer flow
+at all (`giver: "auto"`) and its first quest-scoped mechanic beyond the
+existing `talk_to`/`reach_zone`/`briefing`/choice toolkit: the
+**Decision Clock**.
+
+**Clearance went from "each quest hardcodes its own absolute target
+level" to "1 + however many milestones are complete, in any order"**
+(see CLAUDE.md) — a prerequisite done first ("Section 0" of the task
+spec) because this quest unlocks on a Clearance THRESHOLD
+(`unlockAtClearance: 5`) rather than on one specific prior quest
+completing, and with milestones reachable in any order, no single
+prior quest could safely be hardcoded as "the" C5 trigger anymore.
+`MILESTONE_IDS` reserves a slot for `courthouse_trial` — no quest
+grants it yet, so C7 isn't reachable in the current build, matching how
+"Lawful Bases in the Wild" and "The 72-Hour Clock" earlier had to
+accept that the Courthouse Trial content they referenced didn't exist
+either (see those modules' notes above).
+
+**Trigger** — `Room.ts`'s `create()` checks
+`questEngine.getState("night_the_wall_fell") === "available"` on every
+Village Square entry; when true, `triggerIncidentStart()` plays the
+alarm-bell SFX (a new no-op `SoundId`, same convention as every other
+sound in this project), shakes the camera, and tweens Bram to the
+player's side (`NPCController.triggerBramDash()` — updates `def.x/y`
+alongside the visual tween, since proximity checks read the def, not
+the sprite) before calling `questEngine.acceptQuest()`. `transitioning`
+(the same flag door transitions use) doubles as a scripted-sequence
+lock for the ~1s beat.
+
+**The cold tint** (`Room.refreshIncidentTint()`) is a plain Phaser
+rectangle, not a DOM overlay — this is world atmosphere, not UI chrome
+(see CLAUDE.md's DOM-vs-canvas split), and needs to persist across
+`scene.restart()` room transitions the way DOM elements wouldn't
+automatically. It's redrawn at the end of every `create()` while the
+quest is active and fades out (not snap-cuts) on a `questCompleted`
+listener — "warm dusk returns" is deliberately gradual, since that
+reveal is the reward.
+
+**The Decision Clock** — every step carries a fixed base
+`clockCost`, applied on advance no matter which choice resolved it;
+picking the wrong option in a briefing ALSO adds `clockPenalty` hours.
+No fail state — the quest always completes — but `QuestDef.
+clockDebrief` swaps Herald's fountain-side debrief line (and withholds
+a bonus toast) if the total lands at 72+. The five steps' base costs
+(2+4+40+6+2) sum to exactly 54, the clean-path total; adding all three
+wrong-choice penalties (24+30+12) gives the worst-case 120. Step 4 ("The
+Villagers," reach_zone `fountain_crier`) is the one step not hosted by
+any NPC — a new `QuestStep.choice` block covers this: `checkStep()`
+emits `stepChoice` and pauses (`awaitingChoice`) instead of advancing,
+`hud.ts`'s `showStepChoice()` renders the two options, and picking one
+calls `questEngine.resolveStepChoice()`, which is what actually applies
+costs/penalties and advances the step — steps 1 and 3 (Bram, Quill)
+stay on the existing NPC `briefing`+`choices` machinery, since those
+are ordinary conversations.
+
+**Zones** — `west_gate_marker` and `fountain_crier` were added to
+`village.json`; both use the same generic pulsing zone-marker circle
+every other `reach_zone` step already gets (see `Room.refreshZoneMarker()`)
+rather than a new custom sprite — no "broken padlock" asset exists in
+this project, and the existing marker was built for exactly this
+purpose but had never actually been exercised by a shipped quest until
+now (the old `drop_1..5` zones in `village.json` predate the current
+quest content entirely).
+
+**Academy field-work ping** — the module list's "IN THE VILLAGE →" pip
+previously only ever pinged Herald (`AcademyOverlay.goToFieldWork()`
+hardcoded that). Since this quest has no NPC to ping, `AcademyFieldWork`
+gained a `ping?: "herald" | "courthouseDoor"` discriminator (Threat
+Modeling's JSON now sets `"herald"` explicitly rather than relying on
+the old implicit default) — "The 72-Hour Clock"'s field work pings the
+Village Square's door hotspot leading to the Courthouse instead,
+one-shot-flash style (`Room.pingCourthouseDoor()`, same technique as
+`pingHerald()`), since Quill's notification-filing step is the module's
+own throughline even though the quest itself starts in the square.

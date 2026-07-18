@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { el } from "./ui/dom";
 import { showImageOverlay } from "./ui/imageOverlay";
 import { showTableOverlay } from "./ui/tableOverlay";
-import { questEngine, type QuestStepReveal } from "./questEngine";
+import { questEngine, type QuestStepReveal, type QuestStepChoice, type QuestStepChoiceOption } from "./questEngine";
 import { getSession } from "./session";
 import { academy } from "./academy";
 import { events } from "./events";
@@ -17,14 +17,22 @@ import { events } from "./events";
 const TOAST_DISMISS_MS = 3000;
 const REVEAL_DISMISS_MS = 5000;
 
+// The Decision Clock (see "The Night the Wall Fell") — quest-scoped, only
+// shown while this specific quest is active. Hardcoded id/thresholds
+// rather than a generic per-quest clock system, matching questEngine.ts's
+// own DEMO RULE reasoning for the same mechanic.
+const CLOCK_QUEST_ID = "night_the_wall_fell";
+const CLOCK_AMBER_AT = 48;
+const CLOCK_RED_AT = 72;
+
 // Cosmetic only — the .xp-bar fill is just points/TOTAL_POINTS, it no
 // longer gates Clearance (see questEngine.ts's setClearance()). Sum of
 // every payout in the village demo path: Welcome 50 + Breach M1 150 +
-// Breach M2 150 + Shards M1 150 + Shards M2 150. (The Courthouse
-// Trial's 400 used to be part of this — its content moved to the
-// Academy, a parallel points source with its own per-track credential
-// bars, not counted here.)
-const TOTAL_POINTS = 650;
+// Breach M2 150 + Shards M1 150 + Shards M2 150 + Night the Wall Fell
+// 200. (The Courthouse Trial's 400 used to be part of this — its
+// content moved to the Academy, a parallel points source with its own
+// per-track credential bars, not counted here.)
+const TOTAL_POINTS = 850;
 
 function factionAccent(): string {
   return getSession().faction === "apocalypse" ? "var(--accent-red)" : "var(--accent-gold)";
@@ -42,6 +50,9 @@ export class HUDController {
   private trackerCounterEl: HTMLElement;
   private trackerEvidenceRowEl: HTMLElement;
   private trackerVisible = true;
+
+  private clockEl: HTMLElement;
+  private clockValueEl: HTMLElement;
 
   private toastStackEl: HTMLElement;
   private qKey: Phaser.Input.Keyboard.Key;
@@ -103,6 +114,31 @@ export class HUDController {
     );
     root.appendChild(this.trackerEl);
 
+    // --- Decision Clock (top-center, only while "The Night the Wall
+    // Fell" is active) ---
+    this.clockValueEl = el("span", { text: "⏱ HOUR 0 OF 72" });
+    this.clockEl = el(
+      "div",
+      {
+        className: "panel ds-root",
+        style: {
+          position: "absolute",
+          top: "24px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          padding: "8px 20px",
+          fontFamily: "var(--font-mono)",
+          fontSize: "13px",
+          fontWeight: "700",
+          letterSpacing: "0.06em",
+          color: "var(--accent-gold)",
+          display: "none",
+        },
+      },
+      [this.clockValueEl],
+    );
+    root.appendChild(this.clockEl);
+
     // --- Toast stack (bottom-right) ---
     this.toastStackEl = el("div", {
       className: "ds-root",
@@ -118,12 +154,19 @@ export class HUDController {
       this.refreshXpBar();
       this.flashLevelUp();
     });
-    questEngine.on("questUpdated", () => this.refreshTracker());
+    questEngine.on("questUpdated", () => {
+      this.refreshTracker();
+      this.refreshClock();
+    });
+    questEngine.on("clockChanged", () => this.refreshClock());
+    questEngine.on("clockPenalty", () => this.flashClockPenalty());
     questEngine.on("reveal", (reveal: QuestStepReveal) => this.showReveal(reveal));
+    questEngine.on("stepChoice", (choice: QuestStepChoice) => this.showStepChoice(choice));
     academy.on("toast", (message: string) => this.showToast(message));
 
     this.refreshXpBar();
     this.refreshTracker();
+    this.refreshClock();
   }
 
   update() {
@@ -178,6 +221,32 @@ export class HUDController {
     }
   }
 
+  private refreshClock() {
+    if (!questEngine.isActive(CLOCK_QUEST_ID)) {
+      this.clockEl.style.display = "none";
+      return;
+    }
+    const hours = questEngine.getClockHours();
+    this.clockEl.style.display = "block";
+    this.clockValueEl.textContent = `⏱ HOUR ${hours} OF 72`;
+    this.clockEl.style.color = hours >= CLOCK_RED_AT ? "var(--accent-red)" : hours >= CLOCK_AMBER_AT ? "var(--accent-amber)" : "var(--accent-gold)";
+  }
+
+  // "Red flash on the clock" for a wrong-choice penalty — reuses the
+  // same shake keyframe the quiz/card-drill wrong-answer states already
+  // use, plus a momentary red border regardless of the clock's current
+  // gold/amber/red color. Both reset after the shake completes — without
+  // this the inline borderColor override sticks forever, since nothing
+  // else ever touches it (refreshClock() only sets the text color).
+  private flashClockPenalty() {
+    this.clockEl.style.animation = "ds-shake 400ms ease-in-out";
+    this.clockEl.style.borderColor = "var(--accent-red)";
+    window.setTimeout(() => {
+      this.clockEl.style.animation = "";
+      this.clockEl.style.borderColor = "";
+    }, 400);
+  }
+
   private onPointsChanged(_points: number, delta: number) {
     this.refreshXpBar();
     this.showFloatingDelta(delta);
@@ -229,7 +298,7 @@ export class HUDController {
       { className: "panel panel--glow ds-root", style: { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: "560px", pointerEvents: "auto" } },
       [
         el("div", { className: "briefing" }, [
-          el("div", { className: "briefing__header" }, [el("span", { className: "briefing__case", text: "INTEL" })]),
+          el("div", { className: "briefing__header" }, [el("span", { className: "briefing__case", text: reveal.speaker ?? "INTEL" })]),
           el("hr", { className: "briefing__divider" }),
           body,
         ]),
@@ -249,5 +318,43 @@ export class HUDController {
       wrapper.remove();
     }
     panel.addEventListener("click", close);
+  }
+
+  // A standalone decision point tied to a reach_zone step rather than an
+  // NPC conversation (see QuestStepChoice) — "The Night the Wall Fell"'s
+  // fountain-crier beat is the only current example. Structurally a
+  // sibling of showReveal(): same backdrop/panel, buttons instead of a
+  // dismiss link. Picking an option calls resolveStepChoice(), which
+  // fires its own "reveal" (if the option has a response) independently
+  // of this panel — this one's only job is to close itself on pick.
+  private showStepChoice(choice: QuestStepChoice) {
+    const body = el("p", { className: "briefing__body", text: choice.prompt });
+    const buttonRow = el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" } },
+      choice.options.map((option) =>
+        el("button", {
+          className: "btn btn--ghost",
+          text: option.label,
+          style: { width: "100%" },
+          on: { click: () => resolve(option) },
+        }),
+      ),
+    );
+
+    const panel = el(
+      "div",
+      { className: "panel panel--glow ds-root", style: { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: "560px", pointerEvents: "auto" } },
+      [el("div", { className: "briefing" }, [el("div", { className: "briefing__header" }, [el("span", { className: "briefing__case", text: "DECISION" })]), el("hr", { className: "briefing__divider" }), body]), buttonRow],
+    );
+
+    const backdrop = el("div", { className: "ui-backdrop", style: { pointerEvents: "auto" } });
+    const wrapper = el("div", { style: { position: "absolute", inset: "0" } }, [backdrop, panel]);
+    document.getElementById("ui-root")!.appendChild(wrapper);
+
+    function resolve(option: QuestStepChoiceOption) {
+      wrapper.remove();
+      questEngine.resolveStepChoice(option);
+    }
   }
 }

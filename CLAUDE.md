@@ -80,14 +80,15 @@ Festival is cover for a secret "Battle for AI" Summit; the player is a
 Division Agent; two factions (`fundamentalist`/`apocalypse`, chosen at
 CharacterCreate) color the player's name tag. XP is called "faction
 points" in all UI copy. Progress is tracked via **Clearance Levels**
-(C1-C6), advanced by narrative milestones rather than point thresholds
+(C1-C7), advanced by narrative milestones rather than point thresholds
 — see `questEngine.ts` below. Story content is the arrival flow
-("The Welcome") followed by two two-part quests, "The Breach in the
-Wall" and "The Innkeeper's Shards" (see PLAN.md) — the earlier 5-quest
-"Battle for AI" content (Cover Story, Leaked Dossier, Merchant's Oracle,
-Dead Drops, Whisper in the Portrait) was deprecated and removed along
-with the NPCs that only existed to serve it (Fennick, Frightened
-Patron, the ambient "Villager" wanderer, `villager_a`/`villager_b`).
+("The Welcome") followed by three two-part quests — "The Breach in the
+Wall," "The Innkeeper's Shards," and "The Night the Wall Fell" (see
+PLAN.md) — the earlier 5-quest "Battle for AI" content (Cover Story,
+Leaked Dossier, Merchant's Oracle, Dead Drops, Whisper in the Portrait)
+was deprecated and removed along with the NPCs that only existed to
+serve it (Fennick, Frightened Patron, the ambient "Villager" wanderer,
+`villager_a`/`villager_b`).
 
 `client/src/npc.ts` — static NPCs (`NPC_SPAWNS`, hardcoded per room, same
 pattern as `Room.ts`'s `WANDERER_ROUTES`): a "[E] Talk" proximity prompt
@@ -98,15 +99,19 @@ static frame 0). `NPCDef.dialogue` is a `DialogueSet[]`: each set has an
 optional `if: {flag, faction, questActive, questComplete}` (first match
 wins, the unconditioned entry is the fallback and must be last) and
 either `lines` (sequential, `{name}`-token-aware) or, on the final line,
-`choices` (label/setFlag/response/optional toast/points/clearance — no
-nested trees, a choice always ends the interaction, falling back to the
-compact dialogue box to show its response even if the question itself
-was asked from the big briefing panel below). `NPCDef.questGiver`
-triggers a separate Accept/Not-yet **offer** flow instead of normal
-dialogue while that quest is `available`. Live NPCs: Herald (village
-square, quest giver for "The Breach in the Wall"), Bram (village
-square), Odile (tavern), Quill + Sabine (courthouse, one ambient flavor
-line each — Quill's nods at the Academy, see below). The 4 lore NPCs
+`choices` (label/setFlag/response/optional toast/points/milestone/
+clockPenalty — no nested trees, a choice always ends the interaction,
+falling back to the compact dialogue box to show its response even if
+the question itself was asked from the big briefing panel below).
+`NPCDef.questGiver` triggers a separate Accept/Not-yet **offer** flow
+instead of normal dialogue while that quest is `available`. Live NPCs:
+Herald (village square, quest giver for "The Breach in the Wall," also
+hosts "The Night the Wall Fell"'s fountain debrief lines), Bram
+(village square, hosts "The Night the Wall Fell"'s opening step), Odile
+(tavern), Quill (courthouse, hosts "The Night the Wall Fell"'s
+notification-filing and record-keeping steps, plus an ambient
+Academy-nod fallback), Sabine (courthouse, one ambient flavor line).
+The 4 lore NPCs
 (`LORE_NPC_IDS`: bram/odile/quill/sabine) each get a 4-frame idle-only
 sprite sheet built from a different CraftPix character pack (see
 CREDITS.md) — frame size varies per character (`LORE_NPC_FRAME_SIZE` in
@@ -133,29 +138,58 @@ module from `quest.ts` (below) — different concern, different file.
 States are `locked|available|active|complete`, one quest active at a
 time, `talk_to`/`reach_zone` step triggers, flags, and points — exposed
 via a `Phaser.Events.EventEmitter`
-(`toast`/`pointsChanged`/`levelUp`/`questUpdated`/`reveal`/`questCompleted`)
-that both `hud.ts` and `Room.ts` subscribe to. **Clearance Levels**
-(1-6) are milestone-based, not point-threshold-based:
-`questEngine.setClearance(n)` only ever raises the level (never lowers,
-never double-fires), playing the fanfare + "CLEARANCE RAISED" toast +
-`levelUp` event exactly once per real raise. `QuestDef.clearanceOnComplete`
-fires automatically when that quest's final step completes;
-`DialogueChoice.clearance`/`.points` fire immediately when that specific
-choice is picked, for mid-quest milestones (Mission 1's correct answer
-inside "The Breach in the Wall" raises Clearance 3 and pays 150 points
-before the quest itself is done — Mission 2's completes the quest,
-whose own `xp`/`clearanceOnComplete` cover Clearance 4; "The Innkeeper's
-Shards" — unlocked by Breach's completion — repeats the same two-mission
-pattern and its own `clearanceOnComplete` covers Clearance 5). Points/XP
-still accrue and display on the `.xp-bar` independently of Clearance —
-the bar's fill is cosmetic progress toward the demo path's total
-possible points (650), not a level gate. Clearance 6 is currently
-unclaimed — reserved for future story content. `Room.ts` calls
-`notifyReachZone()` from
-`update()` for every room-JSON `zones` entry the player is standing in
-(purely proximity-based, no `[E]` prompt, same as door transitions) and
-pulses a glow on whichever zone is the active quest's current objective.
-`npc.ts` calls `notifyTalkTo()` when a dialogue interaction closes.
+(`toast`/`pointsChanged`/`levelUp`/`questUpdated`/`reveal`/`questCompleted`/
+`clockChanged`/`clockPenalty`/`stepChoice`/`sceneBeat`) that `hud.ts` and
+`Room.ts` subscribe to.
+
+**Clearance Levels** (1-7) are `1 + however many narrative milestones
+are complete`, in ANY order — `MILESTONE_IDS` (welcome/breach_m1/
+breach_m2/innkeepers_shards/courthouse_trial/night_the_wall_fell) is
+the fixed set; `questEngine.completeMilestone(id)` is idempotent and
+recomputes Clearance from `completedMilestones.size`, so this stayed
+correct when this replaced an earlier scheme where each quest hardcoded
+its own absolute `clearanceOnComplete: N` target (order-dependent — a
+quest completing "out of sequence" could double-count or skip levels).
+`QuestDef.milestone` fires on that quest's final step; `DialogueChoice.
+milestone` fires immediately when that specific choice is picked, for
+mid-quest milestones (Mission 1's correct answer inside "The Breach in
+the Wall" completes the `breach_m1` milestone and pays 150 points
+before the quest itself is done). `courthouse_trial` has no quest wired
+to it yet, so Clearance 7 isn't reachable in the current build — 6 is,
+once the five live milestones are all done. `questEngine.setClearance(n)`
+itself only ever raises the level (never lowers, never double-fires),
+playing the fanfare + "CLEARANCE RAISED" toast + `levelUp` event exactly
+once per real raise, then checks every locked quest's
+`unlockAtClearance` threshold — that's what makes "The Night the Wall
+Fell" available the moment Clearance hits 5 regardless of which
+milestones got there, instead of being tied to one specific prior
+quest's completion the way `QuestDef.unlocks` is.
+
+Points/XP still accrue and display on the `.xp-bar` independently of
+Clearance — the bar's fill is cosmetic progress toward the demo path's
+total possible points (850), not a level gate.
+
+**The Decision Clock** — "The Night the Wall Fell"'s one quest-scoped
+mechanic (`questEngine.ts`'s `clockHours`/`addClockHours()`, `hud.ts`'s
+top-center panel, gold under 48 / amber 48-71 / red at 72+). Every step
+carries a fixed `QuestStep.clockCost` applied on advance regardless of
+which choice resolved it; a wrong choice ALSO adds
+`DialogueChoice.clockPenalty` (hours only, no fail state — the quest
+always completes, but `QuestDef.clockDebrief` picks a different Herald
+line, and withholds the bonus toast, if the total lands at 72+).
+`QuestStep.choice` is a standalone decision point for a `reach_zone`
+step with no hosting NPC (the fountain-crier beat) — `checkStep()` emits
+`stepChoice` and waits (`awaitingChoice`) instead of advancing directly;
+`hud.ts`'s `showStepChoice()` renders it and calls
+`questEngine.resolveStepChoice()` on pick, which applies the penalty,
+the step's base cost, and emits `reveal`/`toast`/`sceneBeat` from
+whichever option was chosen.
+
+`Room.ts` calls `notifyReachZone()` from `update()` for every room-JSON
+`zones` entry the player is standing in (purely proximity-based, no
+`[E]` prompt, same as door transitions) and pulses a glow on whichever
+zone is the active quest's current objective. `npc.ts` calls
+`notifyTalkTo()` when a dialogue interaction closes.
 
 `client/src/hud.ts` (`HUDController`) — the first real use of the
 `.xp-bar`/quest-tracker `.panel`/`.toast` components from the earlier
@@ -164,7 +198,7 @@ matters because `UIOverlay` is `scene.launch()`'d once from
 `CharacterCreate` and never `scene.restart()`'d on room transitions
 (unlike `Room.ts`, torn down and rebuilt every door), making it the only
 scene that persists the way a HUD needs to. `Q` toggles the tracker; the
-level badge reads "C1" through "C6".
+level badge reads "C1" through "C7".
 
 `client/src/quest.ts` — the Courthouse desk. Used to run the "Personal
 Data Classification Lab" in-world (a drag-and-drop GDPR trial that paid

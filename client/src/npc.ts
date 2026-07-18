@@ -5,7 +5,7 @@ import { el, typewriter, type TypewriterHandle } from "./ui/dom";
 import { showImageOverlay, type EvidenceImage } from "./ui/imageOverlay";
 import { showTableOverlay, type EvidenceTableTab } from "./ui/tableOverlay";
 import { getSession, type Faction } from "./session";
-import { questEngine } from "./questEngine";
+import { questEngine, type MilestoneId } from "./questEngine";
 import { playSound, playBlip } from "./audio";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
@@ -69,13 +69,19 @@ interface DialogueChoice {
   response: string;
   /** Extra toast beyond the response line itself. */
   toast?: string;
-  /** Immediate points/clearance award for picking this specific choice —
-   * mid-quest milestones that fire before the quest's own completion
-   * payout (e.g. Mission 1's correct answer inside "The Breach in the
-   * Wall" — Mission 2's correct answer instead completes the quest,
-   * whose own xp/clearanceOnComplete cover the payout generically). */
+  /** Immediate points award for picking this specific choice — mid-quest
+   * milestones that fire before the quest's own completion payout (e.g.
+   * Mission 1's correct answer inside "The Breach in the Wall" — Mission
+   * 2's correct answer instead completes the quest, whose own xp covers
+   * the payout generically). */
   points?: number;
-  clearance?: number;
+  /** Narrative milestone this choice fires — see questEngine.ts's
+   * MILESTONE_IDS/completeMilestone(). */
+  milestone?: MilestoneId;
+  /** Decision Clock hours added for picking this choice — "The Night the
+   * Wall Fell"'s wrong-choice consequence (no fail state, only cost).
+   * Unused outside that quest. */
+  clockPenalty?: number;
 }
 
 interface EvidenceRef {
@@ -251,6 +257,16 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       questGiver: "breach_in_the_wall",
       dialogue: [
         {
+          if: { questComplete: "night_the_wall_fell" },
+          lines: [
+            "Fifty-some hours or a hundred and twenty, Ranger — the wall held because YOU did. The Council still doesn't know how close it came.",
+          ],
+        },
+        {
+          if: { questActive: "night_the_wall_fell" },
+          lines: ["Go, Ranger! Bram needs you at the gates — this isn't a drill!"],
+        },
+        {
           if: { questComplete: "innkeepers_shards" },
           lines: ["The mask slipped once, Ranger. Quill's scribes will not make that mistake twice — not while you're watching."],
         },
@@ -370,7 +386,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
               label: "WEST GATE",
               setFlag: "gate_identified",
               points: 150,
-              clearance: 3,
+              milestone: "breach_m1",
               toast: "INTEL FILED — Prevention without detection is a gate left open.",
               response:
                 "The Service Entry. One rusted lock and not a single eye upon it. The Council forgot it because servants use it — attackers love what the powerful forget. You see like a Ranger already.",
@@ -389,6 +405,35 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       baseScale: loreNpcBaseScale("bram"),
       idleAnim: "npc-bram-idle",
       dialogue: [
+        {
+          if: { questComplete: "night_the_wall_fell" },
+          lines: ["The gate's mended, the wax is set. I still check that padlock twice a night, though."],
+        },
+        {
+          if: { questActive: "night_the_wall_fell", flag: "warden_heard" },
+          lines: ["Go on, Ranger — the gate won't wedge itself. West edge of the square."],
+        },
+        {
+          if: { questActive: "night_the_wall_fell" },
+          briefing: { caseLabel: "STEP 1", title: "Hear the Warden" },
+          ghostChoices: true,
+          lines: [
+            "Agent! The West Gate — the padlock's picked, just as your Ranger said. The archive annex was ENTERED. Scrolls of villager records — debts, faction marks — may be copied, I can't yet say. I know what I saw at 02:00. What I don't know would fill that annex twice over.",
+          ],
+          choices: [
+            {
+              label: "A breach is presumed the moment you saw that open annex. The clock is already running — move.",
+              setFlag: "warden_heard",
+              response: "Then we count from 02:00. Gods help us.",
+            },
+            {
+              label: "Say nothing yet. We investigate fully first — days if we must.",
+              setFlag: "warden_heard",
+              clockPenalty: 24,
+              response: "Days?! Agent, the law counts from KNOWING, not from finishing! The Herald will skin us.",
+            },
+          ],
+        },
         {
           if: { questActive: "arrival" },
           lines: [
@@ -544,7 +589,49 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       texture: "npc-quill",
       baseScale: loreNpcBaseScale("quill"),
       idleAnim: "npc-quill-idle",
-      dialogue: [{ lines: ["Forty-six Trials, Agent. The tome on the desk once held one — the Academy holds all of them now."] }],
+      dialogue: [
+        {
+          if: { questComplete: "night_the_wall_fell" },
+          lines: ["The Incident Register holds it now, Agent — every hour, every choice. Even the ones that needed no notice."],
+        },
+        {
+          if: { questActive: "night_the_wall_fell", flag: "notice_filed" },
+          briefing: { caseLabel: "STEP 5", title: "The Record" },
+          lines: [
+            "Last duty. Every hour, every choice, every reason — into the Incident Register. Including the East Gate probe last month that touched nothing.",
+          ],
+          choices: [
+            {
+              label: "Record everything.",
+              setFlag: "incident_recorded",
+              response:
+                "Even the breaches that need no notice get a page. When the Authority comes — and they come — they ask one thing first: \"show me your records.\"",
+            },
+          ],
+        },
+        {
+          if: { questActive: "night_the_wall_fell" },
+          briefing: { caseLabel: "STEP 3", title: "File While Blind" },
+          ghostChoices: true,
+          lines: [
+            "The notification to the Authority. I can file what we hold: nature of the breach, the categories touched, our containment. But the COUNT, Agent — we still cannot say how many scrolls were copied. Do we file incomplete, or do we wait for certainty?",
+          ],
+          choices: [
+            {
+              label: "File now, in phases. State what we know, state what we don't, supplement when we do.",
+              setFlag: "notice_filed",
+              response: "\"Investigation continuing.\" Four honest words the law was built to accept. Filed.",
+            },
+            {
+              label: "Wait for the full count. Accuracy first.",
+              setFlag: "notice_filed",
+              clockPenalty: 30,
+              response: "And if the count takes a week? Silence past the seventy-second hour is the violation — incompleteness is not. We file NOW.",
+            },
+          ],
+        },
+        { lines: ["Forty-six Trials, Agent. The tome on the desk once held one — the Academy holds all of them now."] },
+      ],
     },
     {
       id: "sabine",
@@ -741,7 +828,7 @@ export class NPCController {
     if (this.heraldPulse || questEngine.getClearance() < 2) return;
     const herald = this.npcs.find((n) => n.def.id === "herald");
     if (!herald) return;
-    const g = scene.add.circle(herald.def.x, herald.def.y - 20, 34, 0xf0b429, 0.22).setDepth(herald.def.y - 1);
+    const g = scene.add.circle(herald.image.x, herald.image.y - 20, 34, 0xf0b429, 0.22).setDepth(herald.image.y - 1);
     scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.heraldPulse = g;
   }
@@ -752,7 +839,7 @@ export class NPCController {
     if (this.odilePulse || questEngine.getClearance() < 4) return;
     const odile = this.npcs.find((n) => n.def.id === "odile");
     if (!odile) return;
-    const g = scene.add.circle(odile.def.x, odile.def.y - 20, 34, 0xf0b429, 0.22).setDepth(odile.def.y - 1);
+    const g = scene.add.circle(odile.image.x, odile.image.y - 20, 34, 0xf0b429, 0.22).setDepth(odile.image.y - 1);
     scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.odilePulse = g;
   }
@@ -763,8 +850,48 @@ export class NPCController {
   pingHerald(scene: Phaser.Scene) {
     const herald = this.npcs.find((n) => n.def.id === "herald");
     if (!herald) return;
-    const g = scene.add.circle(herald.def.x, herald.def.y - 20, 10, 0xf0b429, 0.9).setDepth(herald.def.y + 1);
+    const g = scene.add.circle(herald.image.x, herald.image.y - 20, 10, 0xf0b429, 0.9).setDepth(herald.image.y + 1);
     scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
+  }
+
+  // "The Night the Wall Fell"'s opening beat — Bram slides straight to
+  // the player (no pathfinding, just a tween) rather than the player
+  // needing to hunt him down mid-alarm. Only tweens the sprite — never
+  // def.x/y, which is a shared object living in the module-level
+  // NPC_SPAWNS for the whole session; writing to it here would leave
+  // Bram permanently relocated on every future room rebuild, long after
+  // this quest ends. update()'s proximity check reads the live sprite
+  // position for exactly this reason (see its comment).
+  triggerBramDash(scene: Phaser.Scene, targetX: number, targetY: number) {
+    const bram = this.npcs.find((n) => n.def.id === "bram");
+    if (!bram) return;
+    scene.tweens.add({
+      targets: bram.image,
+      x: targetX,
+      y: targetY,
+      duration: 700,
+      ease: "Cubic.easeOut",
+      onUpdate: () => {
+        bram.image.setScale(bram.def.baseScale * depthScaleFor(bram.image.y));
+        bram.image.setDepth(bram.image.y);
+        bram.nameText.setPosition(bram.image.x, bram.image.y - bram.image.displayHeight - 4);
+      },
+    });
+  }
+
+  // "The village knows" beat (Step 4, correct choice) — whichever lore
+  // NPCs are standing in the current room briefly turn to face the
+  // fountain, then resume their normal idle facing. No generic
+  // "villager" wanderers are currently spawned (see Room.ts's empty
+  // WANDERER_ROUTES), so this reacts with whichever NPCs are actually
+  // present rather than inventing sprites that don't exist.
+  runVillagersTurnBeat(scene: Phaser.Scene) {
+    const FOUNTAIN_X = 640;
+    for (const npc of this.npcs) {
+      const originalFlip = npc.image.flipX;
+      npc.image.setFlipX(FOUNTAIN_X < npc.image.x);
+      scene.time.delayedCall(3000, () => npc.image.setFlipX(originalFlip));
+    }
   }
 
   get dialogueOpen(): boolean {
@@ -780,7 +907,11 @@ export class NPCController {
     let nearest: NPCView | null = null;
     let nearestDist = INTERACT_RADIUS;
     for (const npc of this.npcs) {
-      const dist = Phaser.Math.Distance.Between(playerX, playerY, npc.def.x, npc.def.y);
+      // Live sprite position, not npc.def.x/y — def is shared, static spawn
+      // config (the same object lives in the module-level NPC_SPAWNS for
+      // the whole session), so anything that actually moves an NPC (see
+      // triggerBramDash()) must never write back into it.
+      const dist = Phaser.Math.Distance.Between(playerX, playerY, npc.image.x, npc.image.y);
       if (dist < nearestDist) {
         nearest = npc;
         nearestDist = dist;
@@ -911,7 +1042,8 @@ export class NPCController {
   private pickChoice(choice: DialogueChoice) {
     if (choice.setFlag) questEngine.setFlag(choice.setFlag);
     if (choice.points) questEngine.addPoints(choice.points);
-    if (choice.clearance) questEngine.setClearance(choice.clearance);
+    if (choice.milestone) questEngine.completeMilestone(choice.milestone);
+    if (choice.clockPenalty) questEngine.addClockHours(choice.clockPenalty, true);
     if (choice.toast) questEngine.toast(choice.toast);
     this.clearChoices();
     // The response always falls back to the compact dialogue box, even

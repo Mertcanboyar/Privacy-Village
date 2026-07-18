@@ -7,6 +7,7 @@ import { getAvatarOption, getFactionColor, getSession } from "../session";
 import { questEngine } from "../questEngine";
 import { academy } from "../academy";
 import { events } from "../events";
+import { playSound } from "../audio";
 import type { RoomName } from "../rooms";
 
 const PLAYER_SPEED = 160;
@@ -52,6 +53,10 @@ interface RoomJSON {
 
 interface RoomInitData {
   room: RoomName;
+  /** Set by AcademyOverlay's goToFieldWork() when a village-room-switch
+   * field-work pip's ping target is the Courthouse door rather than
+   * Herald (see academy.ts's AcademyFieldWork.ping). */
+  pingCourthouseDoor?: boolean;
 }
 
 interface Wanderer {
@@ -108,6 +113,11 @@ export class Room extends Phaser.Scene {
   private wanderers: Wanderer[] = [];
   private npcController!: NPCController;
   private questController!: QuestController;
+  // Cold blue-grey overlay while "The Night the Wall Fell" is active —
+  // persists across room changes (see refreshIncidentTint(), called at
+  // the end of every create()) and lifts on quest completion.
+  private incidentTint: Phaser.GameObjects.Rectangle | null = null;
+  private pendingCourthouseDoorPing = false;
 
   constructor() {
     super("Room");
@@ -123,10 +133,24 @@ export class Room extends Phaser.Scene {
     this.npcController.pingHerald(this);
   }
 
+  // One-shot flash on the Village Square's door hotspot leading to the
+  // Courthouse — same technique as pingHerald(), just anchored to a door
+  // hotspot's coordinates instead of an NPC sprite (see academy.ts's
+  // AcademyFieldWork.ping doc comment for why this exists).
+  pingCourthouseDoor() {
+    const door = this.doors.find((d) => d.target === "courthouse");
+    if (!door) return;
+    const cx = door.x + door.width / 2;
+    const cy = door.y + door.height / 2;
+    const g = this.add.circle(cx, cy, 10, 0xf0b429, 0.9).setDepth(100002);
+    this.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
+  }
+
   init(data: RoomInitData) {
     this.roomName = data.room ?? "village";
     this.transitioning = false;
     this.wanderers = [];
+    this.pendingCourthouseDoorPing = data.pingCourthouseDoor ?? false;
   }
 
   create() {
@@ -198,9 +222,75 @@ export class Room extends Phaser.Scene {
 
     this.refreshZoneMarker();
     questEngine.on("questUpdated", this.refreshZoneMarker, this);
+
+    this.refreshIncidentTint();
+    const onQuestCompleted = (id: string) => {
+      if (id === "night_the_wall_fell") this.refreshIncidentTint();
+    };
+    const onSceneBeat = (beat: string) => {
+      if (beat === "villagersTurn") this.npcController.runVillagersTurnBeat(this);
+    };
+    questEngine.on("questCompleted", onQuestCompleted);
+    questEngine.on("sceneBeat", onSceneBeat);
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       questEngine.off("questUpdated", this.refreshZoneMarker, this);
+      questEngine.off("questCompleted", onQuestCompleted);
+      questEngine.off("sceneBeat", onSceneBeat);
       this.zoneMarker?.destroy();
+    });
+
+    // Auto-trigger: the incident starts the moment the player is standing
+    // in the Village Square with the quest unlocked but not yet begun —
+    // no NPC offers it (see QuestDef.giver's "auto" convention).
+    if (this.roomName === "village" && questEngine.getState("night_the_wall_fell") === "available") {
+      this.triggerIncidentStart();
+    }
+
+    if (this.roomName === "village" && this.pendingCourthouseDoorPing) {
+      this.pendingCourthouseDoorPing = false;
+      this.time.delayedCall(300, () => this.pingCourthouseDoor());
+    }
+  }
+
+  // Cold blue-grey wash over the whole scene while the incident quest is
+  // active — a Phaser rectangle rather than a DOM overlay, consistent
+  // with how bg/fg art is already rendered as full-canvas Phaser objects
+  // (see CLAUDE.md's DOM-vs-canvas split: this is world atmosphere, not
+  // UI chrome). Depth 5000 sits above the foreground art (1000) but below
+  // name tags/prompts (100000+), so labels stay legible through the tint.
+  private refreshIncidentTint() {
+    const active = questEngine.isActive("night_the_wall_fell");
+    if (active && !this.incidentTint) {
+      this.incidentTint = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x2b3a55, 0.25).setOrigin(0, 0).setDepth(5000);
+    } else if (!active && this.incidentTint) {
+      const tint = this.incidentTint;
+      this.incidentTint = null;
+      // The fade-out IS the reward ("warm dusk returns") — no snap-cut.
+      this.tweens.add({ targets: tint, alpha: 0, duration: 1500, onComplete: () => tint.destroy() });
+    }
+  }
+
+  // Bell, camera shake, Bram's dash, then the quest itself accepts and
+  // the tint settles in. `transitioning` doubles as a scripted-sequence
+  // lock here (same flag door transitions use) — update() already
+  // early-returns on it, freezing movement/interaction for the beat.
+  private triggerIncidentStart() {
+    this.transitioning = true;
+    playSound("alarm-bell");
+    this.cameras.main.shake(400, 0.01);
+
+    this.time.delayedCall(150, () => {
+      // 50px, comfortably inside NPCController's 70px interact radius —
+      // Bram dashing "to the player" should mean the player can talk to
+      // him immediately, not take one more step to close the gap.
+      this.npcController.triggerBramDash(this, this.player.x - 50, this.player.y);
+    });
+
+    this.time.delayedCall(900, () => {
+      questEngine.acceptQuest("night_the_wall_fell");
+      this.refreshIncidentTint();
+      this.transitioning = false;
     });
   }
 
