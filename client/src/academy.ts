@@ -23,6 +23,7 @@ export const ACADEMY_MODULE_IDS = [
   "ai_pipeline_mapping",
   "personal_data_or_not",
   "the_ravens_burden",
+  "deidentification_masks_and_chains",
   "the_three_locks",
 ] as const;
 
@@ -33,13 +34,6 @@ export interface AcademyModuleSummary {
   /** True only for ids in ACADEMY_MODULE_IDS — false renders as a
    * name-only locked stub card with no module-list click-through. */
   hasContent: boolean;
-  /** Cross-link for a stub card that has no lesson/quiz content of its
-   * own yet, but tracks live field-work progress against a real village
-   * quest anyway — "De-identification: Masks & Chains" ↔ "The
-   * Innkeeper's Shards". Renders a FIELD WORK pip (auto-✓ once the
-   * quest completes) and a static "THEORY: IN DEVELOPMENT" tag instead
-   * of the plain clearance-only stub treatment. */
-  fieldWorkQuestId?: string;
 }
 
 export interface AcademyTrack {
@@ -150,6 +144,12 @@ export interface ModuleProgress {
 
 const EMPTY_PROGRESS: ModuleProgress = { theoryDone: false, fieldDone: false };
 
+function roomLabel(room: RoomName): string {
+  if (room === "tavern") return "the tavern";
+  if (room === "courthouse") return "the courthouse";
+  return "the village";
+}
+
 class AcademyManager extends Phaser.Events.EventEmitter {
   private open_ = false;
   private tracks = new Map<string, AcademyTrack>();
@@ -233,6 +233,10 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     if (!p || p.theoryDone) return;
     p.theoryDone = true;
     this.emit("progressChanged", moduleId);
+    const module = this.modules.get(moduleId);
+    if (module?.fieldWork && !p.fieldDone) {
+      this.emit("toast", `THEORY SEALED — field work awaits at ${roomLabel(module.fieldWork.room)}.`);
+    }
     this.tryCompleteModule(moduleId);
   }
 

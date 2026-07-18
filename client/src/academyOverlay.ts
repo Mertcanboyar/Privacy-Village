@@ -333,20 +333,6 @@ export class AcademyOverlay {
   private renderModuleCard(summary: AcademyModuleSummary): HTMLElement {
     const eligible = summary.hasContent && questEngine.getClearance() >= summary.clearanceRequired;
     if (!eligible) {
-      // A stub with no lesson/quiz content of its own can still track
-      // live field-work progress against a real village quest — "De-
-      // identification: Masks & Chains" ↔ "The Innkeeper's Shards".
-      if (summary.fieldWorkQuestId) {
-        const fieldDone = questEngine.isComplete(summary.fieldWorkQuestId);
-        return el("div", { className: "quest-card", style: { opacity: "0.7" } }, [
-          el("div", { className: "quest-card__icon" }),
-          el("div", { className: "quest-card__info" }, [el("div", { className: "quest-card__title", text: summary.title })]),
-          el("div", { className: "quest-card__meta", style: { gap: "8px" } }, [
-            el("span", { className: fieldDone ? "chip chip--gold" : "chip", text: fieldDone ? "FIELD WORK ✓" : "FIELD WORK: PENDING" }),
-            el("span", { className: "chip", text: "THEORY: IN DEVELOPMENT" }),
-          ]),
-        ]);
-      }
       return el("div", { className: "quest-card", style: { opacity: "0.5" } }, [
         el("div", { className: "quest-card__icon" }),
         el("div", { className: "quest-card__info" }, [el("div", { className: "quest-card__title", text: summary.title })]),

@@ -1,0 +1,83 @@
+{
+  "id": "deidentification_masks_and_chains",
+  "track": "privacy_ops",
+  "title": "De-identification: Masks & Chains",
+  "clearanceRequired": 4,
+  "fieldWork": { "questId": "innkeepers_shards", "label": "The Innkeeper's Shards", "room": "tavern" },
+  "lesson": [
+    { "type": "heading", "text": "Removing the name is not removing the person." },
+    {
+      "type": "paragraph",
+      "text": "Data has two kinds of identifying power. Direct identifiers point at a person by themselves — a name, an ID number, a face. Quasi-identifiers seem harmless alone — a timestamp, a district, a coat — but in combination they can single a person out. De-identification fails not because names leak, but because combinations do."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "THE CHAIN RULE — Any attribute shared between two datasets is a potential link. Sharding data into separate stores does nothing if the shards still share linkable values. Separation is not severance."
+    },
+    {
+      "type": "paragraph",
+      "text": "You proved this at the inn. No log contained both a room and a name — yet Room 7 → Ticket T-822 → a green cloak at 20:15 → Wren. Each hop used a shared attribute. This is a linkage attack, and it is not theoretical: a famous study showed that ~87% of the US population is uniquely identifiable from just three quasi-identifiers — ZIP code, birth date, and sex. A researcher used exactly this chain, linking an \"anonymized\" hospital dataset to a public voter roll, to re-identify a state governor's medical records."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "PSEUDONYMIZATION ≠ ANONYMIZATION. Replacing names with codes (Agent NIGHTINGALE, Ticket T-822) is pseudonymization — reversible wherever a key or a chain exists, and still personal data under the law. Anonymization means no one, using reasonable means, can re-identify. It is a high bar, and most 'anonymized' datasets do not clear it."
+    },
+    {
+      "type": "paragraph",
+      "text": "One defense is k-anonymity: generalize (ages become ranges) and suppress (values become *) until every row is identical to at least k−1 others on its quasi-identifiers. Each person hides in a crowd of at least k. But the promise is only as strong as its weakest row — a single unique combination, like the one courier in the Mill Quarter who wasn't young, and the mask slips for that person entirely."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "AUDIT RULE — k-anonymity is a property you VERIFY, not declare. Count the twins. Every row, no exceptions. The Archive declared k=2; you found S-08. Declarations are not proofs."
+    },
+    {
+      "type": "paragraph",
+      "text": "And k-anonymity has limits even when perfect: if everyone in a group shares the same sensitive value, hiding in the crowd reveals it anyway (all twelve guests in one wing testing positive tells you everything without naming anyone). Stronger tools exist — l-diversity, differential privacy — and they await at higher clearance. For now, carry the two lessons of the inn: chains link, and masks slip."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "Odile's coat check ticket \"T-822\" is best described as:",
+      "choices": ["Anonymous data", "A pseudonym — still personal data", "A direct identifier"],
+      "answer": 1,
+      "explain": [
+        "Wrong — you personally de-anonymized it by chaining it to a name. Nothing about the ticket was ever truly anonymous.",
+        "Correct — a code standing in for a person, reversible via the chain. Pseudonymized data remains personal data.",
+        "Wrong — the ticket names no one by itself; it only became identifying once chained to the other logs."
+      ]
+    },
+    {
+      "q": "Which single change would have DEFEATED your linkage attack at the inn?",
+      "choices": ["Deleting names from the gate log too", "Renaming the logs", "Adding more rooms"],
+      "answer": 0,
+      "explain": [
+        "Correct — the attack needed one dataset that resolves to real identities. Remove the identity anchor and the chain ends in codes.",
+        "Wrong — renaming the logs leaves every link intact; the shared attributes are what matter, not the labels.",
+        "Wrong — adding more rooms leaves every link intact; the shared attributes are what matter, not the volume of data."
+      ]
+    },
+    {
+      "q": "A dataset claims k=3. You find one row with exactly two identical twins and another row with none. The dataset satisfies:",
+      "choices": ["k=3", "k=2", "Neither — k-anonymity fails"],
+      "answer": 2,
+      "explain": [
+        "Wrong — k is set by the WORST row, not the best. A row with zero twins breaks any k>1 claim.",
+        "Wrong — the two-twin row would satisfy k=3, but the untwinned row still breaks the guarantee entirely.",
+        "Correct — k is set by the WORST row. A row with zero twins means at least one person is unique — the guarantee fails outright, whatever the average looks like."
+      ]
+    },
+    {
+      "q": "Why is \"87% identifiable from ZIP + birth date + sex\" the same lesson as Room 7?",
+      "choices": ["Both involve hotels", "Harmless attributes combine into a fingerprint", "Both required hacking"],
+      "answer": 1,
+      "explain": [
+        "Wrong — the hospital study and the voter roll involve no hotel at all; the parallel is structural, not situational.",
+        "Correct — no single attribute identifies; the combination does. Quasi-identifiers are judged together, never alone — in an inn, a hospital, or a census.",
+        "Wrong — no hacking was involved in either case, just cross-referencing public or shared records."
+      ]
+    }
+  ]
+}
