@@ -4,6 +4,7 @@ import { ROOMS } from "../rooms";
 import { LORE_NPC_IDS, LORE_NPC_FRAME_SIZE } from "../npc";
 import { QUEST_IDS, questEngine, type QuestDef } from "../questEngine";
 import { ACADEMY_TRACK_IDS, ACADEMY_MODULE_IDS, academy, type AcademyTrack, type AcademyModule } from "../academy";
+import { events, type EventVideo } from "../events";
 
 export class Preload extends Phaser.Scene {
   constructor() {
@@ -67,6 +68,10 @@ export class Preload extends Phaser.Scene {
       this.load.json(`academy-module-${id}`, `data/academy/module_${id}.json`);
     }
 
+    // Events panel (see hud.ts) — curated video list from the real
+    // Privacy Village YouTube channel, youtube.com/@PrivacyQuest.
+    this.load.json("events", "data/events.json");
+
     // Painted-room assets (see CLAUDE.md). Foreground PNGs and room JSON
     // (walkable polygon/doors/lights, authored via /debug) may not exist
     // yet for every room — missing files 404 quietly and Room.ts falls
@@ -90,6 +95,8 @@ export class Preload extends Phaser.Scene {
     const academyTracks = ACADEMY_TRACK_IDS.map((id) => this.cache.json.get(`academy-track-${id}`) as AcademyTrack);
     const academyModules = ACADEMY_MODULE_IDS.map((id) => this.cache.json.get(`academy-module-${id}`) as AcademyModule);
     academy.loadData(academyTracks, academyModules);
+
+    events.loadData(this.cache.json.get("events") as EventVideo[]);
 
     // Idle loop for each lore NPC — row 0, cols 0-3 (see preload() comment).
     // 6fps per the source pack's suggested speed.

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { HUDController } from "../hud";
 import { AcademyOverlay } from "../academyOverlay";
+import { EventsOverlay } from "../eventsOverlay";
 
 // HUD scene, runs in parallel with Room — launched once from
 // CharacterCreate and never scene.restart()'d on room transitions,
@@ -28,6 +29,7 @@ export class UIOverlay extends Phaser.Scene {
     // all the DOM/event listeners it needs (see academyOverlay.ts); there
     // is no per-frame update() to call on it anymore.
     new AcademyOverlay(this);
+    new EventsOverlay(this);
   }
 
   update() {

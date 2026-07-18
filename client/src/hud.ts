@@ -5,6 +5,7 @@ import { showTableOverlay } from "./ui/tableOverlay";
 import { questEngine, type QuestStepReveal } from "./questEngine";
 import { getSession } from "./session";
 import { academy } from "./academy";
+import { events } from "./events";
 
 // Persistent HUD (see PLAN.md Phase 2, Day 3) — .xp-bar, quest tracker,
 // and toast stack from design-system.css, wired to questEngine's events
@@ -48,14 +49,29 @@ export class HUDController {
   constructor(scene: Phaser.Scene) {
     const root = document.getElementById("ui-root")!;
 
-    // --- Academy button (top-left, always visible) ---
+    // --- Top bar: Academy + Events buttons (top-left, always visible) ---
+    // pointerEvents:"auto" on the row is load-bearing: #ui-root sets
+    // pointer-events:none (see style.css) so any child is invisible to a
+    // real mouse click unless something in its ancestry opts back in —
+    // this button previously had no such opt-in and silently swallowed
+    // every real click while still responding to synthetic .click() calls
+    // in tests, which is why it looked "broken" only for actual players.
     const academyBtnEl = el("button", {
-      className: "btn btn--ghost ds-root",
+      className: "btn btn--ghost",
       text: "\u{1F4D6} ACADEMY",
-      style: { position: "absolute", top: "24px", left: "24px" },
       on: { click: () => academy.toggle() },
     });
-    root.appendChild(academyBtnEl);
+    const eventsBtnEl = el("button", {
+      className: "btn btn--ghost",
+      text: "\u{1F3AC} EVENTS",
+      on: { click: () => events.toggle() },
+    });
+    const topBarEl = el(
+      "div",
+      { className: "ds-root", style: { position: "absolute", top: "24px", left: "24px", display: "flex", gap: "12px", pointerEvents: "auto" } },
+      [academyBtnEl, eventsBtnEl],
+    );
+    root.appendChild(topBarEl);
 
     // --- XP bar (bottom-left, always visible) ---
     this.levelBadgeEl = el("div", { className: "level-badge", text: "C1" });
@@ -79,7 +95,10 @@ export class HUDController {
     this.trackerEvidenceRowEl = el("div", { style: { marginTop: "8px" } });
     this.trackerEl = el(
       "div",
-      { className: "panel ds-root", style: { position: "absolute", top: "24px", right: "24px", width: "280px", display: "none" } },
+      // pointerEvents:"auto" — same #ui-root opt-in fix as the top bar
+      // above; the evidence button inside this panel was equally
+      // unclickable for real users before this.
+      { className: "panel ds-root", style: { position: "absolute", top: "24px", right: "24px", width: "280px", display: "none", pointerEvents: "auto" } },
       [this.trackerTitleEl, this.trackerObjectiveEl, this.trackerEvidenceRowEl, this.trackerCounterEl],
     );
     root.appendChild(this.trackerEl);
