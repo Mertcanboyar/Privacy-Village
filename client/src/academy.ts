@@ -21,6 +21,7 @@ export const ACADEMY_TRACK_IDS = ["ai_governance", "privacy_ops", "cyber_securit
 export const ACADEMY_MODULE_IDS = [
   "threat_modeling",
   "ai_pipeline_mapping",
+  "annex_iii_risk_categorization",
   "personal_data_or_not",
   "the_ravens_burden",
   "deidentification_masks_and_chains",
@@ -55,7 +56,7 @@ export interface AcademyTrack {
 export type LessonBlock =
   | { type: "heading"; text: string }
   | { type: "paragraph"; text: string }
-  | { type: "callout"; variant: "gold" | "blue"; text: string }
+  | { type: "callout"; variant: "gold" | "blue" | "danger"; text: string }
   | { type: "evidence-image"; images: EvidenceImage[]; caption: string; buttonLabel: string };
 
 export interface QuizQuestion {

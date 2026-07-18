@@ -450,7 +450,7 @@ export class AcademyOverlay {
       return el("p", { className: "briefing__body", text: block.text, style: { marginBottom: "var(--space-2)" } });
     }
     if (block.type === "callout") {
-      const accent = block.variant === "gold" ? "var(--accent-gold)" : "var(--accent-blue)";
+      const accent = block.variant === "gold" ? "var(--accent-gold)" : block.variant === "danger" ? "var(--accent-red)" : "var(--accent-blue)";
       return el("div", {
         text: block.text,
         style: {

@@ -1,0 +1,92 @@
+{
+  "id": "annex_iii_risk_categorization",
+  "track": "ai_governance",
+  "title": "Annex III: The Four Tiers of the Machine",
+  "clearanceRequired": 4,
+  "_fieldWork_TODO": "questId: courthouse_trial — reserved for the planned Courthouse capstone quest (\"The Trial of the Speaking Engine\"), not yet built. The Courthouse desk is currently a pure signpost (see quest.ts). Wire as fieldWork: { questId, label: \"The Trial of the Speaking Engine (Courthouse)\" } once that quest exists, and add a courthouse-door pulse (see refreshHeraldPulse/refreshOdilePulse in npc.ts for the existing NPC-pulse pattern this would need to mirror for a door instead).",
+  "lesson": [
+    { "type": "heading", "text": "The law does not ask if a machine is intelligent. It asks what the machine is FOR." },
+    {
+      "type": "paragraph",
+      "text": "The village Charter — like the EU AI Act it mirrors — regulates thinking machines by RISK, not by cleverness. The same enchantment can be harmless in a mill and forbidden in the square. Classification comes first; every obligation flows from it. Four tiers, from the forbidden to the free."
+    },
+    {
+      "type": "callout",
+      "variant": "danger",
+      "text": "TIER I — PROHIBITED. Some purposes are banned outright: machines that score villagers' trustworthiness for all purposes of life (social scoring), machines that read loyalty or emotion from faces in the square or the schoolhouse, machines built to manipulate beyond a person's awareness. No safeguards make these lawful. The Charter does not regulate them. It refuses them."
+    },
+    {
+      "type": "paragraph",
+      "text": "You have heard the rumor: a Shadownet device that reads allegiance from faces at the fountain. If it exists, it is not a compliance problem. It is contraband."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "TIER II — HIGH-RISK (Annex III). Machines whose purpose touches what the law calls fundamental chances in life: who gets credit, work, schooling, essential services; who is policed, judged, admitted at borders; what runs critical infrastructure. These may operate — under heavy duty: risk management, quality data, logging, human oversight, accuracy. The list of purposes IS Annex III. Classification is by INTENDED PURPOSE, not by how the machine works."
+    },
+    {
+      "type": "paragraph",
+      "text": "Consider Fennick's judgment engine, which sets prices and can DENY CREDIT with no explanation. Creditworthiness sits in Annex III. Forcing such an oracle under a human hand — demanding reasons, keeping the power to overrule — is not merely fairness. It is Article 14: human oversight, the signature obligation of the high-risk tier."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "TIER III — TRANSPARENCY. Some machines may work freely but must DECLARE THEMSELVES: conversational engines must reveal they are not human; conjured images, voices, and videos — synthetic media — must be detectable and disclosed. Imagine marking an enchanted, speaking portrait \"ENCHANTED — DECLARED\" — that mark is the entire tier in one word: declared."
+    },
+    {
+      "type": "paragraph",
+      "text": "TIER IV — MINIMAL RISK. The great remainder: the mill's grain-sorter, a quill that filters junk missives, an enchantment that suggests the next word of a letter. The Charter asks nothing of them beyond the ordinary law of the land — though their makers may adopt codes of honor voluntarily. Most machines in any village live here."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "THE COUNSEL'S METHOD — Given any machine: (1) Purpose? (2) Is that purpose refused (Tier I)? (3) Is it listed in Annex III (Tier II)? (4) Does it converse or conjure (Tier III)? (5) Otherwise: minimal. Answer in order. Never start from the technology; start from the purpose."
+    },
+    {
+      "type": "paragraph",
+      "text": "You now hold the method, counselor. When the Courthouse calls for a verdict, purpose will be your first question — and your last."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "Fennick's judgment engine — pricing customers and deciding credit. Tier?",
+      "choices": ["Prohibited", "High-risk (Annex III)", "Transparency only"],
+      "answer": 1,
+      "explain": [
+        "Wrong — pricing and credit are not banned purposes, however badly run. Nothing about Fennick's engine falls under the Tier I refusals.",
+        "Creditworthiness and essential services is an Annex III purpose — lawful, but under risk management, logging, and the human oversight you personally imposed.",
+        "Wrong — declaring itself would not discharge Annex III duties. Transparency is a separate, lighter tier for machines that only need to say what they are."
+      ]
+    },
+    {
+      "q": "The rumored fountain device reading villagers' loyalty from their faces. Tier?",
+      "choices": ["Prohibited", "High-risk", "Minimal — it's only a rumor"],
+      "answer": 0,
+      "explain": [
+        "Emotion and loyalty inference on the public, like social scoring, is refused outright — no safeguards cure a banned purpose.",
+        "Wrong tier entirely — high-risk purposes may operate under heavy duty. This purpose isn't permitted to operate at all, under any duty.",
+        "The rumor joke answer: existence is a question of fact; classification is a question of purpose. If the device exists and does what's rumored, its purpose is refused regardless of how well-hidden it is."
+      ]
+    },
+    {
+      "q": "The whispering portrait — a conjured voice speaking to patrons. Its PRIMARY obligation?",
+      "choices": ["Human oversight under Annex III", "Declare itself as synthetic", "None — taverns are minimal risk"],
+      "answer": 1,
+      "explain": [
+        "Wrong tier — Annex III's human-oversight duty belongs to high-risk purposes like credit and employment, not to a conversational enchantment.",
+        "Synthetic media and conversational engines carry transparency duties — the DECLARED mark. Location doesn't set the tier; purpose does.",
+        "Wrong — a tavern setting doesn't exempt a conversational engine from declaring itself. The obligation follows the machine's purpose, not its address."
+      ]
+    },
+    {
+      "q": "The mill installs an enchanted sorter that grades grain by size. Tier?",
+      "choices": ["High-risk — mills are critical infrastructure", "Transparency", "Minimal risk"],
+      "answer": 2,
+      "explain": [
+        "\"Critical infrastructure\" in Annex III means safety components of essential systems — not every machine that happens to live near a waterwheel. Beware tier-inflation: over-classification is also a counsel's error.",
+        "Wrong — a grain sorter converses with no one and conjures nothing. Transparency duties are for machines that speak or create, not machines that sort.",
+        "Grading grain touches no fundamental chance in life and converses with no one. Most machines in any village live here."
+      ]
+    }
+  ]
+}
