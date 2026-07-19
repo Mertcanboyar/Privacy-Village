@@ -1,0 +1,409 @@
+{
+  "course": "LAW 4025 · AI GOVERNANCE SEMINAR · SPRING '27 · 24 STUDENTS",
+  "modules": [
+    "Personal Data or Not?",
+    "Lawful Bases in the Wild",
+    "The 72-Hour Clock",
+    "Annex III: The Four Tiers of the Machine",
+    "De-identification: Masks & Chains",
+    "Threat Modeling Fundamentals"
+  ],
+  "students": [
+    {
+      "id": "s01",
+      "name": "Priya Raghavan",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 9, 2027",
+      "clearance": 7,
+      "moduleStatus": ["complete", "complete", "complete", "complete", "complete", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": 58,
+      "capstone": "passed",
+      "lastActiveMinutes": 120,
+      "decisionLog": [
+        { "date": "MAR 2", "text": "Breach M1 — answered WEST GATE (1st try)" },
+        { "date": "MAR 2", "text": "Breach M2 — GOBLIN SABOTEUR (1st try)" },
+        { "date": "MAR 6", "text": "Shards M2 — flagged S-08 (1st try)" },
+        { "date": "MAR 11", "text": "Wall Fell — clock started at awareness ✓ · notified villagers immediately ✓ · total: 58 h" },
+        { "date": "MAR 17", "text": "Annex III quiz — 4/4, no retries" },
+        { "date": "MAR 24", "text": "Capstone Trial — PASSED, full marks on lawful-basis identification" }
+      ]
+    },
+    {
+      "id": "s02",
+      "name": "Femke van Dijk",
+      "faction": "apocalypse",
+      "enrolled": "JAN 9, 2027",
+      "clearance": 7,
+      "moduleStatus": ["complete", "complete", "complete", "complete", "complete", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": 61,
+      "capstone": "passed",
+      "lastActiveMinutes": 300,
+      "decisionLog": [
+        { "date": "MAR 8", "text": "Wall Fell — total: 61 h" },
+        { "date": "MAR 19", "text": "Capstone Trial — PASSED, strong on breach-notification timing" }
+      ]
+    },
+    {
+      "id": "s03",
+      "name": "Chen Wei",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 10, 2027",
+      "clearance": 7,
+      "moduleStatus": ["complete", "complete", "complete", "complete", "complete", "complete"],
+      "threatModel": { "attempts": 2 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": 63,
+      "capstone": "passed",
+      "lastActiveMinutes": 1500,
+      "decisionLog": [
+        { "date": "MAR 5", "text": "Breach M2 — GOBLIN SABOTEUR (2 attempts)" },
+        { "date": "MAR 22", "text": "Capstone Trial — PASSED" }
+      ]
+    },
+    {
+      "id": "s04",
+      "name": "Amara Okafor",
+      "faction": "apocalypse",
+      "enrolled": "JAN 10, 2027",
+      "clearance": 7,
+      "moduleStatus": ["complete", "complete", "complete", "complete", "complete", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": 54,
+      "capstone": "passed",
+      "lastActiveMinutes": 100,
+      "decisionLog": [
+        { "date": "MAR 10", "text": "Wall Fell — total: 54 h" },
+        { "date": "MAR 25", "text": "Capstone Trial — PASSED, cited Art. 33 correctly" }
+      ]
+    },
+    {
+      "id": "s05",
+      "name": "Deniz Aydın",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 11, 2027",
+      "clearance": 5,
+      "moduleStatus": ["complete", "complete", "complete", "complete", "partial", "complete"],
+      "threatModel": { "attempts": 2 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": 84,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 200,
+      "decisionLog": [
+        { "date": "MAR 3", "text": "Breach M1 — answered EAST GATE, then WEST GATE (2 attempts)" },
+        { "date": "MAR 3", "text": "Breach M2 — GOBLIN SABOTEUR (1st try)" },
+        { "date": "MAR 9", "text": "Shards M2 — flagged S-08 (1st try)" },
+        { "date": "MAR 14", "text": "Wall Fell — clock started at awareness ✓ · waited for full count ✗ (+30h) · villagers notified ✓ · total: 84 h" },
+        { "date": "MAR 20", "text": "Annex III quiz — 4/4, one retry on Q4 (tier-inflation)" }
+      ]
+    },
+    {
+      "id": "s06",
+      "name": "Marcus Lindqvist",
+      "faction": "apocalypse",
+      "enrolled": "JAN 11, 2027",
+      "clearance": 4,
+      "moduleStatus": ["complete", "none", "complete", "partial", "none", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": 66,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 400,
+      "decisionLog": [
+        { "date": "MAR 6", "text": "Breach M1 — answered WEST GATE (1st try)" },
+        { "date": "MAR 15", "text": "Wall Fell — total: 66 h" }
+      ]
+    },
+    {
+      "id": "s07",
+      "name": "Sofia Marchetti",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 12, 2027",
+      "clearance": 6,
+      "moduleStatus": ["complete", "complete", "complete", "complete", "none", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 2 },
+      "breachHours": 71,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 600,
+      "decisionLog": [
+        { "date": "MAR 4", "text": "Shards M2 — flagged S-11, then S-08 (2 attempts)" },
+        { "date": "MAR 16", "text": "Wall Fell — total: 71 h" }
+      ]
+    },
+    {
+      "id": "s08",
+      "name": "Kwabena Owusu",
+      "faction": "apocalypse",
+      "enrolled": "JAN 12, 2027",
+      "clearance": 4,
+      "moduleStatus": ["partial", "complete", "complete", "none", "none", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": null,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 2880,
+      "decisionLog": [
+        { "date": "MAR 7", "text": "Breach M1 — answered EAST GATE (1st try)" },
+        { "date": "MAR 12", "text": "Lawful Bases in the Wild — 5/5, no retries" }
+      ]
+    },
+    {
+      "id": "s09",
+      "name": "Yuki Tanaka",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 13, 2027",
+      "clearance": 4,
+      "moduleStatus": ["complete", "complete", "complete", "none", "partial", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": 64,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 1440,
+      "decisionLog": [{ "date": "MAR 9", "text": "Wall Fell — total: 64 h" }]
+    },
+    {
+      "id": "s10",
+      "name": "Isabela Ferreira",
+      "faction": "apocalypse",
+      "enrolled": "JAN 13, 2027",
+      "clearance": 5,
+      "moduleStatus": ["complete", "complete", "complete", "complete", "complete", "none"],
+      "threatModel": { "attempts": 2 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": 91,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 4320,
+      "decisionLog": [{ "date": "MAR 11", "text": "Wall Fell — clock started late (+18h) · total: 91 h" }]
+    },
+    {
+      "id": "s11",
+      "name": "Noah Bergström",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 14, 2027",
+      "clearance": 6,
+      "moduleStatus": ["complete", "partial", "complete", "complete", "none", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 2 },
+      "breachHours": 68,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 720,
+      "decisionLog": [
+        { "date": "MAR 8", "text": "Breach M2 — GOBLIN SABOTEUR (1st try)" },
+        { "date": "MAR 17", "text": "Wall Fell — total: 68 h" }
+      ]
+    },
+    {
+      "id": "s12",
+      "name": "Aiko Nakamura",
+      "faction": "apocalypse",
+      "enrolled": "JAN 14, 2027",
+      "clearance": 4,
+      "moduleStatus": ["none", "none", "complete", "none", "complete", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 2 },
+      "breachHours": 59,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 60,
+      "decisionLog": [{ "date": "MAR 13", "text": "Wall Fell — total: 59 h" }]
+    },
+    {
+      "id": "s13",
+      "name": "Liam O'Connor",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 15, 2027",
+      "clearance": 5,
+      "moduleStatus": ["complete", "complete", "complete", "none", "complete", "complete"],
+      "threatModel": { "attempts": 2 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": 70,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 240,
+      "decisionLog": [
+        { "date": "MAR 10", "text": "Shards M2 — flagged S-08 (1st try)" },
+        { "date": "MAR 19", "text": "Wall Fell — total: 70 h" }
+      ]
+    },
+    {
+      "id": "s14",
+      "name": "Fatima Al-Sayed",
+      "faction": "apocalypse",
+      "enrolled": "JAN 15, 2027",
+      "clearance": 4,
+      "moduleStatus": ["complete", "complete", "partial", "none", "complete", "complete"],
+      "threatModel": { "attempts": 2 },
+      "reidPuzzle": { "attempts": 1 },
+      "breachHours": 78,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 2160,
+      "decisionLog": [{ "date": "MAR 14", "text": "Wall Fell — waited past window (+22h) · total: 78 h" }]
+    },
+    {
+      "id": "s15",
+      "name": "Jonas Weber",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 16, 2027",
+      "clearance": 6,
+      "moduleStatus": ["complete", "complete", "complete", "complete", "none", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 2 },
+      "breachHours": 62,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 300,
+      "decisionLog": [
+        { "date": "MAR 9", "text": "Breach M1 — answered WEST GATE (1st try)" },
+        { "date": "MAR 18", "text": "Wall Fell — total: 62 h" }
+      ]
+    },
+    {
+      "id": "s16",
+      "name": "W. Ren",
+      "faction": "unknown",
+      "enrolled": "JAN 16, 2027",
+      "clearance": 4,
+      "moduleStatus": ["complete", "partial", "complete", "complete", "none", "complete"],
+      "threatModel": { "attempts": 1 },
+      "reidPuzzle": { "attempts": 2 },
+      "breachHours": 65,
+      "capstone": "in_progress",
+      "lastActiveMinutes": 5,
+      "lastActiveDisplay": "02:00",
+      "decisionLog": [
+        { "date": "MAR 11", "text": "Wall Fell — total: 65 h" },
+        { "date": "MAR 21", "text": "Annex III quiz — 4/4, no retries" }
+      ]
+    },
+    {
+      "id": "s17",
+      "name": "Tomás Herrera",
+      "faction": "apocalypse",
+      "enrolled": "JAN 18, 2027",
+      "clearance": 2,
+      "moduleStatus": ["partial", "none", "none", "none", "none", "none"],
+      "threatModel": null,
+      "reidPuzzle": null,
+      "breachHours": null,
+      "capstone": "none",
+      "lastActiveMinutes": 1440,
+      "decisionLog": [
+        { "date": "FEB 24", "text": "Breach M1 — answered EAST GATE, then WEST GATE (2 attempts)" },
+        { "date": "FEB 24", "text": "Breach M2 — abandoned mid-dialogue, no answer logged" },
+        { "date": "MAR 1", "text": "Personal Data or Not? — 6/10 cards, session ended early" }
+      ]
+    },
+    {
+      "id": "s18",
+      "name": "Grace Mensah",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 18, 2027",
+      "clearance": 3,
+      "moduleStatus": ["partial", "none", "none", "none", "none", "none"],
+      "threatModel": null,
+      "reidPuzzle": null,
+      "breachHours": null,
+      "capstone": "none",
+      "lastActiveMinutes": 4320,
+      "decisionLog": [{ "date": "FEB 26", "text": "Personal Data or Not? — 4/10 cards, session ended early" }]
+    },
+    {
+      "id": "s19",
+      "name": "Oskar Nowak",
+      "faction": "apocalypse",
+      "enrolled": "JAN 19, 2027",
+      "clearance": 2,
+      "moduleStatus": ["complete", "none", "none", "none", "none", "none"],
+      "threatModel": null,
+      "reidPuzzle": null,
+      "breachHours": null,
+      "capstone": "none",
+      "lastActiveMinutes": 5760,
+      "decisionLog": [{ "date": "MAR 1", "text": "Breach M1 — answered WEST GATE (1st try)" }]
+    },
+    {
+      "id": "s20",
+      "name": "Camila Reyes",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 19, 2027",
+      "clearance": 3,
+      "moduleStatus": ["partial", "none", "none", "none", "none", "none"],
+      "threatModel": null,
+      "reidPuzzle": null,
+      "breachHours": null,
+      "capstone": "none",
+      "lastActiveMinutes": 120,
+      "decisionLog": [
+        { "date": "FEB 24", "text": "Personal Data or Not? — 7/10 cards" },
+        { "date": "MAR 2", "text": "Breach M1 — abandoned mid-dialogue" }
+      ]
+    },
+    {
+      "id": "s21",
+      "name": "Ravi Shankar",
+      "faction": "apocalypse",
+      "enrolled": "JAN 20, 2027",
+      "clearance": 2,
+      "moduleStatus": ["none", "none", "none", "none", "none", "none"],
+      "threatModel": null,
+      "reidPuzzle": null,
+      "breachHours": null,
+      "capstone": "none",
+      "lastActiveMinutes": 1440,
+      "decisionLog": [{ "date": "FEB 22", "text": "Onboarding only — no module or quest activity logged" }]
+    },
+    {
+      "id": "s22",
+      "name": "Zara Ahmed",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 21, 2027",
+      "clearance": 1,
+      "moduleStatus": ["partial", "none", "none", "none", "none", "none"],
+      "threatModel": null,
+      "reidPuzzle": null,
+      "breachHours": null,
+      "capstone": "none",
+      "lastActiveMinutes": 15840,
+      "decisionLog": [
+        { "date": "FEB 18", "text": "Personal Data or Not? — 2/10 cards" },
+        { "date": "—", "text": "No activity in 11 days." }
+      ]
+    },
+    {
+      "id": "s23",
+      "name": "Milo Jansen",
+      "faction": "apocalypse",
+      "enrolled": "JAN 21, 2027",
+      "clearance": 2,
+      "moduleStatus": ["none", "none", "none", "none", "none", "none"],
+      "threatModel": null,
+      "reidPuzzle": null,
+      "breachHours": null,
+      "capstone": "none",
+      "lastActiveMinutes": 12960,
+      "decisionLog": [
+        { "date": "FEB 15", "text": "Onboarding only — no module or quest activity logged" },
+        { "date": "—", "text": "No activity in 9 days." }
+      ]
+    },
+    {
+      "id": "s24",
+      "name": "Hana Suzuki",
+      "faction": "fundamentalist",
+      "enrolled": "JAN 22, 2027",
+      "clearance": 1,
+      "moduleStatus": ["partial", "none", "none", "none", "none", "none"],
+      "threatModel": null,
+      "reidPuzzle": null,
+      "breachHours": null,
+      "capstone": "none",
+      "lastActiveMinutes": 10080,
+      "decisionLog": [
+        { "date": "FEB 20", "text": "Breach M1 — answered EAST GATE (1st try)" },
+        { "date": "—", "text": "No activity in 7 days." }
+      ]
+    }
+  ]
+}

@@ -1,111 +1,296 @@
-// Static mock data — nothing here is wired to a live backend (see
-// PLAN.md Week 4, D22-23). Numbers are fixed rather than randomized so
-// the page looks identical across reloads/rehearsal recordings.
+// Static mock — brochure, not a product. Data comes from one hardcoded
+// JSON of fake students (data/students.json); nothing here is wired to a
+// live backend. Stat cards are always computed from that JSON at render
+// time, never hardcoded, so they can't drift out of sync with the roster.
 
-const STUDENTS = [
-  { name: "Anna Jones", completion: 100, quality: 94, capstone: "complete", lastActive: "2 hours ago" },
-  { name: "Marcus Tran", completion: 100, quality: 91, capstone: "complete", lastActive: "1 day ago" },
-  { name: "Priya Kapoor", completion: 100, quality: 88, capstone: "complete", lastActive: "3 hours ago" },
-  { name: "Jonas Weber", completion: 100, quality: 85, capstone: "complete", lastActive: "5 hours ago" },
-  { name: "Sofia Ricci", completion: 90, quality: 89, capstone: "in_progress", lastActive: "1 hour ago" },
-  { name: "Kwame Mensah", completion: 90, quality: 82, capstone: "in_progress", lastActive: "6 hours ago" },
-  { name: "Elena Petrova", completion: 85, quality: 79, capstone: "in_progress", lastActive: "2 days ago" },
-  { name: "Liam O'Connor", completion: 80, quality: 91, capstone: "in_progress", lastActive: "4 hours ago" },
-  { name: "Yuki Tanaka", completion: 80, quality: 76, capstone: "in_progress", lastActive: "1 day ago" },
-  { name: "Fatima Al-Sayed", completion: 75, quality: 84, capstone: "in_progress", lastActive: "3 hours ago" },
-  { name: "Noah Kim", completion: 75, quality: 68, capstone: "in_progress", lastActive: "2 days ago" },
-  { name: "Isabella Costa", completion: 70, quality: 88, capstone: "in_progress", lastActive: "5 hours ago" },
-  { name: "Deshawn Carter", completion: 65, quality: 73, capstone: "not_started", lastActive: "1 day ago" },
-  { name: "Mei Lin", completion: 65, quality: 92, capstone: "not_started", lastActive: "8 hours ago" },
-  { name: "Oskar Nowak", completion: 60, quality: 65, capstone: "not_started", lastActive: "3 days ago" },
-  { name: "Camila Reyes", completion: 60, quality: 77, capstone: "not_started", lastActive: "2 hours ago" },
-  { name: "Ravi Shankar", completion: 55, quality: 71, capstone: "not_started", lastActive: "1 day ago" },
-  { name: "Grace Mensah", completion: 55, quality: 63, capstone: "not_started", lastActive: "4 days ago" },
-  { name: "Tobias Berg", completion: 50, quality: 58, capstone: "not_started", lastActive: "2 days ago" },
-  { name: "Amara Okafor", completion: 50, quality: 80, capstone: "not_started", lastActive: "6 hours ago" },
-  { name: "Lucas Ferreira", completion: 45, quality: 61, capstone: "not_started", lastActive: "3 days ago" },
-  { name: "Hana Suzuki", completion: 40, quality: 55, capstone: "not_started", lastActive: "5 days ago" },
-  { name: "Ethan Walsh", completion: 35, quality: 66, capstone: "not_started", lastActive: "1 week ago" },
-  { name: "Zara Ahmed", completion: 30, quality: 59, capstone: "not_started", lastActive: "4 days ago" },
-  { name: "Milo Jansen", completion: 20, quality: 50, capstone: "not_started", lastActive: "2 weeks ago" },
-];
+const SEVEN_DAYS_MIN = 7 * 24 * 60;
 
-function initials(name) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+const FACTION_LABEL = { fundamentalist: "AI Optimist", apocalypse: "AI Skeptic", unknown: "" };
+const CAPSTONE_LABEL = { passed: "PASSED", in_progress: "IN PROGRESS", none: "—" };
+
+let DATA = null;
+let sortState = { key: "name", dir: "asc" };
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function qualityChipClass(quality) {
-  if (quality >= 85) return "chip--good";
-  if (quality >= 70) return "chip--ok";
-  return "chip--risk";
+function completedCount(student) {
+  return student.moduleStatus.filter((m) => m === "complete").length;
 }
 
-const CAPSTONE_LABEL = { complete: "Complete", in_progress: "In Progress", not_started: "Not Started" };
-const CAPSTONE_CLASS = { complete: "chip--gold", in_progress: "chip--progress", not_started: "" };
-
-function average(nums) {
-  return Math.round(nums.reduce((a, b) => a + b, 0) / nums.length);
+function attemptsSortValue(quest) {
+  return quest ? quest.attempts : -1;
 }
+
+function capstoneRank(capstone) {
+  return { none: 0, in_progress: 1, passed: 2 }[capstone];
+}
+
+function formatMinutesAgo(minutes) {
+  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1440) return `${Math.round(minutes / 60)} h ago`;
+  const days = Math.round(minutes / 1440);
+  return days === 1 ? "1 day ago" : `${days} days ago`;
+}
+
+function lastActiveText(student) {
+  return student.lastActiveDisplay || formatMinutesAgo(student.lastActiveMinutes);
+}
+
+function threatText(quest) {
+  if (!quest) return "—";
+  return quest.attempts === 1 ? "✓ 1st try" : "✓ 2 attempts";
+}
+
+function breachText(hours) {
+  return hours == null ? "—" : `${hours} h`;
+}
+
+/* ---------------------------------------------------------------------
+   Stat cards
+--------------------------------------------------------------------- */
 
 function renderStats() {
-  const avgCompletion = average(STUDENTS.map((s) => s.completion));
-  const avgQuality = average(STUDENTS.map((s) => s.quality));
-  const capstoneReady = STUDENTS.filter((s) => s.capstone === "complete").length;
+  const students = DATA.students;
+  const avgClearance = students.reduce((a, s) => a + s.clearance, 0) / students.length;
 
-  const stats = [
-    { label: "Students", value: STUDENTS.length, variant: "" },
-    { label: "Avg completion", value: `${avgCompletion}%`, variant: "stat-card__value--blue" },
-    { label: "Avg decision quality", value: `${avgQuality}%`, variant: "stat-card__value--green" },
-    { label: "Capstone ready", value: capstoneReady, variant: "stat-card__value--gold" },
+  const totalModuleSlots = students.length * DATA.modules.length;
+  const completedModules = students.reduce((a, s) => a + completedCount(s), 0);
+  const modulePct = Math.round((completedModules / totalModuleSlots) * 100);
+
+  const breachVals = students.map((s) => s.breachHours).filter((v) => v != null);
+  const avgBreach = Math.round(breachVals.reduce((a, b) => a + b, 0) / breachVals.length);
+
+  const needsAttention = students.filter((s) => s.lastActiveMinutes >= SEVEN_DAYS_MIN).length;
+
+  const cards = [
+    {
+      label: "Avg Clearance",
+      value: `C${avgClearance.toFixed(1)}`,
+      valueClass: "",
+      sub: "",
+      bar: "",
+    },
+    {
+      label: "Modules Completed",
+      value: `${completedModules} / ${totalModuleSlots}`,
+      valueClass: "",
+      sub: "",
+      bar: `<div class="stat-card__bar"><div class="stat-card__bar-fill" style="width:${modulePct}%"></div></div>`,
+    },
+    {
+      label: "Avg Breach Response",
+      value: `${avgBreach} HRS`,
+      valueClass: "",
+      sub: "The Night the Wall Fell",
+      bar: "",
+    },
+    {
+      label: "Needs Attention",
+      value: String(needsAttention),
+      valueClass: "stat-card__value--amber",
+      sub: "no activity in 7+ days",
+      bar: "",
+    },
   ];
 
-  document.getElementById("stat-grid").innerHTML = stats
+  document.getElementById("stat-grid").innerHTML = cards
     .map(
-      (s) => `
+      (c) => `
       <div class="panel stat-card">
-        <div class="stat-card__label">${s.label}</div>
-        <div class="stat-card__value ${s.variant}">${s.value}</div>
+        <div class="stat-card__label">${c.label}</div>
+        <div class="stat-card__value ${c.valueClass}">${c.value}</div>
+        ${c.sub ? `<div class="stat-card__sub">${c.sub}</div>` : ""}
+        ${c.bar}
       </div>`,
     )
     .join("");
 }
 
-function renderRoster() {
-  document.getElementById("roster-count").textContent = `${STUDENTS.length} students`;
+/* ---------------------------------------------------------------------
+   Roster table
+--------------------------------------------------------------------- */
 
-  document.getElementById("roster-body").innerHTML = STUDENTS.map(
-    (s) => `
-    <tr>
-      <td>
-        <div class="student-cell">
-          <div class="student-avatar">${initials(s.name)}</div>
-          <span>${s.name}</span>
-        </div>
-      </td>
-      <td>
-        <div class="completion-cell">
-          <div class="completion-track"><div class="completion-fill" style="width:${s.completion}%"></div></div>
-          <span class="completion-value">${s.completion}%</span>
-        </div>
-      </td>
-      <td><span class="chip ${qualityChipClass(s.quality)}">${s.quality}%</span></td>
-      <td><span class="chip ${CAPSTONE_CLASS[s.capstone]}">${CAPSTONE_LABEL[s.capstone]}</span></td>
-      <td class="last-active">${s.lastActive}</td>
-    </tr>`,
-  ).join("");
+const COLUMNS = [
+  { key: "name", label: "Student", sortValue: (s) => s.name.toLowerCase() },
+  { key: "clearance", label: "Clearance", sortValue: (s) => s.clearance },
+  { key: "modules", label: "Modules", sortValue: (s) => completedCount(s) },
+  { key: "threat", label: "Threat Model", sortValue: (s) => attemptsSortValue(s.threatModel) },
+  { key: "reid", label: "Re-ID Puzzle", sortValue: (s) => attemptsSortValue(s.reidPuzzle) },
+  { key: "breach", label: "Breach Response", sortValue: (s) => (s.breachHours == null ? -1 : s.breachHours) },
+  { key: "capstone", label: "Capstone", sortValue: (s) => capstoneRank(s.capstone) },
+  { key: "lastActive", label: "Last Active", sortValue: (s) => s.lastActiveMinutes },
+];
+
+function renderRosterHead() {
+  document.getElementById("roster-head").innerHTML = COLUMNS.map((col) => {
+    const active = sortState.key === col.key;
+    const arrow = active ? (sortState.dir === "asc" ? "▲" : "▼") : "▲";
+    return `<th data-key="${col.key}" ${active ? "data-sort-active" : ""}>${col.label}<span class="sort-arrow">${arrow}</span></th>`;
+  }).join("");
+
+  document.getElementById("roster-head").querySelectorAll("th").forEach((th) => {
+    th.addEventListener("click", () => {
+      const key = th.dataset.key;
+      if (sortState.key === key) {
+        sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+      } else {
+        sortState = { key, dir: "asc" };
+      }
+      renderRosterHead();
+      renderRosterBody();
+    });
+  });
 }
 
-function exportCsv() {
-  const header = ["Name", "Module Completion (%)", "Decision Quality (%)", "Capstone Status", "Last Active"];
-  const rows = STUDENTS.map((s) => [s.name, s.completion, s.quality, CAPSTONE_LABEL[s.capstone], s.lastActive]);
-  const csv = [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+function sortedStudents() {
+  const col = COLUMNS.find((c) => c.key === sortState.key);
+  const dir = sortState.dir === "asc" ? 1 : -1;
+  return [...DATA.students].sort((a, b) => {
+    const av = col.sortValue(a);
+    const bv = col.sortValue(b);
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return 0;
+  });
+}
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+function moduleSegmentsHtml(student) {
+  return `<div class="module-segments">${student.moduleStatus
+    .map((status, i) => {
+      const cls = status === "none" ? "" : ` module-segment--${status}`;
+      const label = status === "complete" ? "Complete" : status === "partial" ? "In progress" : "Not started";
+      return `<div class="module-segment${cls}" title="${escapeHtml(DATA.modules[i])}: ${label}"></div>`;
+    })
+    .join("")}</div>`;
+}
+
+function breachCellHtml(student) {
+  if (student.breachHours == null) return `<span class="breach-cell breach-cell--empty">—</span>`;
+  const cls = student.breachHours < 72 ? "gold" : "red";
+  return `<span class="breach-cell breach-cell--${cls}">${student.breachHours} h</span>`;
+}
+
+function capstoneCellHtml(student) {
+  if (student.capstone === "none") return `<span class="quest-cell quest-cell--empty">—</span>`;
+  const cls = student.capstone === "passed" ? "passed" : "progress";
+  return `<span class="chip capstone-chip--${cls}">${CAPSTONE_LABEL[student.capstone]}</span>`;
+}
+
+function questCellHtml(quest) {
+  const cls = quest ? "" : " quest-cell--empty";
+  return `<span class="quest-cell${cls}">${threatText(quest)}</span>`;
+}
+
+function renderRosterBody() {
+  document.getElementById("roster-body").innerHTML = sortedStudents()
+    .map(
+      (s) => `
+    <tr data-id="${s.id}">
+      <td>
+        <div class="student-cell">
+          <span class="faction-dot faction-dot--${s.faction}"></span>
+          <span>${escapeHtml(s.name)}</span>
+        </div>
+      </td>
+      <td><span class="clearance-badge">C${s.clearance}</span></td>
+      <td>${moduleSegmentsHtml(s)}</td>
+      <td>${questCellHtml(s.threatModel)}</td>
+      <td>${questCellHtml(s.reidPuzzle)}</td>
+      <td>${breachCellHtml(s)}</td>
+      <td>${capstoneCellHtml(s)}</td>
+      <td><span class="last-active ${s.lastActiveMinutes >= SEVEN_DAYS_MIN ? "last-active--stale" : ""}">${lastActiveText(s)}</span></td>
+    </tr>`,
+    )
+    .join("");
+
+  document.getElementById("roster-body").querySelectorAll("tr").forEach((tr) => {
+    tr.addEventListener("click", () => openDrawer(tr.dataset.id));
+  });
+}
+
+/* ---------------------------------------------------------------------
+   Student detail drawer
+--------------------------------------------------------------------- */
+
+function openDrawer(id) {
+  const student = DATA.students.find((s) => s.id === id);
+  if (!student) return;
+
+  const factionLabel = FACTION_LABEL[student.faction] || "";
+
+  document.getElementById("drawer-body").innerHTML = `
+    <div class="drawer__name">${escapeHtml(student.name)}</div>
+    <div class="drawer__meta">
+      <span class="clearance-badge">C${student.clearance}</span>
+      ${
+        factionLabel
+          ? `<span class="drawer__faction"><span class="faction-dot faction-dot--${student.faction}"></span>${factionLabel}</span>`
+          : `<span class="drawer__faction"><span class="faction-dot faction-dot--${student.faction}"></span></span>`
+      }
+    </div>
+    <div class="drawer__enrolled">Enrolled ${escapeHtml(student.enrolled)}</div>
+    <div class="drawer__section-title">Decision Log</div>
+    <div class="timeline">
+      ${student.decisionLog
+        .map(
+          (entry) => `
+        <div class="timeline-entry">
+          <div class="timeline-entry__date">${escapeHtml(entry.date)}</div>
+          <div class="timeline-entry__text">${escapeHtml(entry.text)}</div>
+        </div>`,
+        )
+        .join("")}
+    </div>
+    <p class="drawer__closing-line">Every decision is logged with reasoning context. Grade the thinking, not the attendance.</p>
+  `;
+
+  document.getElementById("drawer").classList.add("drawer--open");
+  document.getElementById("drawer-backdrop").classList.add("drawer-backdrop--open");
+}
+
+function closeDrawer() {
+  document.getElementById("drawer").classList.remove("drawer--open");
+  document.getElementById("drawer-backdrop").classList.remove("drawer-backdrop--open");
+}
+
+/* ---------------------------------------------------------------------
+   CSV export
+--------------------------------------------------------------------- */
+
+function exportCsv() {
+  const header = [
+    "Student",
+    "Faction",
+    "Clearance",
+    "Modules Completed",
+    "Threat Model",
+    "Re-ID Puzzle",
+    "Breach Response (h)",
+    "Capstone",
+    "Last Active",
+  ];
+
+  const rows = sortedStudents().map((s) => [
+    s.name,
+    FACTION_LABEL[s.faction] || "—",
+    `C${s.clearance}`,
+    `${completedCount(s)}/${DATA.modules.length}`,
+    threatText(s.threatModel),
+    threatText(s.reidPuzzle),
+    s.breachHours == null ? "—" : s.breachHours,
+    CAPSTONE_LABEL[s.capstone],
+    lastActiveText(s),
+  ]);
+
+  const csv = [header, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\r\n");
+
+  // BOM so Excel (which otherwise assumes the system codepage, not UTF-8)
+  // renders the accented names and ✓/— glyphs correctly instead of mojibake.
+  const blob = new Blob(["﻿", csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -114,6 +299,23 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
-renderStats();
-renderRoster();
+/* ---------------------------------------------------------------------
+   Boot
+--------------------------------------------------------------------- */
+
+fetch("data/students.json")
+  .then((res) => res.json())
+  .then((data) => {
+    DATA = data;
+    document.getElementById("course-chip").textContent = DATA.course;
+    renderStats();
+    renderRosterHead();
+    renderRosterBody();
+  });
+
 document.getElementById("export-btn").addEventListener("click", exportCsv);
+document.getElementById("drawer-close").addEventListener("click", closeDrawer);
+document.getElementById("drawer-backdrop").addEventListener("click", closeDrawer);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeDrawer();
+});

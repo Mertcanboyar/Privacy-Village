@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Village — Professor Dashboard</title>
+  <title>Privacy Village — Instructor Console</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -12,6 +12,10 @@
   />
   <link rel="stylesheet" href="ui/design-system.css" />
   <style>
+    :root {
+      --accent-amber: #f5a623;
+    }
+
     html, body {
       margin: 0;
       background: var(--bg-deep);
@@ -19,42 +23,42 @@
     }
 
     .page {
-      max-width: 1200px;
+      max-width: 1320px;
       margin: 0 auto;
-      padding: var(--space-4) var(--space-4) var(--space-6);
+      padding: 20px var(--space-4) 16px;
     }
 
     /* Header */
     .topbar {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: var(--space-3);
-      margin-bottom: var(--space-4);
+      margin-bottom: var(--space-2);
     }
 
     .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-variant-caps: small-caps;
+      color: var(--text-primary);
+    }
+
+    .course-chip {
+      display: inline-block;
+      margin-top: var(--space-1);
       font-family: var(--font-mono);
       font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--accent-gold);
-    }
-
-    .page-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 30px;
-      color: var(--text-primary);
-      margin: var(--space-1) 0 0;
-    }
-
-    .page-subtitle {
-      font-family: var(--font-body);
-      font-size: 15px;
+      letter-spacing: 0.06em;
       color: var(--text-muted);
-      margin-top: 4px;
+      border: 1.5px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      padding: 5px 12px;
+      background: var(--bg-raised);
     }
 
     /* Stat cards */
@@ -62,16 +66,16 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: var(--space-2);
-      margin-bottom: var(--space-4);
+      margin-bottom: 12px;
     }
 
     .stat-card {
-      padding: var(--space-2) var(--space-3);
+      padding: var(--space-2) var(--space-2);
     }
 
     .stat-card__label {
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -81,36 +85,38 @@
     .stat-card__value {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: 32px;
+      font-size: 28px;
       color: var(--text-primary);
       margin-top: 4px;
+      line-height: 1;
     }
 
     .stat-card__value--gold { color: var(--accent-gold); }
-    .stat-card__value--blue { color: var(--accent-blue); }
-    .stat-card__value--green { color: var(--accent-green); }
+    .stat-card__value--amber { color: var(--accent-amber); }
 
-    /* Roster panel + table */
-    .roster-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--space-2);
-    }
-
-    .roster-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 18px;
-      color: var(--text-primary);
-    }
-
-    .roster-count {
+    .stat-card__sub {
+      margin-top: 4px;
       font-family: var(--font-mono);
-      font-size: 13px;
+      font-size: 10.5px;
       color: var(--text-muted);
     }
 
+    .stat-card__bar {
+      margin-top: 8px;
+      height: 5px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .stat-card__bar-fill {
+      height: 100%;
+      background: var(--accent-gold);
+      border-radius: 999px;
+    }
+
+    /* Roster panel + table */
     .roster-panel {
       padding: 0;
       overflow: hidden;
@@ -124,92 +130,142 @@
     table.roster thead th {
       text-align: left;
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--text-muted);
-      padding: 14px var(--space-2);
+      padding: 8px 14px;
       border-bottom: 2px solid var(--border-strong);
       background: var(--bg-raised);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    table.roster thead th:hover {
+      color: var(--text-primary);
+    }
+
+    table.roster thead th .sort-arrow {
+      display: inline-block;
+      margin-left: 4px;
+      color: var(--accent-gold);
+      opacity: 0;
+    }
+
+    table.roster thead th[data-sort-active] .sort-arrow {
+      opacity: 1;
     }
 
     table.roster tbody td {
-      padding: 12px var(--space-2);
+      padding: 2px 14px;
       border-bottom: 1px solid var(--border-strong);
       font-family: var(--font-body);
-      font-size: 14px;
+      font-size: 13px;
+      line-height: 1.2;
       color: var(--text-primary);
       vertical-align: middle;
+      white-space: nowrap;
     }
 
     table.roster tbody tr:last-child td {
       border-bottom: none;
     }
 
+    table.roster tbody tr {
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
     table.roster tbody tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(255, 255, 255, 0.03);
     }
 
     .student-cell {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .student-avatar {
+    .faction-dot {
       flex: none;
-      width: 32px;
-      height: 32px;
+      width: 8px;
+      height: 8px;
       border-radius: 999px;
-      background: var(--bg-raised);
-      border: 2px solid var(--border-strong);
-      display: flex;
+      background: var(--text-muted);
+    }
+
+    .faction-dot--fundamentalist { background: var(--accent-gold); }
+    .faction-dot--apocalypse { background: var(--accent-red); }
+    .faction-dot--unknown { background: var(--accent-blue); }
+
+    .clearance-badge {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
+      min-width: 28px;
+      height: 19px;
+      padding: 0 6px;
       font-family: var(--font-mono);
-      font-size: 12px;
       font-weight: 700;
-      color: var(--text-muted);
+      font-size: 11px;
+      color: var(--accent-gold-ink);
+      background: var(--accent-gold);
+      border: 1.5px solid #b8860f;
+      border-radius: var(--radius-sm);
     }
 
-    .completion-cell {
+    .module-segments {
       display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 160px;
+      gap: 3px;
     }
 
-    .completion-track {
-      flex: 1;
-      height: 10px;
+    .module-segment {
+      width: 14px;
+      height: 9px;
+      border-radius: 2px;
+      border: 1px solid var(--border-strong);
       background: var(--bg-deep);
-      border: 1.5px solid var(--border-strong);
-      border-radius: 999px;
-      overflow: hidden;
     }
 
-    .completion-fill {
-      height: 100%;
-      background: var(--accent-blue);
-      border-radius: 999px;
+    .module-segment--complete {
+      background: var(--accent-gold);
+      border-color: #b8860f;
     }
 
-    .completion-value {
-      flex: none;
-      width: 38px;
+    .module-segment--partial {
+      background: linear-gradient(90deg, var(--accent-gold) 50%, var(--bg-deep) 50%);
+      border-color: #b8860f;
+    }
+
+    .quest-cell {
       font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--text-muted);
-      text-align: right;
+      font-size: 12.5px;
+      color: var(--text-primary);
     }
 
-    /* Decision-quality / capstone chips (dashboard-specific semantics,
-       layered on top of the shared .chip base from design-system.css). */
-    .chip--good { color: var(--accent-gold-ink); background: var(--accent-green); border-color: #1f7a4c; }
-    .chip--ok { color: var(--accent-gold-ink); background: var(--accent-gold); border-color: #b8860f; }
-    .chip--risk { color: var(--text-primary); background: rgba(239, 71, 111, 0.18); border-color: var(--accent-red); }
-    .chip--progress { color: var(--text-primary); background: rgba(76, 201, 240, 0.18); border-color: var(--accent-blue); }
+    .quest-cell--empty {
+      color: var(--text-muted);
+    }
+
+    .breach-cell {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+
+    .breach-cell--gold { color: var(--accent-gold); }
+    .breach-cell--red { color: var(--accent-red); }
+    .breach-cell--empty { color: var(--text-muted); font-weight: 400; }
+
+    table.roster .chip {
+      padding: 2px 8px;
+      font-size: 10px;
+    }
+
+    .capstone-chip--passed { color: var(--accent-gold-ink); background: var(--accent-green); border-color: #1f7a4c; }
+    .capstone-chip--progress { color: var(--text-primary); background: rgba(76, 201, 240, 0.18); border-color: var(--accent-blue); }
 
     .last-active {
       font-family: var(--font-mono);
@@ -217,10 +273,183 @@
       color: var(--text-muted);
     }
 
+    .last-active--stale {
+      color: var(--accent-amber);
+      font-weight: 700;
+    }
+
     .page-footer {
-      margin-top: var(--space-3);
+      margin-top: var(--space-2);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Detail drawer */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast);
+      z-index: 40;
+    }
+
+    .drawer-backdrop--open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 420px;
+      max-width: 92vw;
+      border-radius: 0;
+      border-top: none;
+      border-bottom: none;
+      border-right: none;
+      box-shadow: -8px 0 30px rgba(0, 0, 0, 0.5);
+      transform: translateX(100%);
+      transition: transform 220ms ease;
+      z-index: 50;
+      overflow-y: auto;
+      padding: var(--space-3);
+    }
+
+    .drawer--open {
+      transform: translateX(0);
+    }
+
+    .drawer__close {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--text-muted);
+      background: var(--bg-raised);
+      border: 1.5px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+
+    .drawer__close:hover {
+      color: var(--text-primary);
+    }
+
+    .drawer__name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 24px;
+      color: var(--text-primary);
+      padding-right: 40px;
+    }
+
+    .drawer__meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .drawer__faction {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .drawer__enrolled {
+      margin-top: var(--space-2);
       font-family: var(--font-mono);
       font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .drawer__section-title {
+      margin-top: var(--space-3);
+      margin-bottom: var(--space-2);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 18px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      bottom: 4px;
+      width: 2px;
+      background: var(--border-strong);
+    }
+
+    .timeline-entry {
+      position: relative;
+      padding-bottom: var(--space-2);
+    }
+
+    .timeline-entry:last-child {
+      padding-bottom: 0;
+    }
+
+    .timeline-entry::before {
+      content: "";
+      position: absolute;
+      left: -18px;
+      top: 5px;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--accent-gold);
+      border: 2px solid var(--bg-panel);
+      box-shadow: 0 0 0 1.5px var(--accent-gold);
+    }
+
+    .timeline-entry__date {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .timeline-entry__text {
+      margin-top: 2px;
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: var(--text-primary);
+    }
+
+    .drawer__closing-line {
+      margin-top: var(--space-3);
+      padding-top: var(--space-2);
+      border-top: 1px solid var(--border-strong);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-style: italic;
       color: var(--text-muted);
     }
   </style>
@@ -229,36 +458,31 @@
   <div class="page">
     <div class="topbar">
       <div>
-        <div class="wordmark">Privacy Village</div>
-        <h1 class="page-title">Professor Dashboard</h1>
-        <p class="page-subtitle">AI Governance — Track B · Fall 2026 Cohort</p>
+        <div class="wordmark">Privacy Village — Instructor Console</div>
+        <div class="course-chip" id="course-chip"></div>
       </div>
-      <button class="btn btn--gold" id="export-btn">Export grades (CSV)</button>
+      <button class="btn btn--gold" id="export-btn">Export Grades (CSV)</button>
     </div>
 
     <div class="stat-grid" id="stat-grid"></div>
 
     <div class="panel roster-panel">
-      <div style="padding: var(--space-2) var(--space-2) 0;" class="roster-header">
-        <div class="roster-title">Class roster</div>
-        <div class="roster-count" id="roster-count"></div>
-      </div>
       <table class="roster">
         <thead>
-          <tr>
-            <th>Student</th>
-            <th>Module completion</th>
-            <th>Decision quality</th>
-            <th>Capstone status</th>
-            <th>Last active</th>
-          </tr>
+          <tr id="roster-head"></tr>
         </thead>
         <tbody id="roster-body"></tbody>
       </table>
     </div>
 
-    <p class="page-footer">Decision-log data shown is illustrative — Privacy Village demo build. Nothing on this page is wired to a live backend.</p>
+    <p class="page-footer">LTI / Canvas export — in development</p>
   </div>
+
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <aside class="panel drawer" id="drawer">
+    <div class="drawer__close" id="drawer-close">✕</div>
+    <div id="drawer-body"></div>
+  </aside>
 
   <script src="dashboard.js"></script>
 </body>
