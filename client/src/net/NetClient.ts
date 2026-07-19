@@ -1,15 +1,25 @@
-import { Client, Room, getStateCallbacks } from "colyseus.js";
+import { Client, Room } from "colyseus.js";
 import type { Faction } from "../session";
 
 // Presence-only network layer — see PLAN.md's multiplayer section.
-// getStateCallbacks(room) is used deliberately: the previous, abandoned
-// client (client/src/net/colyseus.ts, since removed) never registered any
-// state-sync listeners at all, which is the most likely explanation for
-// this project's historically-documented "first connection never receives
-// other players" bug (see Room.ts's git history). getStateCallbacks fires
-// onAdd retroactively for entries already in the map at registration time,
-// which a hand-rolled room.state.players.onAdd(...) call would too, but
-// only if actually wired up — this makes sure it is.
+//
+// This does NOT use getStateCallbacks/onAdd/onChange/onRemove, despite
+// that being the obvious API. Verified directly (two real browser tabs
+// against the local dev server): room.state.players itself syncs
+// correctly in the browser bundle — .size and .forEach both reflect the
+// true player count — but getStateCallbacks-registered onAdd/onChange
+// handlers simply never fire, neither retroactively for players already
+// in the map at connect time nor live for players who join afterward. A
+// standalone Node script using the identical colyseus.js version proved
+// the callback API itself isn't broken in general — this reproduces the
+// project's historically-documented "first connection never receives
+// other players" bug, just isolated one step further than the previous
+// attempt's theory (missing listeners) got: the listeners fire in Node,
+// not in this Vite/browser bundle. Root cause not identified (suspect a
+// decorator/bundling interaction) and not worth more of this timebox to
+// chase — polling the schema map directly every frame (pollPlayers(),
+// called from Room.ts's update()) sidesteps it entirely and is just as
+// correct for a ~30-player presence demo.
 const COLYSEUS_URL = import.meta.env.VITE_COLYSEUS_URL ?? "ws://localhost:2567";
 
 const SEND_INTERVAL_MS = 100; // 10Hz
@@ -70,6 +80,10 @@ export class NetClient {
   private changeHandler: PlayerChangeHandler | null = null;
   private removeHandler: PlayerRemoveHandler | null = null;
 
+  // pollPlayers()'s own diff baseline — see the file-level comment on why
+  // this drives add/change/remove instead of getStateCallbacks.
+  private knownPlayers = new Map<string, RemotePlayerSnapshot>();
+
   private lastSend = 0;
   private lastSentX: number | null = null;
   private lastSentY: number | null = null;
@@ -120,7 +134,6 @@ export class NetClient {
       this.room = room;
       this.sessionId = room.sessionId;
       this.resetSendState();
-      this.wireStateCallbacks(room);
     } catch {
       if (!allowRetry || token !== this.connectToken) return;
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
@@ -129,24 +142,44 @@ export class NetClient {
     }
   }
 
-  private wireStateCallbacks(room: Room) {
-    const $ = getStateCallbacks(room);
+  /** Diffs room.state.players against the last-seen snapshot and fires
+   * add/change/remove accordingly. Called once per frame from Room.ts's
+   * update(), right alongside sendMove(). */
+  pollPlayers() {
+    if (!this.room) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const players = (room.state as any).players;
+    const players = (this.room.state as any).players as Map<string, RemotePlayerSnapshot>;
+    const seen = new Set<string>();
 
-    $(players).onAdd((player: RemotePlayerSnapshot, sessionId: string) => {
+    players.forEach((player, sessionId) => {
       if (sessionId === this.sessionId) return;
-      this.addHandler?.(snapshotOf(sessionId, player));
-      $(player).onChange(() => {
-        if (sessionId === this.sessionId) return;
-        this.changeHandler?.(snapshotOf(sessionId, player));
-      });
+      seen.add(sessionId);
+      const snapshot = snapshotOf(sessionId, player);
+      const prev = this.knownPlayers.get(sessionId);
+      if (!prev) {
+        this.knownPlayers.set(sessionId, snapshot);
+        this.addHandler?.(snapshot);
+      } else if (
+        prev.x !== snapshot.x ||
+        prev.y !== snapshot.y ||
+        prev.facing !== snapshot.facing ||
+        prev.moving !== snapshot.moving ||
+        prev.name !== snapshot.name ||
+        prev.faction !== snapshot.faction ||
+        prev.spriteId !== snapshot.spriteId ||
+        prev.clearance !== snapshot.clearance
+      ) {
+        this.knownPlayers.set(sessionId, snapshot);
+        this.changeHandler?.(snapshot);
+      }
     });
 
-    $(players).onRemove((_player: RemotePlayerSnapshot, sessionId: string) => {
-      if (sessionId === this.sessionId) return;
-      this.removeHandler?.(sessionId);
-    });
+    for (const sessionId of this.knownPlayers.keys()) {
+      if (!seen.has(sessionId)) {
+        this.knownPlayers.delete(sessionId);
+        this.removeHandler?.(sessionId);
+      }
+    }
   }
 
   disconnect() {
@@ -156,6 +189,7 @@ export class NetClient {
       this.room = null;
     }
     this.sessionId = null;
+    this.knownPlayers.clear();
     this.resetSendState();
   }
 

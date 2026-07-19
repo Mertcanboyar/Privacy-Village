@@ -16,12 +16,10 @@ const PLAYER_SPEED = 160;
 const SCALE_FAR = 0.75;
 const SCALE_NEAR = 1.0;
 
-// Ambient wanderers — village only (see PLAN.md Day 13 / risk-register
-// fallback). Live multiplayer presence was cut: the first Colyseus
-// connection a fresh page makes never receives other players into its
-// local state (root cause not found; see git history on this file for the
-// investigation). These scripted wanderers stand in for "ambient life"
-// instead.
+// Ambient wanderers — village only (see PLAN.md Day 13). Separate from
+// and unrelated to live multiplayer presence (see net/NetClient.ts),
+// which is wired in — these are scripted "ambient life" NPCs, not a
+// multiplayer fallback.
 const WANDERER_SPEED = 50;
 const WANDERER_ARRIVE_DIST = 6;
 const WANDERER_PAUSE_MIN_MS = 1000;
@@ -450,6 +448,7 @@ export class Room extends Phaser.Scene {
     // player correctly appears standing (not frozen mid-walk) to others,
     // via the same change-detection sendMove already does internally.
     net.sendMove(this.player.x, this.player.y, this.player.flipX ? "left" : "right", localMoving);
+    net.pollPlayers();
     this.remotePlayers.update();
 
     this.updateWanderers(time, dt);

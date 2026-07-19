@@ -40,19 +40,39 @@ Room JSON shape (per room): walkable polygon (for movement clamping),
 door hotspots (rect or polygon + target room), light positions (for any
 ambient glow/flicker effects), NPC spawn points (position + facing).
 
-### Multiplayer presence — not wired in
+### Multiplayer presence — live, local-only
 
-`server/` (Colyseus room) and `client/src/net/colyseus.ts` exist and are
-individually functional (verified with a standalone Node test client:
-joining, leaving, and sending position updates all work correctly), but
-**nothing in the game currently connects to them.** Live multiplayer
-presence was cut per PLAN.md's Day 8-9 fallback: the browser's first
-Colyseus connection each page load never receives other players into its
-local state (extensively debugged, root cause not found). [Room.ts](client/src/scenes/Room.ts)
-uses scripted wanderers (`WANDERER_ROUTES`) instead — see PLAN.md Day 13.
-If you revisit real multiplayer, start by trying to reproduce the bug
-outside Vite/Phaser (a plain bundled web page) to isolate whether it's
-environment-specific.
+`server/` (Colyseus, one `SceneRoom` class partitioned by `sceneId` via
+`filterBy`) and `client/src/net/NetClient.ts` are wired into the game:
+[Room.ts](client/src/scenes/Room.ts) connects on every `create()` (so a
+door transition's `scene.restart()` naturally disconnects the old scene
+and reconnects to the new one), sends local position/facing/moving at
+10Hz (only when changed, and forced to `moving: false` whenever an
+overlay has movement locked), and renders remote players through
+`client/src/net/remotePlayers.ts`'s `RemotePlayerController` — the same
+single-Image system the local player uses (no Sprite/animation frames or
+contact-shadow system exist for any character in this project), lerped
+toward the network position at 12%/frame with a 150px snap for
+teleports/room changes.
+
+**Known quirk, worked around:** `colyseus.js`'s `getStateCallbacks`
+(`onAdd`/`onChange`) never fires inside this Vite/browser bundle, even
+though the raw schema state (`room.state.players.size`/`.forEach`)
+syncs correctly — confirmed by a standalone Node script using the same
+library version, where the callbacks fire fine. This is presumably the
+same bug this project's earlier multiplayer attempt hit and never
+diagnosed. `NetClient.pollPlayers()` works around it by diffing
+`room.state.players` directly once a frame instead of relying on those
+callbacks — see the file's header comment before touching this again.
+
+**Deployment is out of scope for now** — the server only runs via local
+`npm run dev` (`ws://localhost:2567`); nothing is deployed to
+Render/Railway/a VPS, and there's no production `wss://` URL or CORS
+setup yet. Multiplayer is explicitly garnish: connection failure is
+silent (one retry after 5s, then gives up), and the game plays
+identically solo with the server down. Scripted wanderers
+(`WANDERER_ROUTES`) still exist as a separate, unrelated ambient-life
+mechanism — currently empty (see below), not multiplayer's fallback.
 
 ### Player identity (Title / CharacterCreate)
 
