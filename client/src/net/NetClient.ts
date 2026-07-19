@@ -61,9 +61,14 @@ function snapshotOf(sessionId: string, player: {
 export class NetClient {
   private room: Room | null = null;
   private sessionId: string | null = null;
-  private addHandlers: PlayerAddHandler[] = [];
-  private changeHandlers: PlayerChangeHandler[] = [];
-  private removeHandlers: PlayerRemoveHandler[] = [];
+  // Single overwritable slots, not arrays: there's only ever one live
+  // consumer (the currently active Room scene). Room.ts re-registers on
+  // every create(), including scene.restart() on door transitions — that
+  // simply repoints these at the new scene's fresh RemotePlayerController
+  // rather than accumulating stale handlers pointed at destroyed sprites.
+  private addHandler: PlayerAddHandler | null = null;
+  private changeHandler: PlayerChangeHandler | null = null;
+  private removeHandler: PlayerRemoveHandler | null = null;
 
   private lastSend = 0;
   private lastSentX: number | null = null;
@@ -74,15 +79,15 @@ export class NetClient {
   private connectToken = 0;
 
   onPlayerAdd(handler: PlayerAddHandler) {
-    this.addHandlers.push(handler);
+    this.addHandler = handler;
   }
 
   onPlayerChange(handler: PlayerChangeHandler) {
-    this.changeHandlers.push(handler);
+    this.changeHandler = handler;
   }
 
   onPlayerRemove(handler: PlayerRemoveHandler) {
-    this.removeHandlers.push(handler);
+    this.removeHandler = handler;
   }
 
   async connect(sceneId: string, session: NetSession): Promise<void> {
@@ -131,16 +136,16 @@ export class NetClient {
 
     $(players).onAdd((player: RemotePlayerSnapshot, sessionId: string) => {
       if (sessionId === this.sessionId) return;
-      for (const handler of this.addHandlers) handler(snapshotOf(sessionId, player));
+      this.addHandler?.(snapshotOf(sessionId, player));
       $(player).onChange(() => {
         if (sessionId === this.sessionId) return;
-        for (const handler of this.changeHandlers) handler(snapshotOf(sessionId, player));
+        this.changeHandler?.(snapshotOf(sessionId, player));
       });
     });
 
     $(players).onRemove((_player: RemotePlayerSnapshot, sessionId: string) => {
       if (sessionId === this.sessionId) return;
-      for (const handler of this.removeHandlers) handler(sessionId);
+      this.removeHandler?.(sessionId);
     });
   }
 

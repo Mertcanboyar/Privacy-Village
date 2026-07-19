@@ -9,6 +9,8 @@ import { academy } from "../academy";
 import { events } from "../events";
 import { playSound } from "../audio";
 import type { RoomName } from "../rooms";
+import { net } from "../net/NetClient";
+import { RemotePlayerController } from "../net/remotePlayers";
 
 const PLAYER_SPEED = 160;
 const SCALE_FAR = 0.75;
@@ -118,6 +120,7 @@ export class Room extends Phaser.Scene {
   // the end of every create()) and lifts on quest completion.
   private incidentTint: Phaser.GameObjects.Rectangle | null = null;
   private pendingCourthouseDoorPing = false;
+  private remotePlayers!: RemotePlayerController;
 
   constructor() {
     super("Room");
@@ -186,6 +189,25 @@ export class Room extends Phaser.Scene {
     if (this.textures.exists(fgKey)) {
       this.add.image(0, 0, fgKey).setOrigin(0, 0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT).setDepth(1000);
     }
+
+    // Presence-only multiplayer (see PLAN.md) — garnish, never a
+    // dependency. net.connect() silently retries once then gives up if
+    // the server's unreachable, and the game plays identically solo
+    // either way. Re-registering the handlers here (rather than once at
+    // module scope) is what makes this safe across scene.restart(): each
+    // call simply repoints net's single handler slots at this scene's
+    // fresh RemotePlayerController, whose predecessor was already torn
+    // down by normal Phaser scene teardown.
+    this.remotePlayers = new RemotePlayerController(this);
+    net.onPlayerAdd((p) => this.remotePlayers.spawn(p));
+    net.onPlayerChange((p) => this.remotePlayers.applySnapshot(p));
+    net.onPlayerRemove((sessionId) => this.remotePlayers.remove(sessionId));
+    net.connect(this.roomName, {
+      name: getSession().name,
+      spriteId: avatar.id,
+      faction: getSession().faction,
+      clearance: questEngine.getClearance(),
+    });
 
     // The Academy building's doorway is partly obscured by foreground
     // market-stall art, so it gets a floating label (same convention as
@@ -386,6 +408,7 @@ export class Room extends Phaser.Scene {
     const dt = Math.min(this.game.loop.delta, 50) / 1000;
 
     const uiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen;
+    let localMoving = false;
 
     if (!uiOpen) {
       const left = this.cursors.left.isDown || this.wasd.A.isDown;
@@ -401,6 +424,7 @@ export class Room extends Phaser.Scene {
       if (down) vy += 1;
 
       const moving = vx !== 0 || vy !== 0;
+      localMoving = moving;
       if (moving) {
         const len = Math.hypot(vx, vy);
         const stepX = (vx / len) * PLAYER_SPEED * dt;
@@ -421,6 +445,12 @@ export class Room extends Phaser.Scene {
       if (left) this.player.setFlipX(true);
       else if (right) this.player.setFlipX(false);
     }
+
+    // While an overlay has movement locked, localMoving stays false — the
+    // player correctly appears standing (not frozen mid-walk) to others,
+    // via the same change-detection sendMove already does internally.
+    net.sendMove(this.player.x, this.player.y, this.player.flipX ? "left" : "right", localMoving);
+    this.remotePlayers.update();
 
     this.updateWanderers(time, dt);
     this.npcController.update(this.player.x, this.player.y);
@@ -451,6 +481,7 @@ export class Room extends Phaser.Scene {
 
       if (inside) {
         this.transitioning = true;
+        net.disconnect();
         this.scene.restart({ room: door.target as RoomName });
         return;
       }
