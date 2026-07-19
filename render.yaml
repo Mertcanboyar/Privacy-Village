@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: privacy-village-server
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: ALLOWED_ORIGINS
+        sync: false

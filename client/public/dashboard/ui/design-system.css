@@ -1,0 +1,843 @@
+/*
+  Privacy Village — UI Design System
+  Boot.dev-inspired gamified dark UI. Loaded by both index.html (the game)
+  and ui-kit.html (component catalog). Plain CSS, no preprocessor.
+
+  Fonts are loaded via <link> in each HTML entry's <head> (Space Grotesk,
+  Inter, JetBrains Mono) — never fall back to a browser default font.
+*/
+
+:root {
+  /* Surfaces */
+  --bg-deep: #14161f;
+  --bg-panel: #1e2130;
+  --bg-raised: #272b3d;
+  --border-strong: #3d4257;
+
+  /* Text */
+  --text-primary: #f2f0e9;
+  --text-muted: #9aa0b5;
+
+  /* Accents */
+  --accent-gold: #f0b429;
+  --accent-gold-ink: #1a1500;
+  --accent-blue: #4cc9f0;
+  --accent-green: #3ddc84;
+  --accent-red: #ef476f;
+
+  /* Shape */
+  --shadow-hard: 4px 4px 0px rgba(0, 0, 0, 0.55);
+  --shadow-hard-lift: 6px 6px 0px rgba(0, 0, 0, 0.55);
+  --radius: 10px;
+  --radius-sm: 6px;
+
+  /* 8px spacing grid */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+
+  /* Type */
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --transition-fast: 140ms ease;
+}
+
+/* ---------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------- */
+
+.ds-root,
+.ds-root * {
+  box-sizing: border-box;
+}
+
+.ds-root {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+/* ---------------------------------------------------------------------
+   1. .panel — base card. Variant .panel--glow adds an accent-blue outer
+   glow for magical/case content (the quest briefing panel).
+
+   <div class="panel">...</div>
+   <div class="panel panel--glow">...</div>
+--------------------------------------------------------------------- */
+
+.panel {
+  position: relative;
+  background: var(--bg-panel);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--space-3);
+}
+
+/* 1px inner highlight so floating panels read as UI, not scene art. */
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--radius) - 1px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.panel--glow {
+  border-color: rgba(76, 201, 240, 0.45);
+  box-shadow: var(--shadow-hard), 0 0 28px rgba(76, 201, 240, 0.22), 0 0 2px rgba(76, 201, 240, 0.35);
+}
+
+/* ---------------------------------------------------------------------
+   2. .btn — chunky button. Variants: .btn--gold (primary), .btn--ghost
+   (outline), .btn--danger.
+
+   <button class="btn btn--gold">Continue</button>
+--------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 14px;
+  padding: 12px 22px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border-strong);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-hard);
+  cursor: pointer;
+  transform: translate(0, 0);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-hard-lift);
+}
+
+.btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: var(--shadow-hard);
+}
+
+.btn--gold {
+  background: var(--accent-gold);
+  color: var(--accent-gold-ink);
+  border-color: #b8860f;
+}
+
+.btn--ghost {
+  background: transparent;
+}
+
+.btn--danger {
+  background: var(--accent-red);
+  color: #2a0008;
+  border-color: #9c1236;
+}
+
+/* ---------------------------------------------------------------------
+   3. .quest-card — quest list item.
+
+   <div class="quest-card">
+     <div class="quest-card__icon"></div>
+     <div class="quest-card__info">
+       <div class="quest-card__title">Case #004: AI Vendor Audit</div>
+       <div class="quest-card__desc">Review the chatbot's data handling.</div>
+     </div>
+     <div class="quest-card__meta">
+       <span class="quest-card__xp">+250 XP</span>
+       <span class="chip">MEDIUM</span>
+     </div>
+   </div>
+--------------------------------------------------------------------- */
+
+.quest-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-panel);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--space-2);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.quest-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-hard-lift);
+}
+
+.quest-card__icon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  border: 2px solid var(--border-strong);
+  image-rendering: pixelated;
+}
+
+.quest-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.quest-card__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.quest-card__desc {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quest-card__meta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+.quest-card__xp {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent-gold);
+}
+
+/* ---------------------------------------------------------------------
+   4. .briefing — case briefing panel (sits inside a .panel.panel--glow).
+   .chip — small mono metadata label.
+
+   <div class="panel panel--glow">
+     <div class="briefing">
+       <div class="briefing__header">
+         <span class="briefing__case">CASE #004-AI</span>
+         <h2 class="briefing__title">HR Onboarding Platform</h2>
+       </div>
+       <hr class="briefing__divider" />
+       <p class="briefing__body">...</p>
+       <div class="briefing__meta">
+         <span class="chip">EU AI ACT</span>
+         <span class="chip">ANNEX III</span>
+         <span class="chip">45 MIN</span>
+       </div>
+     </div>
+   </div>
+--------------------------------------------------------------------- */
+
+.briefing__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.briefing__case {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-blue);
+}
+
+.briefing__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.briefing__divider {
+  border: none;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-gold), rgba(240, 180, 41, 0));
+  margin: var(--space-2) 0;
+}
+
+.briefing__body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-line;
+}
+
+.briefing__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  background: var(--bg-raised);
+}
+
+.chip--gold {
+  color: var(--accent-gold-ink);
+  background: var(--accent-gold);
+  border-color: #b8860f;
+}
+
+/* ---------------------------------------------------------------------
+   5. .dialogue — NPC dialogue box. Semi-transparent backdrop-blur is
+   used ONLY here.
+
+   <div class="dialogue">
+     <div class="dialogue__name">HERALD</div>
+     <div class="dialogue__body">Hear ye! ...</div>
+     <div class="dialogue__continue">▸ CONTINUE</div>
+   </div>
+--------------------------------------------------------------------- */
+
+.dialogue {
+  position: relative;
+  background: rgba(20, 22, 31, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+}
+
+.dialogue::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--radius) - 1px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.dialogue__name {
+  position: absolute;
+  top: -14px;
+  left: 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-gold-ink);
+  background: var(--accent-gold);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 2px 10px;
+}
+
+.dialogue__body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  min-height: 3.2em;
+}
+
+.dialogue__continue {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent-gold);
+  margin-top: var(--space-1);
+  animation: ds-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ds-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ---------------------------------------------------------------------
+   6. .xp-bar — progress bar with a square/hex level badge.
+
+   <div class="xp-bar">
+     <div class="level-badge">L3</div>
+     <div class="xp-bar__track"><div class="xp-bar__fill" style="width:64%"></div></div>
+     <div class="xp-bar__value">640 / 1000</div>
+   </div>
+--------------------------------------------------------------------- */
+
+.xp-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.level-badge {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent-gold-ink);
+  background: var(--accent-gold);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hard);
+}
+
+.xp-bar__track {
+  flex: 1;
+  height: 18px;
+  background: var(--bg-deep);
+  border: 2px solid var(--border-strong);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.xp-bar__fill {
+  height: 100%;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.18) 0,
+      rgba(255, 255, 255, 0.18) 8px,
+      transparent 8px,
+      transparent 16px
+    ),
+    var(--accent-gold);
+  background-size: 32px 32px, auto;
+  animation: ds-stripe 1.2s linear infinite;
+  transition: width 400ms ease;
+}
+
+@keyframes ds-stripe {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 32px 0, 0 0; }
+}
+
+.xp-bar__value {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------
+   7. .meter — consequence meter (Legal Risk, User Trust, ...). Width
+   animates on change; .meter__delta flashes the change amount.
+
+   <div class="meter">
+     <div class="meter__label">Legal Risk</div>
+     <div class="meter__track"><div class="meter__fill" style="width:42%"></div></div>
+     <div class="meter__delta meter__delta--down">-12</div>
+   </div>
+--------------------------------------------------------------------- */
+
+.meter {
+  display: grid;
+  grid-template-columns: 96px 1fr 44px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.meter__label {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.meter__track {
+  height: 12px;
+  background: var(--bg-deep);
+  border: 2px solid var(--border-strong);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.meter__fill {
+  height: 100%;
+  background: var(--accent-blue);
+  transition: width 400ms ease;
+}
+
+.meter__fill--risk {
+  background: var(--accent-red);
+}
+
+.meter__delta {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.meter__delta--down {
+  color: var(--accent-red);
+}
+
+.meter__delta--up {
+  color: var(--accent-green);
+}
+
+/* ---------------------------------------------------------------------
+   8. .badge-popup — award modal shown on trial/quest completion.
+
+   <div class="badge-popup">
+     <div class="badge-popup__icon">...svg...</div>
+     <div class="badge-popup__label">Trial Complete</div>
+     <div class="badge-popup__name">Data Classification Novice</div>
+     <div class="badge-popup__xp">+180 <span>XP</span></div>
+   </div>
+--------------------------------------------------------------------- */
+
+.badge-popup {
+  position: relative;
+  width: 360px;
+  text-align: center;
+  background: var(--bg-panel);
+  border: 2px solid var(--accent-gold);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard), 0 0 40px rgba(240, 180, 41, 0.25);
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  animation: ds-badge-in 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.badge-popup::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--radius) - 1px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+@keyframes ds-badge-in {
+  0% { opacity: 0; transform: scale(0.6); }
+  70% { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.badge-popup__icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto var(--space-2);
+  color: var(--accent-gold);
+}
+
+.badge-popup__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.badge-popup__label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.badge-popup__name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--accent-gold);
+  margin-top: var(--space-1);
+}
+
+.badge-popup__xp {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text-primary);
+  margin-top: var(--space-2);
+}
+
+.badge-popup__xp span {
+  margin-left: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------
+   9. .toast — small corner notification, auto-dismiss (JS toggles
+   .toast--out to fade before removal).
+
+   <div class="toast">Quest updated</div>
+--------------------------------------------------------------------- */
+
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hard);
+  padding: 10px 14px;
+  animation: ds-toast-in 200ms ease;
+}
+
+.toast--out {
+  animation: ds-toast-out 200ms ease forwards;
+}
+
+@keyframes ds-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ds-toast-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(8px); }
+}
+
+/* ---------------------------------------------------------------------
+   10. .leaderboard-row
+
+   <div class="leaderboard-row">
+     <span class="leaderboard-row__rank">1</span>
+     <span class="leaderboard-row__avatar"></span>
+     <span class="leaderboard-row__name">Anna J.</span>
+     <span class="leaderboard-row__xp">1,240 XP</span>
+   </div>
+--------------------------------------------------------------------- */
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.leaderboard-row__rank {
+  flex: none;
+  width: 24px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.leaderboard-row__rank--top {
+  color: var(--accent-gold);
+}
+
+.leaderboard-row__avatar {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--bg-raised);
+  border: 2px solid var(--border-strong);
+}
+
+.leaderboard-row__name {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.leaderboard-row__xp {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-gold);
+}
+
+/* ---------------------------------------------------------------------
+   Supporting: .ui-backdrop — full-stage dim behind modal panels/popups.
+--------------------------------------------------------------------- */
+
+.ui-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+/* ---------------------------------------------------------------------
+   Supporting: .drag-card / .drop-zone — infrastructure for the quest's
+   drag-to-classify interaction, not part of the 10-component catalog.
+
+   <div class="drag-card">Full Name</div>
+   <div class="drop-zone drop-zone--personal">Personal Data</div>
+--------------------------------------------------------------------- */
+
+.drag-card {
+  position: absolute;
+  width: 340px;
+  padding: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
+  text-align: center;
+  background: var(--bg-raised);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: box-shadow var(--transition-fast);
+}
+
+.drag-card:active {
+  cursor: grabbing;
+  box-shadow: var(--shadow-hard-lift);
+}
+
+.drop-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.03);
+  transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+}
+
+.drop-zone--not_personal { border-color: rgba(61, 220, 132, 0.55); }
+.drop-zone--personal { border-color: rgba(76, 201, 240, 0.55); }
+.drop-zone--sensitive { border-color: rgba(239, 71, 111, 0.55); }
+
+.drop-zone--hover.drop-zone--not_personal { background: rgba(61, 220, 132, 0.18); border-color: var(--accent-green); transform: scale(1.02); }
+.drop-zone--hover.drop-zone--personal { background: rgba(76, 201, 240, 0.18); border-color: var(--accent-blue); transform: scale(1.02); }
+.drop-zone--hover.drop-zone--sensitive { background: rgba(239, 71, 111, 0.18); border-color: var(--accent-red); transform: scale(1.02); }
+
+/* ---------------------------------------------------------------------
+   Supporting: .avatar-option — character-creation avatar picker card.
+   Not part of the 10-component catalog. The bob keyframe is a cheap
+   stand-in for "idle animation" until real animated sprite frames exist.
+
+   <div class="avatar-option avatar-option--selected">
+     <img src="/assets/sprites/player/wizard.png" alt="Wizard" />
+     <span>Wizard</span>
+   </div>
+--------------------------------------------------------------------- */
+
+.avatar-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--bg-panel);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.avatar-option:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-hard-lift);
+}
+
+.avatar-option img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  animation: ds-avatar-bob 3s ease-in-out infinite;
+}
+
+.avatar-option span {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.avatar-option--selected {
+  border-color: var(--accent-gold);
+  box-shadow: var(--shadow-hard), 0 0 20px rgba(240, 180, 41, 0.35);
+  transform: scale(1.05);
+}
+
+.avatar-option--selected span {
+  color: var(--accent-gold);
+}
+
+@keyframes ds-avatar-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* ---------------------------------------------------------------------
+   Supporting: HUD animations (client/src/hud.ts) — floating XP delta
+   and the level-up screen flash.
+--------------------------------------------------------------------- */
+
+@keyframes ds-delta-float {
+  0% { opacity: 0; transform: translateY(0); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-28px); }
+}
+
+@keyframes ds-levelup-flash {
+  0% { opacity: 0; }
+  30% { opacity: 0.35; }
+  100% { opacity: 0; }
+}

@@ -65,12 +65,15 @@ diagnosed. `NetClient.pollPlayers()` works around it by diffing
 `room.state.players` directly once a frame instead of relying on those
 callbacks — see the file's header comment before touching this again.
 
-**Deployment is out of scope for now** — the server only runs via local
-`npm run dev` (`ws://localhost:2567`); nothing is deployed to
-Render/Railway/a VPS, and there's no production `wss://` URL or CORS
-setup yet. Multiplayer is explicitly garnish: connection failure is
-silent (one retry after 5s, then gives up), and the game plays
-identically solo with the server down. Scripted wanderers
+**Deployment:** server on Render (`render.yaml` blueprint at the repo
+root), client on Vercel (root directory `client`) — see
+[DEPLOY.md](DEPLOY.md) for the click-by-click setup. The WS endpoint is
+`VITE_WS_URL` (client env var, `ws://localhost:2567` fallback for dev);
+the server's allowed CORS origins come from `ALLOWED_ORIGINS` (comma-
+separated, `http://localhost:5173` fallback). Multiplayer is explicitly
+garnish regardless of deployment: connection failure is silent (one
+retry after 5s, then gives up), and the game plays identically solo
+with the server down. Scripted wanderers
 (`WANDERER_ROUTES`) still exist as a separate, unrelated ambient-life
 mechanism — currently empty (see below), not multiplayer's fallback.
 

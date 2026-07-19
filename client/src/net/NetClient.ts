@@ -20,7 +20,7 @@ import type { Faction } from "../session";
 // chase — polling the schema map directly every frame (pollPlayers(),
 // called from Room.ts's update()) sidesteps it entirely and is just as
 // correct for a ~30-player presence demo.
-const COLYSEUS_URL = import.meta.env.VITE_COLYSEUS_URL ?? "ws://localhost:2567";
+const COLYSEUS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:2567";
 
 const SEND_INTERVAL_MS = 100; // 10Hz
 const RETRY_DELAY_MS = 5000;
