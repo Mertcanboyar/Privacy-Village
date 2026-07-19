@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import { Server } from "colyseus";
 import { WebSocketTransport } from "@colyseus/ws-transport";
-import { VillageRoom } from "./rooms/VillageRoom";
+import { SceneRoom } from "./rooms/SceneRoom";
 
 const port = Number(process.env.PORT ?? 2567);
 
@@ -17,8 +17,8 @@ const gameServer = new Server({
   transport: new WebSocketTransport({ server: httpServer }),
 });
 
-gameServer.define("village", VillageRoom);
+gameServer.define("scene", SceneRoom).filterBy(["sceneId"]);
 
 httpServer.listen(port, () => {
-  console.log(`Colyseus village server listening on ws://localhost:${port}`);
+  console.log(`Colyseus scene-presence server listening on ws://localhost:${port}`);
 });
