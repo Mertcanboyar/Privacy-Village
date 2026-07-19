@@ -64,7 +64,15 @@ export function getAvatarOption(): AvatarOption {
  * color if no faction is chosen — shouldn't happen post-CharacterCreate,
  * but Room.ts can be reached directly during testing). */
 export function getFactionColor(): string {
-  if (current.faction === "fundamentalist") return "#f0b429"; // --accent-gold
-  if (current.faction === "apocalypse") return "#ef476f"; // --accent-red
+  return factionColorFor(current.faction);
+}
+
+/** Same color mapping, for an arbitrary faction string rather than the
+ * local session's — remote players carry their own faction over the
+ * network (see net/NetClient.ts), so their name tags can't read from
+ * `current`. */
+export function factionColorFor(faction: string | null | undefined): string {
+  if (faction === "fundamentalist") return "#f0b429"; // --accent-gold
+  if (faction === "apocalypse") return "#ef476f"; // --accent-red
   return "#f2f0e9"; // --text-primary
 }
