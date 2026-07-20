@@ -138,6 +138,73 @@ now.
 
 ---
 
+## E. Optional: waitlist emails (Resend)
+
+The title screen's "Become a Founding Agent" email capture (see
+`client/api/waitlist.ts`) sends a welcome email to whoever signs up and
+a notification to you, via [Resend](https://resend.com). Without these
+env vars set, signup still works from the player's side — it just
+silently skips sending any email (see that file's failure policy) —
+so this section is optional, not required for the game itself to run.
+
+These are **runtime** environment variables, read fresh on every
+request — unlike `VITE_WS_URL` in step B, changing them does **not**
+require a rebuild or redeploy click; Vercel picks up the new value on
+the very next request to `/api/waitlist` once saved.
+
+1. Go to **[resend.com](https://resend.com)**, sign in (or create an
+   account), and verify a sending domain — you'll need DNS access to
+   `privacyvillage.org` (or whatever domain you're sending from) to add
+   the DKIM/SPF records Resend gives you. This is a Resend-side step
+   with its own instructions on their dashboard; the emails are
+   hardcoded in `waitlist.ts` to send `from: "Privacy Village
+   <agents@privacyvillage.org>"`, so that address's domain is what
+   needs to be verified.
+2. Create an API key: **API Keys** → **Create API Key** in the Resend
+   dashboard. Copy it — Resend only shows it once.
+3. In Vercel, open your **privacy-village** project → **Settings** →
+   **Environment Variables**, and add:
+   - Name:
+     ```
+     RESEND_API_KEY
+     ```
+     Value: the key from step 2, e.g.
+     ```
+     re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+     ```
+   - Name:
+     ```
+     OWNER_NOTIFY_EMAIL
+     ```
+     Value: the inbox that should receive a "New Founding Agent: ..."
+     notification for every signup, e.g.
+     ```
+     you@yourdomain.com
+     ```
+4. **Optional** — if you want signups also added to a Resend Audience
+   (for a broadcast/newsletter list later), create one in Resend
+   (**Audiences** → **Create Audience**), copy its ID, and add a third
+   variable:
+   - Name:
+     ```
+     RESEND_AUDIENCE_ID
+     ```
+     Value: the audience ID from Resend, e.g.
+     ```
+     78261eea-8f8b-4381-83c6-79fa7120f1cf
+     ```
+   Leave this one unset entirely if you don't want it — the code skips
+   the audience call silently when it's absent, no error either way.
+5. Both `RESEND_API_KEY` and `OWNER_NOTIFY_EMAIL` are required for
+   email sending to actually happen (`RESEND_AUDIENCE_ID` is the only
+   truly optional one) — set Environment to **Production** (and
+   **Preview**/**Development** too, if you want emails firing from
+   preview deploys, which you probably don't).
+6. No redeploy needed — just try a real signup on the live site and
+   check both inboxes.
+
+---
+
 ## Verification checklist
 
 Run through these on the live URL (Vercel URL, or your custom domain if
@@ -160,3 +227,23 @@ you set one up) once everything above is deployed:
       load and play completely normally with no errors — multiplayer is
       designed to fail silently. Resume the service afterward
       (Settings → **Resume Service**) to bring multiplayer back.
+- [ ] **Waitlist signup (if you set up section E).** On the title
+      screen, enter a real email you can check and click **Join & Enter
+      the Village**. Confirm: the "Welcome, Agent" toast appears, you
+      land in avatar creation with the name field pre-filled from your
+      email, the welcome email arrives in your inbox, and the
+      notification email arrives at `OWNER_NOTIFY_EMAIL`. Open both in
+      Gmail and Outlook (or Outlook.com) if you can — the templates are
+      table-based with inline styles specifically for Outlook's quirks,
+      but real-client rendering is worth an eyeball check.
+- [ ] **Waitlist fails silently without Resend.** In Vercel, remove (or
+      temporarily rename) the `RESEND_API_KEY` environment variable and
+      redeploy — or just test this locally, since the same code path
+      handles a missing key either way. Sign up again: no emails send,
+      but you should still land in avatar creation with the name
+      pre-filled, exactly as if it had worked. Restore the env var
+      afterward.
+- [ ] **"Just exploring" is untouched.** Reload the title screen and
+      click **just exploring →** instead. You should land directly in
+      avatar creation with an empty name field — no email prompt, no
+      toast, no waitlist call at all.
