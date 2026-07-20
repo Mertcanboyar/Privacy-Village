@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Notice — Privacy Village</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/ui/design-system.css" />
+  <style>
+    html, body {
+      margin: 0;
+      background: var(--bg-deep);
+      min-height: 100%;
+    }
+
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: var(--space-5) var(--space-4) var(--space-6);
+    }
+
+    .wordmark {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+      margin-bottom: var(--space-1);
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 32px;
+      color: var(--text-primary);
+      margin: 0 0 var(--space-3);
+    }
+
+    .intro {
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      margin-bottom: var(--space-4);
+    }
+
+    dl.facts {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: var(--space-2) var(--space-3);
+    }
+
+    dl.facts dt {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+      padding-top: 2px;
+    }
+
+    dl.facts dd {
+      margin: 0;
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-primary);
+    }
+
+    dl.facts dd a {
+      color: var(--text-primary);
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: var(--space-4);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      color: var(--text-primary);
+    }
+
+    @media (max-width: 560px) {
+      dl.facts {
+        grid-template-columns: 1fr;
+        gap: var(--space-1) 0;
+      }
+      dl.facts dt {
+        margin-top: var(--space-2);
+      }
+    }
+  </style>
+</head>
+<body class="ds-root">
+  <div class="page">
+    <div class="wordmark">Privacy Village</div>
+    <h1 class="page-title">Privacy Notice</h1>
+
+    <p class="intro">
+      Every agent's file is kept exactly as promised — nothing more, nothing hidden, nothing sold.
+      Here's the ledger, in plain language.
+    </p>
+
+    <div class="panel">
+      <dl class="facts">
+        <dt>Controller</dt>
+        <dd>Imagine Privacy INC.</dd>
+
+        <dt>What we collect</dt>
+        <dd>Just the email address you give us when joining the Founding Agent waitlist.</dd>
+
+        <dt>Why</dt>
+        <dd>To send waitlist confirmations and occasional Privacy Village product updates — nothing else.</dd>
+
+        <dt>Lawful basis</dt>
+        <dd>Your consent, given when you submit the signup form.</dd>
+
+        <dt>Retention</dt>
+        <dd>Until you unsubscribe. Reply <strong>STOP</strong> to any email, or use the unsubscribe link in its footer, any time.</dd>
+
+        <dt>Processor</dt>
+        <dd><a href="https://resend.com" target="_blank" rel="noopener noreferrer">Resend</a> sends the emails on our behalf. We don't share your address with anyone else.</dd>
+
+        <dt>Your rights</dt>
+        <dd>Access, correction, or deletion of your data — email <a href="mailto:agents@privacyvillage.org">agents@privacyvillage.org</a> and a human will handle it.</dd>
+
+        <dt>Analytics</dt>
+        <dd>None. This site doesn't use tracking cookies or analytics of any kind.</dd>
+      </dl>
+    </div>
+
+    <a class="back-link" href="/">← Back to Privacy Village</a>
+  </div>
+</body>
+</html>
