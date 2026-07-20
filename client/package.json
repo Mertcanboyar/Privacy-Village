@@ -14,6 +14,7 @@
     "vite": "^8.1.1"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
     "colyseus.js": "^0.16.22",
     "phaser": "^4.2.1",
     "resend": "^6.17.2"
