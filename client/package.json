@@ -9,11 +9,13 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/node": "^26.1.1",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   },
   "dependencies": {
     "colyseus.js": "^0.16.22",
-    "phaser": "^4.2.1"
+    "phaser": "^4.2.1",
+    "resend": "^6.17.2"
   }
 }
