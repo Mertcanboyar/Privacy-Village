@@ -140,7 +140,7 @@ now.
 
 ## E. Optional: waitlist emails (Resend)
 
-The title screen's "Become a Founding Agent" email capture (see
+The title screen's "Become a Founding Privacy Villager" email capture (see
 `client/api/waitlist.ts`) sends a welcome email to whoever signs up and
 a notification to you, via [Resend](https://resend.com). Without these
 env vars set, signup still works from the player's side — it just
@@ -176,7 +176,7 @@ the very next request to `/api/waitlist` once saved.
      ```
      OWNER_NOTIFY_EMAIL
      ```
-     Value: the inbox that should receive a "New Founding Agent: ..."
+     Value: the inbox that should receive a "New Founding Privacy Villager: ..."
      notification for every signup, e.g.
      ```
      you@yourdomain.com

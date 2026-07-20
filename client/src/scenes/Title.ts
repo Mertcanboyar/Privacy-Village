@@ -173,7 +173,7 @@ export class Title extends Phaser.Scene {
       { className: "panel", style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "28px 36px 24px" } },
       [
         el("div", {
-          text: "Become a Founding Agent",
+          text: "Become a Founding Privacy Villager",
           style: {
             fontFamily: "var(--font-display)",
             fontWeight: "700",

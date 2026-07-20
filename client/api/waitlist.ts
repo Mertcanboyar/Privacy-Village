@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-// Vercel serverless function — POST { email } to join the Founding Agent
+// Vercel serverless function — POST { email } to join the Founding Privacy Villager
 // waitlist. Wired from Title.ts's soft gate; see this repo's DEPLOY.md
 // for the RESEND_API_KEY / OWNER_NOTIFY_EMAIL / RESEND_AUDIENCE_ID env
 // vars this depends on.
@@ -68,7 +68,7 @@ export function welcomeEmailHtml(): string {
         <div style="font-family:'Courier New',Courier,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f0b429;">Privacy Village</div>
       </td></tr>
       <tr><td style="padding:8px 32px 24px;">
-        <p style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.6;color:#f2f0e9;">Enlistment recorded, <strong>Agent</strong> &mdash; your name is now filed in the ledger of Privacy Village's <span style="font-family:'Courier New',monospace;color:#f0b429;">Founding Agents</span>.</p>
+        <p style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.6;color:#f2f0e9;">Enlistment recorded, <strong>Agent</strong> &mdash; your name is now filed in the ledger of Privacy Village's <span style="font-family:'Courier New',monospace;color:#f0b429;">Founding Privacy Villagers</span>.</p>
         <p style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.6;color:#f2f0e9;">Early access to new Trials, the annual festival, and the first credentials will reach you the moment the gates open.</p>
         <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.6;color:#f2f0e9;">Reply to this dispatch any time &mdash; a human reads every one, not a machine.</p>
       </td></tr>
@@ -99,7 +99,7 @@ export function notifyEmailHtml(email: string, utc: string, istanbul: string): s
   <tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#1e2130;border:2px solid #3d4257;border-radius:10px;">
       <tr><td style="padding:24px 28px;">
-        <div style="font-family:'Courier New',Courier,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f0b429;margin-bottom:12px;">New Founding Agent</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f0b429;margin-bottom:12px;">New Founding Privacy Villager</div>
         <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#f2f0e9;">Email: <span style="font-family:'Courier New',monospace;">${escapeHtml(email)}</span></p>
         <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#f2f0e9;">Time: ${escapeHtml(utc)} &middot; ${escapeHtml(istanbul)}</p>
         <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#9aa0b5;">Filed from play.privacyvillage.org</p>
@@ -176,7 +176,7 @@ export default async function handler(req: WaitlistRequest, res: WaitlistRespons
       await resend.emails.send({
         from: FROM_ADDRESS,
         to: OWNER_NOTIFY_EMAIL,
-        subject: `New Founding Agent: ${email}`,
+        subject: `New Founding Privacy Villager: ${email}`,
         html: notifyEmailHtml(email, utc, istanbul),
       });
     } catch (err) {

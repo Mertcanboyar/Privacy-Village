@@ -175,22 +175,54 @@ export class CharacterCreate extends Phaser.Scene {
 
   private showFactionChoices(dialogue: HTMLElement) {
     const buttonRow = el("div", { style: { display: "flex", gap: "16px", marginTop: "20px" } }, [
-      this.buildFactionButton("fundamentalist", "btn--gold", "AI Optimist", "Machines can be taught — the future is bright, if we build it with care."),
-      this.buildFactionButton("apocalypse", "btn--danger", "AI Skeptic", "Machines must be watched closely — every safeguard matters."),
+      this.buildFactionOption(
+        "fundamentalist",
+        "btn--gold",
+        "AI Fundamentalist",
+        "Machines can be taught — the future is bright, if we build it with care.",
+        "https://www.privacyvillage.org/AI-Fundamentalist-Faction-HQ-541d2072ad1a45e3b8746636eef57bf8",
+      ),
+      this.buildFactionOption(
+        "apocalypse",
+        "btn--danger",
+        "AI Apocalypse",
+        "Machines must be watched closely — every safeguard matters.",
+        "https://www.privacyvillage.org/AI-Apocalypse-Faction-HQ-166f281b24208038a791e79bb6a0bf10",
+      ),
     ]);
     dialogue.appendChild(buttonRow);
   }
 
-  private buildFactionButton(faction: Faction, variant: string, label: string, subtitle: string): HTMLElement {
-    return el(
+  // A <button> can't contain an <a> (invalid HTML, and the link's clicks
+  // would bubble into the button's own onclick) — so the lore link is a
+  // sibling below the button, not nested inside it, wrapped in a shared
+  // flex column so the pair still reads as one faction's info block.
+  private buildFactionOption(faction: Faction, variant: string, label: string, subtitle: string, loreUrl: string): HTMLElement {
+    const button = el(
       "button",
       {
         className: `btn ${variant}`,
-        style: { flex: "1", flexDirection: "column", gap: "6px", padding: "16px", height: "auto", whiteSpace: "normal" },
+        style: { flexDirection: "column", gap: "6px", padding: "16px", height: "auto", width: "100%", whiteSpace: "normal" },
         on: { click: () => this.chooseFaction(faction) },
       },
       [el("div", { text: label }), el("div", { style: { fontFamily: "var(--font-body)", fontWeight: "400", textTransform: "none", letterSpacing: "normal", fontSize: "12px", opacity: "0.85" }, text: subtitle })],
     );
+
+    const loreLink = el("a", {
+      text: "Learn more about the faction lore →",
+      attrs: { href: loreUrl, target: "_blank", rel: "noopener noreferrer" },
+      style: {
+        display: "block",
+        marginTop: "8px",
+        textAlign: "center",
+        fontFamily: "var(--font-mono)",
+        fontSize: "11px",
+        color: "var(--text-muted)",
+        textDecoration: "none",
+      },
+    });
+
+    return el("div", { style: { flex: "1", display: "flex", flexDirection: "column" } }, [button, loreLink]);
   }
 
   private chooseFaction(faction: Faction) {
