@@ -1,17 +1,24 @@
 import Phaser from "phaser";
 import { addDriftingBackground } from "./drift";
 import { el } from "../ui/dom";
-import { playSound } from "../audio";
+import { setSession } from "../session";
+import { supabase } from "../cloud/supabaseClient";
+import { setCurrentUserId } from "../cloud/authState";
+import { fetchProfile, fetchProgress, createProfileAndProgress, type ProfileRow } from "../cloud/profile";
+import { takePendingUpgrade, type PendingUpgradeSnapshot } from "../cloud/pendingUpgrade";
+import { buildEmailCapturePanel } from "../cloud/emailCapturePanel";
+import { questEngine } from "../questEngine";
+import { academy } from "../academy";
 
 // Title screen (see PLAN.md Phase 2, Day 1). DOM owns the interactive
 // chrome, same Phaser-world/DOM-UI split as everywhere else in this game.
 //
-// The waitlist gate below is a soft gate, not a wall: "just exploring"
-// always works, and any failure in the /api/waitlist round-trip (network
-// down, endpoint missing in local dev, Resend misconfigured server-side)
-// must never block entry — see api/waitlist.ts's own failure policy.
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// The waitlist/auth gate below is a soft gate, not a wall: "just
+// exploring" always works, and any failure anywhere in this file's
+// network calls (waitlist POST, Supabase auth, profile/progress fetch)
+// must never block entry — see cloud/emailCapturePanel.ts's own
+// fallback path and this file's boot()/spawn methods, which all treat
+// "couldn't reach it" the same as "declined."
 
 // Module-level, not instance state — persists across a hypothetical
 // re-visit to this scene within the same page load ("never nag again in
@@ -29,47 +36,98 @@ export class Title extends Phaser.Scene {
   create() {
     addDriftingBackground(this);
 
-    this.overlayEl = el(
-      "div",
-      {
-        className: "ds-root",
-        style: {
-          position: "absolute",
-          inset: "0",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          paddingBottom: "64px",
-          pointerEvents: "auto",
-        },
+    this.overlayEl = el("div", {
+      className: "ds-root",
+      style: {
+        position: "absolute",
+        inset: "0",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        paddingBottom: "64px",
+        pointerEvents: "auto",
       },
-      [
-        el("h1", {
-          text: "Privacy Village",
-          style: {
-            fontFamily: "var(--font-display)",
-            fontWeight: "700",
-            fontSize: "56px",
-            color: "var(--text-primary)",
-            textShadow: "0 4px 24px rgba(0, 0, 0, 0.6)",
-            margin: "0 0 24px",
-          },
-        }),
-        waitlistHandled ? this.buildPlainEnterButton() : this.buildWaitlistPanel(),
-      ],
-    );
+    });
     document.getElementById("ui-root")!.appendChild(this.overlayEl);
 
-    // Starting CharacterCreate stops this scene (SHUTDOWN fires) — same
-    // DOM-cleanup pattern as npc.ts/quest.ts, so the title overlay never
-    // lingers over later scenes.
+    // Starting CharacterCreate/Room stops this scene (SHUTDOWN fires) —
+    // same DOM-cleanup pattern as npc.ts/quest.ts, so the title overlay
+    // never lingers over later scenes.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.overlayEl.remove());
+
+    this.boot();
   }
 
-  // Fallback shown only on a hypothetical re-visit after the gate has
-  // already been handled once this session — matches the pre-existing
-  // single-button title screen.
+  private heading(): HTMLElement {
+    return el("h1", {
+      text: "Privacy Village",
+      style: {
+        fontFamily: "var(--font-display)",
+        fontWeight: "700",
+        fontSize: "56px",
+        color: "var(--text-primary)",
+        textShadow: "0 4px 24px rgba(0, 0, 0, 0.6)",
+        margin: "0 0 24px",
+      },
+    });
+  }
+
+  private renderPanel(panel: HTMLElement | null) {
+    this.overlayEl.innerHTML = "";
+    this.overlayEl.appendChild(this.heading());
+    if (panel) this.overlayEl.appendChild(panel);
+  }
+
+  // Checks for a live Supabase session (magic-link return, or a
+  // persisted one from a previous visit — supabase-js keeps the
+  // refresh token in localStorage by default) before deciding what to
+  // show. Fast either way: this is a local check, not a network round
+  // trip, unless the access token actually needs refreshing.
+  private async boot() {
+    if (!supabase) {
+      this.renderPanel(waitlistHandled ? this.buildPlainEnterButton() : this.buildGatePanel());
+      return;
+    }
+
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      userId = session?.user.id ?? null;
+      userEmail = session?.user.email ?? null;
+    } catch {
+      userId = null;
+    }
+
+    if (!userId) {
+      this.renderPanel(waitlistHandled ? this.buildPlainEnterButton() : this.buildGatePanel());
+      return;
+    }
+
+    setCurrentUserId(userId);
+    const profile = await fetchProfile(userId);
+
+    if (profile) {
+      await this.spawnReturningUser(userId, profile);
+      return;
+    }
+
+    const pending = takePendingUpgrade();
+    if (pending) {
+      await this.spawnFromPendingUpgrade(userId, pending);
+      return;
+    }
+
+    // Authenticated, no profile yet, no pending guest upgrade — a
+    // genuinely first-time signup. Go through CharacterCreate as usual,
+    // flagged so it creates the profile+progress rows on spawn.
+    this.renderPanel(null);
+    this.enterWithPrefill(nameFromEmail(userEmail ?? ""), true);
+  }
+
   private buildPlainEnterButton(): HTMLElement {
     return el("button", {
       className: "btn btn--gold",
@@ -79,146 +137,54 @@ export class Title extends Phaser.Scene {
     });
   }
 
-  private buildWaitlistPanel(): HTMLElement {
-    let emailInput!: HTMLInputElement;
-    let errorEl!: HTMLElement;
-    let joinBtn!: HTMLButtonElement;
-
-    const submit = () => {
-      const email = emailInput.value.trim();
-      if (!EMAIL_RE.test(email)) {
-        errorEl.textContent = "That doesn't look like an email address.";
-        shake(emailInput);
-        return;
-      }
-      errorEl.textContent = "";
-      this.joinWaitlist(email, joinBtn);
-    };
-
-    emailInput = el("input", {
-      attrs: { type: "email", placeholder: "you@email.com", autocomplete: "email" },
-      style: {
-        fontFamily: "var(--font-mono)",
-        fontSize: "15px",
-        padding: "10px 14px",
-        borderRadius: "var(--radius-sm)",
-        border: "2px solid var(--border-strong)",
-        background: "var(--bg-raised)",
-        color: "var(--text-primary)",
-        textAlign: "center",
-        width: "260px",
+  private buildGatePanel(): HTMLElement {
+    return buildEmailCapturePanel({
+      heading: "Become a Founding Privacy Villager",
+      subline: "Early access to new Trials, the annual festival, and the first credentials.",
+      buttonLabel: "Join & Enter the Village",
+      showSkipLink: true,
+      onSkip: () => {
+        waitlistHandled = true;
+        this.enter();
       },
-      on: {
-        keydown: (e) => {
-          if ((e as KeyboardEvent).key === "Enter") submit();
-        },
+      onFallback: (email, waitlistOk) => {
+        waitlistHandled = true;
+        if (waitlistOk) this.showToast("Welcome, Agent");
+        this.enterWithPrefill(waitlistOk ? nameFromEmail(email) : undefined, false);
       },
     });
-
-    errorEl = el("div", {
-      style: { fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--accent-red)", minHeight: "14px", marginTop: "6px" },
-    });
-
-    joinBtn = el("button", {
-      className: "btn btn--gold",
-      text: "Join & Enter the Village",
-      style: { marginTop: "14px", fontSize: "15px", padding: "14px 28px" },
-      on: { click: submit },
-    });
-
-    const skipLink = el("a", {
-      text: "just exploring →",
-      attrs: { href: "#" },
-      style: {
-        display: "inline-block",
-        marginTop: "12px",
-        fontFamily: "var(--font-mono)",
-        fontSize: "12px",
-        color: "var(--text-muted)",
-        textDecoration: "none",
-        cursor: "pointer",
-      },
-      on: {
-        click: (e) => {
-          e.preventDefault();
-          waitlistHandled = true;
-          playSound("select");
-          this.enter();
-        },
-      },
-    });
-
-    const consentLine = el("p", {
-      style: {
-        marginTop: "16px",
-        maxWidth: "320px",
-        fontFamily: "var(--font-body)",
-        fontSize: "11px",
-        lineHeight: "1.5",
-        color: "var(--text-muted)",
-        textAlign: "center",
-      },
-    });
-    consentLine.append(
-      "We'll email you about Privacy Village only. No sharing, unsubscribe anytime. ",
-      el("a", {
-        text: "Privacy Notice",
-        attrs: { href: "/privacy", target: "_blank", rel: "noopener noreferrer" },
-        style: { color: "var(--text-muted)", textDecoration: "underline" },
-      }),
-    );
-
-    return el(
-      "div",
-      { className: "panel", style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "28px 36px 24px" } },
-      [
-        el("div", {
-          text: "Become a Founding Privacy Villager",
-          style: {
-            fontFamily: "var(--font-display)",
-            fontWeight: "700",
-            fontSize: "18px",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontVariantCaps: "small-caps",
-            color: "var(--accent-gold)",
-          },
-        }),
-        el("p", {
-          text: "Early access to new Trials, the annual festival, and the first credentials.",
-          style: { fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)", margin: "8px 0 18px", textAlign: "center", maxWidth: "320px" },
-        }),
-        emailInput,
-        errorEl,
-        joinBtn,
-        skipLink,
-        consentLine,
-      ],
-    );
   }
 
-  private async joinWaitlist(email: string, joinBtn: HTMLButtonElement) {
-    waitlistHandled = true;
-    playSound("confirm");
-    joinBtn.disabled = true;
-    joinBtn.textContent = "Joining…";
-
-    let joined = false;
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      joined = res.ok;
-    } catch {
-      // Network down, /api unavailable in local dev, etc. — signup
-      // problems must never block entry (see api/waitlist.ts).
-      joined = false;
+  private async spawnReturningUser(userId: string, profile: ProfileRow) {
+    setSession({ name: profile.agent_name, avatarId: profile.sprite_id, faction: profile.faction });
+    const progressRow = await fetchProgress(userId);
+    if (progressRow) {
+      questEngine.hydrateState(progressRow.quest_state);
+      academy.hydrateState(progressRow.module_state);
     }
+    this.renderPanel(null);
+    this.showToast(`Welcome back, Agent ${profile.agent_name} — Clearance ${questEngine.getClearance()}`);
+    this.fadeToRoom(900);
+  }
 
-    if (joined) this.showToast("Welcome, Agent");
-    this.enterWithPrefill(joined ? nameFromEmail(email) : undefined);
+  private async spawnFromPendingUpgrade(userId: string, pending: PendingUpgradeSnapshot) {
+    setSession({ name: pending.name, avatarId: pending.spriteId, faction: pending.faction });
+    questEngine.hydrateState(pending.questState);
+    academy.hydrateState(pending.moduleState);
+
+    await createProfileAndProgress(userId, {
+      agentName: pending.name,
+      spriteId: pending.spriteId,
+      faction: pending.faction,
+      questState: pending.questState,
+      moduleState: pending.moduleState,
+      clearance: questEngine.getClearance(),
+      xp: questEngine.getPoints(),
+    });
+
+    this.renderPanel(null);
+    this.showToast(`Welcome back, Agent ${pending.name} — record saved`);
+    this.fadeToRoom(900);
   }
 
   private showToast(message: string) {
@@ -227,33 +193,40 @@ export class Title extends Phaser.Scene {
   }
 
   private enter() {
-    this.enterWithPrefill(undefined);
+    this.enterWithPrefill(undefined, false);
   }
 
-  private enterWithPrefill(prefillName: string | undefined) {
-    // Brief pause so the "Welcome, Agent" toast is actually readable
-    // before the fade takes over — skipped entirely on the skip/no-toast
-    // paths, since prefillName being undefined there is fine too.
+  private enterWithPrefill(prefillName: string | undefined, authenticated: boolean) {
+    // Brief pause so a toast (e.g. "Welcome, Agent") is actually
+    // readable before the fade takes over — skipped when there's
+    // nothing to read.
     const delay = prefillName ? 900 : 0;
     window.setTimeout(() => {
       this.cameras.main.fadeOut(400, 10, 10, 15);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-        this.scene.start("CharacterCreate", { prefillName });
+        this.scene.start("CharacterCreate", { prefillName, authenticated });
       });
     }, delay);
   }
-}
 
-function shake(el: HTMLElement) {
-  el.style.animation = "none";
-  void el.offsetWidth; // reflow, so re-triggering the same animation twice in a row still plays
-  el.style.animation = "ds-shake 400ms ease-in-out";
+  private fadeToRoom(delayMs: number) {
+    window.setTimeout(() => {
+      this.cameras.main.fadeOut(400, 10, 10, 15);
+      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+        this.scene.start("Room", { room: "village" });
+        this.scene.launch("UIOverlay");
+      });
+    }, delayMs);
+  }
 }
 
 // "sarah.jones@example.com" -> "Sarah.jones" — literal capitalize-first-
-// letter per spec, not a full title-case of the local part.
+// letter per spec, not a full title-case of the local part. Empty input
+// (a returning-via-magic-link session with no local part handy) just
+// yields "".
 function nameFromEmail(email: string): string {
   const local = email.split("@")[0] ?? "";
+  if (!local) return "";
   const capitalized = local.charAt(0).toUpperCase() + local.slice(1);
   return capitalized.slice(0, 16); // matches CharacterCreate's name input maxlength
 }

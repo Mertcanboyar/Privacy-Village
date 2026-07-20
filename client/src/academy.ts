@@ -176,6 +176,15 @@ export interface ModuleProgress {
 
 const EMPTY_PROGRESS: ModuleProgress = { theoryDone: false, fieldDone: false };
 
+// Serialized shape of everything AcademyManager needs to resume a saved
+// game (see cloud/save.ts / profiles.progress.module_state). Same v1
+// versioning convention as questEngine.ts's QuestEngineState.
+export interface AcademyEngineState {
+  v: 1;
+  progress: Record<string, ModuleProgress>;
+  celebrated: string[];
+}
+
 function roomLabel(room: RoomName): string {
   if (room === "tavern") return "the tavern";
   if (room === "courthouse") return "the courthouse";
@@ -223,6 +232,30 @@ class AcademyManager extends Phaser.Events.EventEmitter {
       this.progress.set(module.id, { theoryDone: false, fieldDone: this.isFieldWorkDone(module) });
     }
     questEngine.on("questCompleted", (questId: string) => this.onQuestCompleted(questId));
+  }
+
+  serializeState(): AcademyEngineState {
+    return {
+      v: 1,
+      progress: Object.fromEntries(this.progress),
+      celebrated: [...this.celebrated],
+    };
+  }
+
+  /** Restores previously-saved progress — must run after loadData()
+   * (Preload.ts) so module ids exist to hydrate against. Overwrites
+   * loadData()'s freshly-computed-from-scratch progress map entirely
+   * rather than merging, so it doesn't matter that loadData() itself
+   * ran before questEngine.hydrateState() had restored quest-completion
+   * state (which briefly makes its own fieldDone guess wrong) — this
+   * replaces that guess outright. Silent, same as
+   * questEngine.hydrateState(); ignores anything not shape v1. */
+  hydrateState(saved: AcademyEngineState | null | undefined) {
+    if (!saved || saved.v !== 1) return;
+    for (const [id, p] of Object.entries(saved.progress)) {
+      if (this.modules.has(id)) this.progress.set(id, p);
+    }
+    this.celebrated = new Set(saved.celebrated);
   }
 
   // No fieldWork at all = trivially satisfied (theory-only module).

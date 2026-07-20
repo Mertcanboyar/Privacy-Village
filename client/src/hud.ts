@@ -6,6 +6,10 @@ import { questEngine, type QuestStepReveal, type QuestStepChoice, type QuestStep
 import { getSession } from "./session";
 import { academy } from "./academy";
 import { events } from "./events";
+import { supabase } from "./cloud/supabaseClient";
+import { isAuthenticated } from "./cloud/authState";
+import { savePendingUpgrade } from "./cloud/pendingUpgrade";
+import { buildEmailCapturePanel } from "./cloud/emailCapturePanel";
 
 // Persistent HUD (see PLAN.md Phase 2, Day 3) — .xp-bar, quest tracker,
 // and toast stack from design-system.css, wired to questEngine's events
@@ -94,6 +98,27 @@ export class HUDController {
       [this.levelBadgeEl, el("div", { className: "xp-bar__track" }, [this.xpFillEl]), this.xpValueEl],
     );
     root.appendChild(this.xpBarEl);
+
+    // --- "Save your record" (bottom-left, above the XP bar) — guests
+    // only, and only when persistence is actually configured at all
+    // (no point offering it if Supabase env vars are absent). Opens the
+    // same email-capture panel Title.ts's gate uses, in a floating
+    // modal over the game rather than replacing the whole screen. ---
+    if (supabase && !isAuthenticated()) {
+      const saveRecordBtnEl = el("button", {
+        className: "btn btn--ghost",
+        text: "SAVE YOUR RECORD",
+        style: { fontSize: "11px", padding: "8px 12px" },
+        on: { click: () => this.openSaveRecordModal() },
+      });
+      root.appendChild(
+        el(
+          "div",
+          { className: "ds-root", style: { position: "absolute", left: "24px", bottom: "56px", pointerEvents: "auto" } },
+          [saveRecordBtnEl],
+        ),
+      );
+    }
 
     // --- Quest tracker (top-right, Q toggles) ---
     this.trackerTitleEl = el("div", {
@@ -286,6 +311,52 @@ export class HUDController {
       toastEl.classList.add("toast--out");
       setTimeout(() => toastEl.remove(), 220);
     }, TOAST_DISMISS_MS);
+  }
+
+  // Mid-session guest upgrade — same email-capture panel Title.ts's
+  // gate uses, floated over the game instead of replacing the screen.
+  // The magic link is a real page navigation, so current progress gets
+  // snapshotted into localStorage right before the OTP email sends
+  // (see cloud/pendingUpgrade.ts) — Title.ts's boot() claims it back
+  // and creates the profile+progress rows the next time the page loads
+  // with a fresh authenticated session and no profile row yet.
+  private openSaveRecordModal() {
+    const backdrop = el("div", { className: "ui-backdrop", style: { pointerEvents: "auto" } });
+    const modalWrap = el("div", {
+      className: "ds-root",
+      style: { position: "absolute", inset: "0", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" },
+    });
+
+    const close = () => {
+      backdrop.remove();
+      modalWrap.remove();
+    };
+
+    const panel = buildEmailCapturePanel({
+      heading: "Save Your Record",
+      subline: "Turn this session into a permanent Founding Privacy Villager account.",
+      buttonLabel: "Save & Continue Playing",
+      showSkipLink: false,
+      beforeAuthSubmit: () => {
+        savePendingUpgrade({
+          v: 1,
+          name: getSession().name,
+          spriteId: getSession().avatarId,
+          faction: getSession().faction,
+          questState: questEngine.serializeState(),
+          moduleState: academy.serializeState(),
+        });
+      },
+      onFallback: (_email, waitlistOk) => {
+        close();
+        this.showToast(waitlistOk ? "Couldn't reach the account service — try again shortly." : "Couldn't reach the server — try again shortly.");
+      },
+    });
+    panel.style.pointerEvents = "auto";
+
+    backdrop.addEventListener("click", close);
+    modalWrap.appendChild(panel);
+    document.getElementById("ui-root")!.append(backdrop, modalWrap);
   }
 
   private showReveal(reveal: QuestStepReveal) {

@@ -163,6 +163,23 @@ export interface LevelInfo {
   points: number;
 }
 
+// Serialized shape of everything QuestManager needs to resume a saved
+// game (see cloud/save.ts / profiles.progress.quest_state). Versioned
+// with "v" so a future shape change can migrate old rows instead of
+// silently misreading them — hydrateState() below refuses anything
+// that isn't v1.
+export interface QuestEngineState {
+  v: 1;
+  states: Record<string, QuestState>;
+  stepIndex: Record<string, number>;
+  flags: Record<string, boolean>;
+  points: number;
+  clearance: number;
+  activeQuestId: string | null;
+  completedMilestones: MilestoneId[];
+  clockHours: number;
+}
+
 class QuestManager extends Phaser.Events.EventEmitter {
   private defs = new Map<string, QuestDef>();
   private states = new Map<string, QuestState>();
@@ -190,6 +207,43 @@ class QuestManager extends Phaser.Events.EventEmitter {
       this.states.set(def.id, "locked");
       this.stepIndex.set(def.id, 0);
     }
+  }
+
+  serializeState(): QuestEngineState {
+    return {
+      v: 1,
+      states: Object.fromEntries(this.states),
+      stepIndex: Object.fromEntries(this.stepIndex),
+      flags: { ...this.flags },
+      points: this.points,
+      clearance: this.clearance,
+      activeQuestId: this.activeQuestId,
+      completedMilestones: [...this.completedMilestones],
+      clockHours: this.clockHours,
+    };
+  }
+
+  /** Restores previously-saved progress — must run after loadDefs()
+   * (Preload.ts) so quest ids exist to hydrate against, and before any
+   * gameplay actually happens (Title.ts, for a returning authenticated
+   * player, before spawning into Room). Silent: no toasts, fanfare, or
+   * events fire — this is restoring state, not re-living it. Ignores
+   * anything that isn't shape v1 (see QuestEngineState) rather than
+   * risk misreading a future migration. */
+  hydrateState(saved: QuestEngineState | null | undefined) {
+    if (!saved || saved.v !== 1) return;
+    for (const [id, state] of Object.entries(saved.states)) {
+      if (this.defs.has(id)) this.states.set(id, state);
+    }
+    for (const [id, idx] of Object.entries(saved.stepIndex)) {
+      if (this.defs.has(id)) this.stepIndex.set(id, idx);
+    }
+    this.flags = { ...saved.flags };
+    this.points = saved.points;
+    this.clearance = saved.clearance;
+    this.activeQuestId = saved.activeQuestId;
+    this.completedMilestones = new Set(saved.completedMilestones);
+    this.clockHours = saved.clockHours;
   }
 
   /** Unlocks and immediately activates an `hq`-given quest (Q1 on spawn). */

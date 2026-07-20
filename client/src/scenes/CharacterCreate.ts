@@ -2,7 +2,11 @@ import Phaser from "phaser";
 import { addDriftingBackground } from "./drift";
 import { el, typewriter, type TypewriterHandle } from "../ui/dom";
 import { playSound } from "../audio";
-import { AVATAR_OPTIONS, setSession, type Faction } from "../session";
+import { AVATAR_OPTIONS, setSession, getSession, type Faction } from "../session";
+import { getCurrentUserId } from "../cloud/authState";
+import { createProfileAndProgress } from "../cloud/profile";
+import { questEngine } from "../questEngine";
+import { academy } from "../academy";
 
 // Combined avatar + name + faction screen (see PLAN.md Phase 2, Days 1
 // and 3). Avatar options render as plain <img> tags pointing at the
@@ -19,6 +23,11 @@ interface CharacterCreateInitData {
   // Set when Title's waitlist gate collects an email — pre-fills the name
   // field with the capitalized local part rather than leaving it blank.
   prefillName?: string;
+  // Set when Title's boot() found a live Supabase session with no
+  // profile row yet (a first-time signup, not a guest) — on spawn(),
+  // this creates the profile + progress rows instead of just entering
+  // as a guest. See cloud/profile.ts.
+  authenticated?: boolean;
 }
 
 export class CharacterCreate extends Phaser.Scene {
@@ -29,6 +38,7 @@ export class CharacterCreate extends Phaser.Scene {
   private selectedAvatarId = AVATAR_OPTIONS[0].id;
   private nameValue = "";
   private prefillName = "";
+  private authenticated = false;
   private eKey!: Phaser.Input.Keyboard.Key;
   private currentTypewriter: TypewriterHandle | null = null;
   private awaitingSpawn = false;
@@ -39,6 +49,7 @@ export class CharacterCreate extends Phaser.Scene {
 
   init(data: CharacterCreateInitData) {
     this.prefillName = data?.prefillName ?? "";
+    this.authenticated = data?.authenticated ?? false;
   }
 
   create() {
@@ -258,8 +269,29 @@ export class CharacterCreate extends Phaser.Scene {
     if (this.awaitingSpawn) this.spawn();
   }
 
-  private spawn() {
+  private async spawn() {
+    // Guards against E getting mashed during the fade-out re-firing this
+    // (previously harmless when spawn() was just a scene transition —
+    // now it would also mean a duplicate profile/progress insert below).
+    if (!this.awaitingSpawn) return;
+    this.awaitingSpawn = false;
     this.currentTypewriter = null;
+
+    if (this.authenticated) {
+      const userId = getCurrentUserId();
+      if (userId) {
+        await createProfileAndProgress(userId, {
+          agentName: getSession().name,
+          spriteId: getSession().avatarId,
+          faction: getSession().faction,
+          questState: questEngine.serializeState(),
+          moduleState: academy.serializeState(),
+          clearance: questEngine.getClearance(),
+          xp: questEngine.getPoints(),
+        });
+      }
+    }
+
     this.cameras.main.fadeOut(400, 10, 10, 15);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.start("Room", { room: "village" });
