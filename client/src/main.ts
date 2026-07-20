@@ -8,8 +8,12 @@ import { Title } from "./scenes/Title";
 import { CharacterCreate } from "./scenes/CharacterCreate";
 import { Room } from "./scenes/Room";
 import { UIOverlay } from "./scenes/UIOverlay";
+import { initAutoSave } from "./cloud/save";
 
 initResponsiveScale();
+// Safe to call unconditionally — every listener it wires up no-ops for
+// guests and when Supabase isn't configured (see cloud/save.ts).
+initAutoSave();
 
 new Phaser.Game({
   type: Phaser.AUTO,

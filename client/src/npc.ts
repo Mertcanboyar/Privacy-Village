@@ -7,6 +7,7 @@ import { showTableOverlay, type EvidenceTableTab } from "./ui/tableOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine, type MilestoneId } from "./questEngine";
 import { playSound, playBlip } from "./audio";
+import { logDecision } from "./cloud/save";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
 // dialogue box (see PLAN.md Days 11-12, Phase 2 Days 2-3). Not
@@ -22,6 +23,33 @@ import { playSound, playBlip } from "./audio";
 const INTERACT_RADIUS = 70;
 const SCALE_FAR = 0.75;
 const SCALE_NEAR = 1.0;
+
+// Decision-log event names per quest + step index (see pickChoice()) —
+// "The Breach in the Wall"'s two missions map to the spec's own
+// "breach_m1_answer"/"breach_m2_answer" examples; anything else (today,
+// just "The Innkeeper's Shards") falls back to `${questId}_answer`
+// rather than needing an entry here for every quest that ever adds a
+// dialogue choice.
+const CHOICE_EVENT_NAMES: Record<string, string[]> = {
+  breach_in_the_wall: ["breach_m1_answer", "breach_m2_answer"],
+};
+
+function choiceEventName(questId: string | undefined, stepIndex: number): string {
+  if (!questId) return "npc_choice";
+  const mapped = CHOICE_EVENT_NAMES[questId]?.[stepIndex];
+  return mapped ?? `${questId}_answer`;
+}
+
+// Counts attempts at the SAME quest step — every pickChoice() call
+// (right or wrong) increments it; the key naturally changes once the
+// step actually advances, so nothing needs to reset it explicitly.
+const choiceAttempts = new Map<string, number>();
+
+function nextAttempt(key: string): number {
+  const n = (choiceAttempts.get(key) ?? 0) + 1;
+  choiceAttempts.set(key, n);
+  return n;
+}
 
 function depthScaleFor(y: number): number {
   const t = Phaser.Math.Clamp(y / GAME_HEIGHT, 0, 1);
@@ -1040,11 +1068,28 @@ export class NPCController {
   }
 
   private pickChoice(choice: DialogueChoice) {
+    const questId = questEngine.getActiveQuest()?.id;
+    const stepIndex = questEngine.getActiveStepIndex();
+    const attemptKey = `${questId ?? "none"}:${stepIndex}`;
+
     if (choice.setFlag) questEngine.setFlag(choice.setFlag);
     if (choice.points) questEngine.addPoints(choice.points);
     if (choice.milestone) questEngine.completeMilestone(choice.milestone);
     if (choice.clockPenalty) questEngine.addClockHours(choice.clockPenalty, true);
     if (choice.toast) questEngine.toast(choice.toast);
+
+    logDecision(choiceEventName(questId, stepIndex), {
+      npc: this.activeNpc?.id ?? null,
+      quest: questId ?? null,
+      step: stepIndex,
+      label: choice.label,
+      setFlag: choice.setFlag ?? null,
+      points: choice.points ?? null,
+      milestone: choice.milestone ?? null,
+      clockPenalty: choice.clockPenalty ?? null,
+      attempt: nextAttempt(attemptKey),
+    });
+
     this.clearChoices();
     // The response always falls back to the compact dialogue box, even
     // when the question itself was asked from the big briefing panel.

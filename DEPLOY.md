@@ -205,6 +205,81 @@ the very next request to `/api/waitlist` once saved.
 
 ---
 
+## F. Optional: persistent accounts (Supabase)
+
+The email panel also doubles as account signup (see
+`client/src/cloud/emailCapturePanel.ts`) — submitting sends a Supabase
+magic link alongside the Resend waitlist email, and returning players
+get their Clearance/XP/quest progress restored instead of starting
+over. Without these env vars set, `client/src/cloud/supabaseClient.ts`
+exports a `null` client and every persistence call becomes a silent
+no-op — the game runs exactly as it does today, guest-only, no errors.
+So like section E, this is optional.
+
+These are **build-time** environment variables (`VITE_`-prefixed, same
+as `VITE_WS_URL` in step B) — changing them **does** require a redeploy
+to take effect, unlike the runtime Resend vars in step E.
+
+1. Go to **[supabase.com](https://supabase.com)**, sign in (or create an
+   account), and click **New Project**. Pick an org, name it (e.g.
+   `privacy-village`), set a database password (save it somewhere — you
+   won't need it for this setup, but Supabase requires one), and pick a
+   region close to your players. Wait for provisioning (~2 minutes).
+2. Open the new project → **SQL Editor** → **New query**. Paste in the
+   entire contents of [`supabase/schema.sql`](supabase/schema.sql) from
+   this repo and click **Run**. This creates the `profiles`, `progress`,
+   and `decisions` tables with Row Level Security already enabled — do
+   not run this against a project that already has tables with those
+   names, it won't overwrite data but will fail on the `create table`
+   statements.
+3. Go to **Authentication** → **URL Configuration** and set:
+   - **Site URL** to your live Vercel URL (or custom domain), e.g.
+     ```
+     https://privacy-village.vercel.app
+     ```
+   - **Redirect URLs** — add the same URL again here (Supabase requires
+     it listed explicitly, separate from Site URL, for the magic link
+     to be allowed to redirect back to it).
+   This is what makes the magic link land back on your live site instead
+   of `localhost`.
+4. Go to **Authentication** → **Providers** → **Email** and confirm
+   **Enable Email provider** is on (it is by default) — this project
+   only uses passwordless magic links (`signInWithOtp`), so you can
+   leave **Confirm email** and password-related settings on their
+   defaults; they don't apply to this flow.
+5. Go to **Project Settings** → **API**. You need two values from this
+   page:
+   - **Project URL**, e.g.
+     ```
+     https://abcdefghijklmnop.supabase.co
+     ```
+   - **anon public** key (under **Project API keys**) — a long JWT
+     string. This key is safe to expose client-side; it's what RLS is
+     for.
+6. In Vercel, open your **privacy-village** project → **Settings** →
+   **Environment Variables**, and add:
+   - Name:
+     ```
+     VITE_SUPABASE_URL
+     ```
+     Value: the Project URL from step 5.
+   - Name:
+     ```
+     VITE_SUPABASE_ANON_KEY
+     ```
+     Value: the anon public key from step 5.
+   Set both for **Production** (and **Preview** too if you want account
+   signup working from preview deploys).
+7. Redeploy (Vercel → **Deployments** → latest → **Redeploy**, or just
+   push a commit) — build-time vars only take effect on the next build.
+8. Try a real signup on the live site: submit an email, click the magic
+   link that arrives, create an agent, and confirm it spawns you into
+   the village. Then close the tab, click the same magic link again (or
+   sign in again with the same email) and confirm it skips creation and
+   restores your Clearance/progress instead.
+
+---
+
 ## Verification checklist
 
 Run through these on the live URL (Vercel URL, or your custom domain if

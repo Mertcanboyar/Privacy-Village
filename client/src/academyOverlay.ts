@@ -18,6 +18,7 @@ import {
 import { questEngine } from "./questEngine";
 import { getSession } from "./session";
 import { showImageOverlay, isImageOverlayOpen } from "./ui/imageOverlay";
+import { logDecision } from "./cloud/save";
 import type { Room } from "./scenes/Room";
 
 const MODULE_COMPLETE_XP = 100;
@@ -43,6 +44,18 @@ const FADE_MS = 200;
 const CARD_DRILL_AUTO_ADVANCE_MS = 1500;
 
 type AcademyView = "hub" | "moduleList" | "lesson" | "quiz" | "cardDrillIntro" | "cardDrill" | "cardDrillMultiIntro" | "cardDrillMulti" | "dataSieve";
+
+// Attempt counter for decision-log rows (see answerQuiz()/answerCardDrill()/
+// answerCardDrillMulti()) — keyed by module+question/item so a retry on
+// the SAME question increments rather than a fresh count each time.
+// Same pattern as npc.ts's choiceAttempts.
+const answerAttempts = new Map<string, number>();
+
+function nextAnswerAttempt(key: string): number {
+  const n = (answerAttempts.get(key) ?? 0) + 1;
+  answerAttempts.set(key, n);
+  return n;
+}
 
 export class AcademyOverlay {
   private scene: Phaser.Scene;
@@ -546,6 +559,16 @@ export class AcademyOverlay {
   private answerQuiz(index: number, question: QuizQuestion) {
     this.quizRevealedChoice = index;
     this.quizCorrect = index === question.answer;
+
+    const attemptKey = `${this.currentModuleId}:${this.quizIndex}`;
+    logDecision("module_quiz_answer", {
+      module: this.currentModuleId,
+      question: question.q,
+      questionIndex: this.quizIndex,
+      correct: this.quizCorrect,
+      attempt: nextAnswerAttempt(attemptKey),
+    });
+
     this.render();
   }
 
@@ -676,6 +699,15 @@ export class AcademyOverlay {
     this.drillRevealed = true;
     this.drillPicked = picked;
     this.drillCorrect = picked === card.answer;
+
+    logDecision("module_card_drill_answer", {
+      module: this.currentModuleId,
+      item: card.item,
+      picked,
+      correct: this.drillCorrect,
+      attempt: nextAnswerAttempt(`${this.currentModuleId}:${card.item}`),
+    });
+
     this.render();
     if (this.drillCorrect) {
       this.drillAutoAdvanceTimer = window.setTimeout(() => this.advanceCardDrill(), CARD_DRILL_AUTO_ADVANCE_MS);
@@ -864,6 +896,13 @@ export class AcademyOverlay {
     this.drillMultiRevealed = true;
     this.drillMultiPickedIndex = index;
     this.drillMultiCorrect = index === card.answerIndex;
+    logDecision("module_card_drill_multi_answer", {
+      module: this.currentModuleId,
+      item: card.item,
+      picked: card.choices[index],
+      correct: this.drillMultiCorrect,
+      attempt: nextAnswerAttempt(`${this.currentModuleId}:${card.item}`),
+    });
     this.render();
     if (this.drillMultiCorrect) {
       this.drillMultiAutoAdvanceTimer = window.setTimeout(() => this.advanceCardDrillMulti(), CARD_DRILL_AUTO_ADVANCE_MS);

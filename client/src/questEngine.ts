@@ -413,6 +413,14 @@ class QuestManager extends Phaser.Events.EventEmitter {
     if (option.toast) this.emit("toast", option.toast);
     if (option.sceneBeat) this.emit("sceneBeat", option.sceneBeat);
 
+    // Decision-log hook (see cloud/save.ts's initAutoSave(), which
+    // subscribes to this) — kept as an emitted event rather than a
+    // direct logDecision() call so this module stays free of any
+    // cloud/ dependency, same reasoning as questUpdated/levelUp/
+    // pointsChanged already being how cloud/save.ts drives
+    // saveProgress() rather than this file calling into it directly.
+    this.emit("stepChoiceResolved", { quest: quest.id, step: idx, option });
+
     if (step) this.advanceStep(quest, idx, step);
   }
 
