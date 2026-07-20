@@ -15,6 +15,12 @@ const RECRUITER_LINE =
   "Welcome to Privacy Village, {name}! Here, ideas spark, creativity flows, and privacy pros gather for workshops, gamified adventures, and real problems worth solving. Before you pass the gates — tell us which spark lights your path.";
 const RECRUITER_CLOSING = "Lovely to have you. Follow the lantern-light in — the village, and all its puzzles, await.";
 
+interface CharacterCreateInitData {
+  // Set when Title's waitlist gate collects an email — pre-fills the name
+  // field with the capitalized local part rather than leaving it blank.
+  prefillName?: string;
+}
+
 export class CharacterCreate extends Phaser.Scene {
   private overlayEl!: HTMLElement;
   private nameInputEl!: HTMLInputElement;
@@ -22,12 +28,17 @@ export class CharacterCreate extends Phaser.Scene {
   private avatarEls = new Map<string, HTMLElement>();
   private selectedAvatarId = AVATAR_OPTIONS[0].id;
   private nameValue = "";
+  private prefillName = "";
   private eKey!: Phaser.Input.Keyboard.Key;
   private currentTypewriter: TypewriterHandle | null = null;
   private awaitingSpawn = false;
 
   constructor() {
     super("CharacterCreate");
+  }
+
+  init(data: CharacterCreateInitData) {
+    this.prefillName = data?.prefillName ?? "";
   }
 
   create() {
@@ -61,8 +72,10 @@ export class CharacterCreate extends Phaser.Scene {
       }),
     );
 
+    this.nameValue = this.prefillName;
+
     this.nameInputEl = el("input", {
-      attrs: { type: "text", maxlength: "16", placeholder: "Your name" },
+      attrs: { type: "text", maxlength: "16", placeholder: "Your name", value: this.prefillName },
       style: {
         fontFamily: "var(--font-mono)",
         fontSize: "16px",
