@@ -37,11 +37,13 @@
       "trigger": { "type": "reach_zone", "zone": "fountain_crier" },
       "clockCost": 6,
       "choice": {
-        "prompt": "At the fountain, the crowd waits for word. How do you address them?",
+        "prompt": "The Authority's been told. The village hasn't — not yet, and the crowd at the fountain already smells smoke. Their own debts and faction marks may be exposed. How do you address them?",
         "options": [
           {
             "label": "Announce it plainly: what happened, what it means, what to do — debts and faction marks may be exposed; change your seals, watch for imposters.",
             "correct": true,
+            "response": "The Authority hears what happened. The village must hear what it MEANS for them — that's a separate duty, Agent, and a harder one. High risk to people is the line the law draws; cross it, and the silence becomes its own breach.",
+            "speaker": "HERALD",
             "toast": "The village knows. As it must — the risk is theirs to carry, so the warning was theirs to have.",
             "sceneBeat": "villagersTurn"
           },

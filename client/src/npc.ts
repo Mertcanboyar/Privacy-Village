@@ -446,19 +446,19 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           briefing: { caseLabel: "STEP 1", title: "Hear the Warden" },
           ghostChoices: true,
           lines: [
-            "Agent! The West Gate — the padlock's picked, just as your Ranger said. The archive annex was ENTERED. Scrolls of villager records — debts, faction marks — may be copied, I can't yet say. I know what I saw at 02:00. What I don't know would fill that annex twice over.",
+            "Agent! The West Gate — the padlock's picked, just as your Ranger said. The archive annex was ENTERED. Scrolls of villager records — debts, faction marks — may be copied, I can't yet say. I know what I saw at 02:00. What I don't know would fill that annex twice over. Two truths, and only one starts the clock the law watches: not what was taken, but the moment you learned something was.",
           ],
           choices: [
             {
               label: "A breach is presumed the moment you saw that open annex. The clock is already running — move.",
               setFlag: "warden_heard",
-              response: "Then we count from 02:00. Gods help us.",
+              response: "Then we count from 02:00. The clock doesn't wait for certainty, Agent — only for knowing.",
             },
             {
               label: "Say nothing yet. We investigate fully first — days if we must.",
               setFlag: "warden_heard",
               clockPenalty: 24,
-              response: "Days?! Agent, the law counts from KNOWING, not from finishing! The Herald will skin us.",
+              response: "Days?! Agent, the law counts from KNOWING, not from finishing! Every hour you spend confirming is an hour you'll owe later. The Herald will skin us.",
             },
           ],
         },
@@ -642,13 +642,13 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           briefing: { caseLabel: "STEP 3", title: "File While Blind" },
           ghostChoices: true,
           lines: [
-            "The notification to the Authority. I can file what we hold: nature of the breach, the categories touched, our containment. But the COUNT, Agent — we still cannot say how many scrolls were copied. Do we file incomplete, or do we wait for certainty?",
+            "The notification to the Authority is due within the seventy-second hour of first knowing, Agent — no exceptions for incomplete facts. I can file what we hold: nature of the breach, the categories touched, our containment. But the COUNT — we still cannot say how many scrolls were copied. Do we file incomplete now, or hold it for certainty and gamble on the deadline?",
           ],
           choices: [
             {
               label: "File now, in phases. State what we know, state what we don't, supplement when we do.",
               setFlag: "notice_filed",
-              response: "\"Investigation continuing.\" Four honest words the law was built to accept. Filed.",
+              response: "\"Investigation continuing.\" Four honest words the law was built to accept — a partial notice filed on time beats a perfect one filed late. Filed.",
             },
             {
               label: "Wait for the full count. Accuracy first.",
