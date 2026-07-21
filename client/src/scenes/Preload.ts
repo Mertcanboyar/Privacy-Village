@@ -12,15 +12,33 @@ export class Preload extends Phaser.Scene {
   }
 
   preload() {
-    const box = this.add.graphics();
-    box.fillStyle(0x222233, 1);
-    box.fillRect(GAME_WIDTH / 2 - 160, GAME_HEIGHT / 2 - 20, 320, 24);
+    // Design-system colors (see public/ui/design-system.css) rather than
+    // the old raw purple/near-black one-off — this is the first thing
+    // anyone sees, it should already look like the rest of the game.
+    const centerX = GAME_WIDTH / 2;
+    const centerY = GAME_HEIGHT / 2;
+
+    this.add
+      .text(centerX, centerY - 40, "PRIVACY VILLAGE", {
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: "18px",
+        color: "#f0b429", // --accent-gold
+        letterSpacing: 4,
+      })
+      .setOrigin(0.5);
+
+    const track = this.add.graphics();
+    track.fillStyle(0x1e2130, 1); // --bg-panel
+    track.fillRoundedRect(centerX - 160, centerY - 12, 320, 24, 6);
+    track.lineStyle(2, 0x3d4257, 1); // --border-strong
+    track.strokeRoundedRect(centerX - 160, centerY - 12, 320, 24, 6);
 
     const bar = this.add.graphics();
     this.load.on("progress", (value: number) => {
       bar.clear();
-      bar.fillStyle(0x8a5fff, 1);
-      bar.fillRect(GAME_WIDTH / 2 - 156, GAME_HEIGHT / 2 - 16, 312 * value, 16);
+      if (value <= 0) return;
+      bar.fillStyle(0xf0b429, 1); // --accent-gold
+      bar.fillRoundedRect(centerX - 156, centerY - 8, 312 * value, 16, 4);
     });
 
     // Player avatar — single painted pose (no walk-cycle frames), flipped

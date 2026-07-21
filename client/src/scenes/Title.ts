@@ -86,7 +86,7 @@ export class Title extends Phaser.Scene {
   // trip, unless the access token actually needs refreshing.
   private async boot() {
     if (!supabase) {
-      this.renderPanel(waitlistHandled ? this.buildPlainEnterButton() : this.buildGatePanel());
+      this.renderPanel(this.buildWelcomePanel());
       return;
     }
 
@@ -103,7 +103,7 @@ export class Title extends Phaser.Scene {
     }
 
     if (!userId) {
-      this.renderPanel(waitlistHandled ? this.buildPlainEnterButton() : this.buildGatePanel());
+      this.renderPanel(this.buildWelcomePanel());
       return;
     }
 
@@ -128,12 +128,19 @@ export class Title extends Phaser.Scene {
     this.enterWithPrefill(nameFromEmail(userEmail ?? ""), true);
   }
 
-  private buildPlainEnterButton(): HTMLElement {
+  // The very first thing shown: just the heading over the drifting
+  // village art, no modal in front of it — matching how this screen
+  // looked before the waitlist gate existed. "Enter the Village" opens
+  // the email gate panel (see buildGatePanel()) rather than entering
+  // directly, unless that gate's already been handled once this
+  // session (waitlistHandled), in which case there's nothing left to
+  // show and it goes straight in.
+  private buildWelcomePanel(): HTMLElement {
     return el("button", {
       className: "btn btn--gold",
       text: "Enter the Village",
       style: { fontSize: "16px", padding: "16px 32px" },
-      on: { click: () => this.enter() },
+      on: { click: () => (waitlistHandled ? this.enter() : this.renderPanel(this.buildGatePanel())) },
     });
   }
 
