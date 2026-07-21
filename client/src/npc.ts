@@ -292,7 +292,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
         {
           if: { questActive: "night_the_wall_fell" },
-          lines: ["Go, Ranger! Bram needs you at the gates — this isn't a drill!"],
+          lines: ["Go, Ranger! Bram's holding that breach alone — this isn't a drill!"],
         },
         {
           if: { questComplete: "innkeepers_shards" },
@@ -356,7 +356,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
         {
           if: { questActive: "innkeepers_shards" },
-          lines: ["Odile's waiting on you, Ranger. Room 7 won't identify itself."],
+          lines: ["Room 7 won't identify itself on its own, Ranger. The Innkeeper's drawers hold the thread — if you're willing to pull it."],
         },
         { if: { questComplete: "breach_in_the_wall" }, lines: ["Well met, Ranger. The Council will never know how close the breach came."] },
         {
@@ -439,7 +439,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
         {
           if: { questActive: "night_the_wall_fell", flag: "warden_heard" },
-          lines: ["Go on, Ranger — the gate won't wedge itself. West edge of the square."],
+          lines: ["Go on, Ranger — that gate won't wedge itself, and every minute you linger is a minute more they win."],
         },
         {
           if: { questActive: "night_the_wall_fell" },
@@ -489,7 +489,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
         {
           if: { questActive: "innkeepers_shards", flag: "guest_identified" },
-          lines: ["Go on, then — the Herald's waiting. I heard him cackling something about masks."],
+          lines: ["Room 7 has a name now — mine to remember, yours to report. I hear the Herald's already cackling about masks; whatever he's cooked up, it won't wait long."],
         },
         {
           if: { questActive: "innkeepers_shards" },
@@ -601,7 +601,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questActive: "arrival" },
           lines: [
-            "New face! Welcome to the festival — creativity's in the air, and every corner's got a workshop, a game, or a puzzle worth your time. Settle in. And find the Herald — he's been pacing the square all morning, itching to share something.",
+            "New face! Welcome to the festival — creativity's in the air, and every corner's got a workshop, a game, or a puzzle worth your time. Settle in... though don't be surprised if the Herald finds you first. He's been pacing the square all morning, itching to share something.",
           ],
         },
         { lines: ["The Griffin's Drink serves stories alongside the ale. Pull up a stool."] },
