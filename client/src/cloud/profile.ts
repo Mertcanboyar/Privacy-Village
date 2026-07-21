@@ -27,22 +27,32 @@ export interface ProgressRow {
 
 export async function fetchProfile(userId: string): Promise<ProfileRow | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
-  if (error) {
-    console.error("[cloud] fetchProfile failed", error);
+  try {
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+    if (error) {
+      console.error("[cloud] fetchProfile failed", error);
+      return null;
+    }
+    return data as ProfileRow | null;
+  } catch (err) {
+    console.error("[cloud] fetchProfile threw", err);
     return null;
   }
-  return data as ProfileRow | null;
 }
 
 export async function fetchProgress(userId: string): Promise<ProgressRow | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.from("progress").select("*").eq("player_id", userId).maybeSingle();
-  if (error) {
-    console.error("[cloud] fetchProgress failed", error);
+  try {
+    const { data, error } = await supabase.from("progress").select("*").eq("player_id", userId).maybeSingle();
+    if (error) {
+      console.error("[cloud] fetchProgress failed", error);
+      return null;
+    }
+    return data as ProgressRow | null;
+  } catch (err) {
+    console.error("[cloud] fetchProgress threw", err);
     return null;
   }
-  return data as ProgressRow | null;
 }
 
 export interface InitialProfileData {
@@ -64,29 +74,34 @@ export interface InitialProfileData {
 export async function createProfileAndProgress(userId: string, data: InitialProfileData): Promise<boolean> {
   if (!supabase) return false;
 
-  const { error: profileError } = await supabase.from("profiles").insert({
-    id: userId,
-    agent_name: data.agentName,
-    sprite_id: data.spriteId,
-    faction: data.faction,
-  });
-  if (profileError) {
-    console.error("[cloud] createProfile failed", profileError);
+  try {
+    const { error: profileError } = await supabase.from("profiles").insert({
+      id: userId,
+      agent_name: data.agentName,
+      sprite_id: data.spriteId,
+      faction: data.faction,
+    });
+    if (profileError) {
+      console.error("[cloud] createProfile failed", profileError);
+      return false;
+    }
+
+    const { error: progressError } = await supabase.from("progress").insert({
+      player_id: userId,
+      clearance: data.clearance,
+      xp: data.xp,
+      quest_state: data.questState,
+      module_state: data.moduleState,
+      updated_at: new Date().toISOString(),
+    });
+    if (progressError) {
+      console.error("[cloud] createProgress failed", progressError);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("[cloud] createProfileAndProgress threw", err);
     return false;
   }
-
-  const { error: progressError } = await supabase.from("progress").insert({
-    player_id: userId,
-    clearance: data.clearance,
-    xp: data.xp,
-    quest_state: data.questState,
-    module_state: data.moduleState,
-    updated_at: new Date().toISOString(),
-  });
-  if (progressError) {
-    console.error("[cloud] createProgress failed", progressError);
-    return false;
-  }
-
-  return true;
 }

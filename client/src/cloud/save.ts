@@ -30,35 +30,51 @@ export function saveProgress() {
 
 async function flushSaveProgress(userId: string) {
   if (!supabase) return;
-  const { error } = await supabase
-    .from("progress")
-    .upsert(
-      {
-        player_id: userId,
-        clearance: questEngine.getClearance(),
-        xp: questEngine.getPoints(),
-        quest_state: questEngine.serializeState(),
-        module_state: academy.serializeState(),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "player_id" },
-    );
-  if (error) console.error("[cloud] saveProgress failed", error);
+  try {
+    const { error } = await supabase
+      .from("progress")
+      .upsert(
+        {
+          player_id: userId,
+          clearance: questEngine.getClearance(),
+          xp: questEngine.getPoints(),
+          quest_state: questEngine.serializeState(),
+          module_state: academy.serializeState(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "player_id" },
+      );
+    if (error) console.error("[cloud] saveProgress failed", error);
+  } catch (err) {
+    console.error("[cloud] saveProgress threw", err);
+  }
 }
 
 /** Fire-and-forget insert into decisions — called at every answer/choice
  * moment across the game (see npc.ts, academyOverlay.ts, questEngine.ts's
- * resolveStepChoice). detail is versioned the same way as
- * progress.quest_state/module_state. */
+ * resolveStepChoice), synchronously, from the middle of UI state
+ * mutation (e.g. npc.ts's pickChoice() closes the choice buttons right
+ * after this call). This must never throw: a real Supabase client can
+ * throw synchronously (a malformed URL, for one) rather than only
+ * rejecting its promise, and an uncaught throw here would abort
+ * whichever caller invoked it mid-execution — for pickChoice()
+ * specifically, that leaves NPCController.mode stuck open forever,
+ * which also blocks player movement (Room.ts's uiOpen reads
+ * dialogueOpen from that same stuck state). Hence the try/catch,
+ * despite `supabase.from(...).insert(...)` itself already being wrapped
+ * in a `void` fire-and-forget. */
 export function logDecision(event: string, detail: Record<string, unknown>) {
   const userId = getCurrentUserId();
   if (!supabase || !userId) return;
-  void supabase
-    .from("decisions")
-    .insert({ player_id: userId, event, detail: { v: 1, ...detail } })
-    .then(({ error }) => {
-      if (error) console.error("[cloud] logDecision failed", event, error);
-    });
+  try {
+    void Promise.resolve(supabase.from("decisions").insert({ player_id: userId, event, detail: { v: 1, ...detail } }))
+      .then(({ error }) => {
+        if (error) console.error("[cloud] logDecision failed", event, error);
+      })
+      .catch((err: unknown) => console.error("[cloud] logDecision threw", event, err));
+  } catch (err) {
+    console.error("[cloud] logDecision threw", event, err);
+  }
 }
 
 /** Subscribes saveProgress() to every trigger the spec calls out: quest
