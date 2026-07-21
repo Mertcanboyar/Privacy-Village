@@ -11,6 +11,7 @@ import { playSound } from "../audio";
 import type { RoomName } from "../rooms";
 import { net } from "../net/NetClient";
 import { RemotePlayerController } from "../net/remotePlayers";
+import { isUiLocked } from "../cloud/uiLock";
 
 const PLAYER_SPEED = 160;
 const SCALE_FAR = 0.75;
@@ -405,7 +406,7 @@ export class Room extends Phaser.Scene {
     // the player or a wanderer warp straight through several waypoints.
     const dt = Math.min(this.game.loop.delta, 50) / 1000;
 
-    const uiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen;
+    const uiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen || isUiLocked();
     let localMoving = false;
 
     if (!uiOpen) {

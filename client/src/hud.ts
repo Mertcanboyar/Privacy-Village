@@ -10,6 +10,9 @@ import { supabase } from "./cloud/supabaseClient";
 import { isAuthenticated } from "./cloud/authState";
 import { savePendingUpgrade } from "./cloud/pendingUpgrade";
 import { buildEmailCapturePanel } from "./cloud/emailCapturePanel";
+import { net } from "./net/NetClient";
+import { persistenceStatus, type PersistenceStatus } from "./cloud/persistenceStatus";
+import { lockUi, unlockUi } from "./cloud/uiLock";
 
 // Persistent HUD (see PLAN.md Phase 2, Day 3) — .xp-bar, quest tracker,
 // and toast stack from design-system.css, wired to questEngine's events
@@ -61,6 +64,9 @@ export class HUDController {
   private toastStackEl: HTMLElement;
   private qKey: Phaser.Input.Keyboard.Key;
 
+  private netDotEl: HTMLElement;
+  private persistDotEl: HTMLElement;
+
   constructor(scene: Phaser.Scene) {
     const root = document.getElementById("ui-root")!;
 
@@ -87,6 +93,36 @@ export class HUDController {
       [academyBtnEl, eventsBtnEl],
     );
     root.appendChild(topBarEl);
+
+    // --- Status dots (top-left, below Academy/Events) — diagnostic only,
+    // never gate anything. MP = multiplayer connection (net/NetClient.ts,
+    // silent by design otherwise); ACCT = whether progress is actually
+    // saving to Supabase (cloud/persistenceStatus.ts). Hover either dot
+    // for the exact reason it's not green. */
+    const dotStyle = (): Partial<CSSStyleDeclaration> => ({
+      width: "9px",
+      height: "9px",
+      borderRadius: "50%",
+      display: "inline-block",
+      transition: "background 200ms ease, box-shadow 200ms ease",
+    });
+    this.netDotEl = el("span", { style: dotStyle() });
+    this.persistDotEl = el("span", { style: dotStyle() });
+    const statusLabel = (text: string) => el("span", { text, style: { fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.04em" } });
+    const statusRowEl = el(
+      "div",
+      { className: "ds-root", style: { position: "absolute", top: "72px", left: "24px", display: "flex", gap: "14px", alignItems: "center", pointerEvents: "auto" } },
+      [
+        el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [this.netDotEl, statusLabel("MP")]),
+        el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [this.persistDotEl, statusLabel("ACCT")]),
+      ],
+    );
+    root.appendChild(statusRowEl);
+
+    net.onStatusChange(() => this.refreshNetDot());
+    this.refreshNetDot();
+    persistenceStatus.on("changed", () => this.refreshPersistDot());
+    this.refreshPersistDot();
 
     // --- XP bar (bottom-left, always visible) ---
     this.levelBadgeEl = el("div", { className: "level-badge", text: "C1" });
@@ -207,6 +243,29 @@ export class HUDController {
     const pct = Phaser.Math.Clamp((points / TOTAL_POINTS) * 100, 0, 100);
     this.xpFillEl.style.width = `${pct}%`;
     this.xpValueEl.textContent = `${points} PTS`;
+  }
+
+  private refreshNetDot() {
+    const { status, lastError } = net.getStatus();
+    const color = status === "connected" ? "var(--accent-green)" : status === "connecting" ? "var(--accent-amber)" : "var(--text-muted)";
+    this.netDotEl.style.background = color;
+    this.netDotEl.style.boxShadow = `0 0 4px ${color}`;
+    const detail = status === "connected" ? "connected" : status === "connecting" ? "connecting…" : `disconnected${lastError ? ` — ${lastError}` : ""}`;
+    this.netDotEl.title = `Multiplayer: ${detail}`;
+  }
+
+  private refreshPersistDot() {
+    const { status, lastError } = persistenceStatus.get();
+    const color: Record<PersistenceStatus, string> = { ok: "var(--accent-green)", guest: "var(--accent-amber)", error: "var(--accent-red)" };
+    this.persistDotEl.style.background = color[status];
+    this.persistDotEl.style.boxShadow = `0 0 4px ${color[status]}`;
+    const detail =
+      status === "ok"
+        ? "signed in, progress saving"
+        : status === "guest"
+          ? "guest — sign up to save progress"
+          : `signed in, but saving is failing${lastError ? ` — ${lastError}` : ""}`;
+    this.persistDotEl.title = `Account: ${detail}`;
   }
 
   private refreshTracker() {
@@ -347,6 +406,14 @@ export class HUDController {
           moduleState: academy.serializeState(),
         });
       },
+      // Freezes player movement (Room.ts's uiOpen reads isUiLocked())
+      // for exactly the async window this modal is doing real network
+      // work — released in emailCapturePanel.ts's own try/finally, so a
+      // network error or thrown exception mid-submit can't strand the
+      // player frozen once the modal itself is still visibly open but
+      // no longer doing anything.
+      onSubmitStart: () => lockUi(),
+      onSubmitEnd: () => unlockUi(),
       onFallback: (_email, waitlistOk) => {
         close();
         this.showToast(waitlistOk ? "Couldn't reach the account service — try again shortly." : "Couldn't reach the server — try again shortly.");

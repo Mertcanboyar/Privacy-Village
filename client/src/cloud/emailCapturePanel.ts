@@ -1,6 +1,7 @@
 import { el } from "../ui/dom";
 import { playSound } from "../audio";
 import { supabase } from "./supabaseClient";
+import { logPersistence } from "./log";
 
 // Shared by Title.ts's "Become a Founding Privacy Villager" gate and
 // hud.ts's mid-session "SAVE YOUR RECORD" upgrade — same panel, same
@@ -22,6 +23,13 @@ export interface EmailCapturePanelOptions {
    * (see cloud/pendingUpgrade.ts) so it survives the magic-link
    * navigation. Title.ts's first-time signup doesn't need it. */
   beforeAuthSubmit?: (email: string) => void;
+  /** Bracket the async submit window (waitlist POST + signInWithOtp) —
+   * hud.ts's mid-session modal uses these to lock/unlock player movement
+   * (see cloud/uiLock.ts), guaranteed via try/finally below regardless
+   * of which way submit() exits. Title.ts's gate has no movement concept
+   * to lock, so it leaves these unset. */
+  onSubmitStart?: () => void;
+  onSubmitEnd?: () => void;
   /** Called when Supabase isn't configured at all, or the OTP send
    * itself failed (bad config, rate limit) — either way there's no
    * magic link coming, so the caller decides what "proceeding" means.
@@ -72,28 +80,45 @@ function renderForm(container: HTMLElement, opts: EmailCapturePanelOptions) {
     const waitlistPromise = postWaitlist(email);
 
     if (!supabase) {
+      logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "skip" });
       const waitlistOk = await waitlistPromise;
       opts.onFallback(email, waitlistOk);
       return;
     }
 
     opts.beforeAuthSubmit?.(email);
+    opts.onSubmitStart?.();
 
-    const [waitlistOk, authOk] = await Promise.all([
-      waitlistPromise,
-      supabase.auth
-        .signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
-        .then(({ error }) => !error)
-        .catch(() => false),
-    ]);
+    try {
+      const [waitlistOk, authOk] = await Promise.all([
+        waitlistPromise,
+        supabase.auth
+          .signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
+          .then(({ error }) => {
+            if (error) {
+              logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "error", error });
+              return false;
+            }
+            logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "ok" });
+            return true;
+          })
+          .catch((err: unknown) => {
+            logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "error", error: err });
+            return false;
+          }),
+      ]);
 
-    if (authOk) {
-      renderCheckInbox(container, opts, email);
-    } else {
-      // Supabase configured but the OTP call itself failed — a hiccup
-      // here must never block entry either, so fall back exactly like
-      // the not-configured path.
-      opts.onFallback(email, waitlistOk);
+      if (authOk) {
+        renderCheckInbox(container, opts, email);
+      } else {
+        // Supabase configured but the OTP call itself failed — a hiccup
+        // here must never block entry either, so fall back exactly like
+        // the not-configured path. The real error is now in the console
+        // (see logPersistence above) instead of silently discarded.
+        opts.onFallback(email, waitlistOk);
+      }
+    } finally {
+      opts.onSubmitEnd?.();
     }
   };
 

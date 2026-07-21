@@ -2,6 +2,8 @@ import { supabase } from "./supabaseClient";
 import { getCurrentUserId } from "./authState";
 import { questEngine, type QuestStepChoiceOption } from "../questEngine";
 import { academy } from "../academy";
+import { logPersistence } from "./log";
+import { persistenceStatus } from "./persistenceStatus";
 
 // The ongoing save loop — as opposed to cloud/profile.ts's one-shot
 // row creation at signup/upgrade time. Both saveProgress() and
@@ -30,23 +32,26 @@ export function saveProgress() {
 
 async function flushSaveProgress(userId: string) {
   if (!supabase) return;
+  const row = {
+    player_id: userId,
+    clearance: questEngine.getClearance(),
+    xp: questEngine.getPoints(),
+    quest_state: questEngine.serializeState(),
+    module_state: academy.serializeState(),
+    updated_at: new Date().toISOString(),
+  };
   try {
-    const { error } = await supabase
-      .from("progress")
-      .upsert(
-        {
-          player_id: userId,
-          clearance: questEngine.getClearance(),
-          xp: questEngine.getPoints(),
-          quest_state: questEngine.serializeState(),
-          module_state: academy.serializeState(),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "player_id" },
-      );
-    if (error) console.error("[cloud] saveProgress failed", error);
+    const { error } = await supabase.from("progress").upsert(row, { onConflict: "player_id" });
+    if (error) {
+      logPersistence({ action: "saveProgress", table: "progress", payload: { player_id: userId, clearance: row.clearance, xp: row.xp }, status: "error", error });
+      persistenceStatus.reportError(error);
+      return;
+    }
+    logPersistence({ action: "saveProgress", table: "progress", payload: { player_id: userId, clearance: row.clearance, xp: row.xp }, status: "ok" });
+    persistenceStatus.reportOk();
   } catch (err) {
-    console.error("[cloud] saveProgress threw", err);
+    logPersistence({ action: "saveProgress", table: "progress", status: "error", error: err });
+    persistenceStatus.reportError(err);
   }
 }
 
@@ -69,11 +74,21 @@ export function logDecision(event: string, detail: Record<string, unknown>) {
   try {
     void Promise.resolve(supabase.from("decisions").insert({ player_id: userId, event, detail: { v: 1, ...detail } }))
       .then(({ error }) => {
-        if (error) console.error("[cloud] logDecision failed", event, error);
+        if (error) {
+          logPersistence({ action: "logDecision", table: "decisions", payload: { event, detail }, status: "error", error });
+          persistenceStatus.reportError(error);
+          return;
+        }
+        logPersistence({ action: "logDecision", table: "decisions", payload: { event, detail }, status: "ok" });
+        persistenceStatus.reportOk();
       })
-      .catch((err: unknown) => console.error("[cloud] logDecision threw", event, err));
+      .catch((err: unknown) => {
+        logPersistence({ action: "logDecision", table: "decisions", payload: { event }, status: "error", error: err });
+        persistenceStatus.reportError(err);
+      });
   } catch (err) {
-    console.error("[cloud] logDecision threw", event, err);
+    logPersistence({ action: "logDecision", table: "decisions", payload: { event }, status: "error", error: err });
+    persistenceStatus.reportError(err);
   }
 }
 

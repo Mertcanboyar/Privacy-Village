@@ -9,6 +9,8 @@ import { takePendingUpgrade, type PendingUpgradeSnapshot } from "../cloud/pendin
 import { buildEmailCapturePanel } from "../cloud/emailCapturePanel";
 import { questEngine } from "../questEngine";
 import { academy } from "../academy";
+import { logPersistence } from "../cloud/log";
+import { withTimeout, HYDRATE_TIMEOUT_MS } from "../cloud/withTimeout";
 
 // Title screen (see PLAN.md Phase 2, Day 1). DOM owns the interactive
 // chrome, same Phaser-world/DOM-UI split as everywhere else in this game.
@@ -92,13 +94,23 @@ export class Title extends Phaser.Scene {
 
     let userId: string | null = null;
     let userEmail: string | null = null;
+    let timedOut = false;
     try {
       const {
         data: { session },
-      } = await supabase.auth.getSession();
-      userId = session?.user.id ?? null;
-      userEmail = session?.user.email ?? null;
-    } catch {
+        error,
+      } = await withTimeout(supabase.auth.getSession(), HYDRATE_TIMEOUT_MS, { data: { session: null }, error: null }, () => (timedOut = true));
+      if (timedOut) {
+        logPersistence({ action: "getSession", table: "auth", status: "timeout" });
+      } else if (error) {
+        logPersistence({ action: "getSession", table: "auth", status: "error", error });
+      } else {
+        userId = session?.user.id ?? null;
+        userEmail = session?.user.email ?? null;
+        logPersistence({ action: "getSession", table: "auth", payload: { sessionFound: !!userId }, status: "ok" });
+      }
+    } catch (err) {
+      logPersistence({ action: "getSession", table: "auth", status: "error", error: err });
       userId = null;
     }
 

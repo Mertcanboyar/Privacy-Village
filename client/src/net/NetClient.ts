@@ -48,6 +48,9 @@ type PlayerAddHandler = (player: RemotePlayerSnapshot) => void;
 type PlayerChangeHandler = (player: RemotePlayerSnapshot) => void;
 type PlayerRemoveHandler = (sessionId: string) => void;
 
+export type ConnectionStatus = "connecting" | "connected" | "disconnected";
+type StatusChangeHandler = (status: ConnectionStatus, lastError: string | null) => void;
+
 function snapshotOf(sessionId: string, player: {
   name: string; spriteId: string; faction: string; x: number; y: number;
   facing: string; moving: boolean; clearance: number;
@@ -79,6 +82,13 @@ export class NetClient {
   private addHandler: PlayerAddHandler | null = null;
   private changeHandler: PlayerChangeHandler | null = null;
   private removeHandler: PlayerRemoveHandler | null = null;
+  // Unlike the three above, this one's set once by hud.ts (in UIOverlay,
+  // constructed before Room.ts's first connect() call and never rebuilt
+  // on room transitions) and never needs repointing — it's read by the
+  // HUD's connection status dot, purely diagnostic, never gates gameplay.
+  private statusHandler: StatusChangeHandler | null = null;
+  private status: ConnectionStatus = "disconnected";
+  private lastError: string | null = null;
 
   // pollPlayers()'s own diff baseline — see the file-level comment on why
   // this drives add/change/remove instead of getStateCallbacks.
@@ -104,9 +114,25 @@ export class NetClient {
     this.removeHandler = handler;
   }
 
+  onStatusChange(handler: StatusChangeHandler) {
+    this.statusHandler = handler;
+  }
+
+  getStatus(): { status: ConnectionStatus; lastError: string | null } {
+    return { status: this.status, lastError: this.lastError };
+  }
+
+  private setStatus(status: ConnectionStatus, lastError: string | null = null) {
+    if (this.status === status && this.lastError === lastError) return;
+    this.status = status;
+    this.lastError = lastError;
+    this.statusHandler?.(status, lastError);
+  }
+
   async connect(sceneId: string, session: NetSession): Promise<void> {
     this.disconnect();
     const token = ++this.connectToken;
+    this.setStatus("connecting");
     await this.attemptConnect(sceneId, session, token, true);
   }
 
@@ -132,10 +158,20 @@ export class NetClient {
         return;
       }
       this.room = room;
+      this.setStatus("connected");
       this.sessionId = room.sessionId;
       this.resetSendState();
-    } catch {
-      if (!allowRetry || token !== this.connectToken) return;
+    } catch (err) {
+      // A dead/refused WebSocket typically throws a raw ProgressEvent or
+      // CloseEvent from the browser, not an Error — those stringify to
+      // useless junk like "[object ProgressEvent]" in the status dot's
+      // tooltip, so fall back to a plain description instead of that.
+      const message = err instanceof Error ? err.message : "could not reach the server";
+      if (!allowRetry || token !== this.connectToken) {
+        if (token === this.connectToken) this.setStatus("disconnected", message);
+        return;
+      }
+      this.setStatus("connecting", message); // still trying — one retry left
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
       if (token !== this.connectToken) return;
       await this.attemptConnect(sceneId, session, token, false);
@@ -202,6 +238,7 @@ export class NetClient {
     this.sessionId = null;
     this.knownPlayers.clear();
     this.resetSendState();
+    this.setStatus("disconnected");
   }
 
   private resetSendState() {
