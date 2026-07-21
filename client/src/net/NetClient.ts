@@ -147,8 +147,19 @@ export class NetClient {
    * update(), right alongside sendMove(). */
   pollPlayers() {
     if (!this.room) return;
+    // this.room resolving (joinOrCreate() awaited) and this.room.state's
+    // schema actually finishing its first sync over the websocket are two
+    // separate async events — there's a real window (worse over a real
+    // network than localhost) where .players is still undefined here.
+    // Called unconditionally every frame from Room.ts's update(), ahead of
+    // npcController/questController/checkDoors/checkZones — an uncaught
+    // throw here would silently starve all of those for every subsequent
+    // frame this stays undefined, which is the opposite of "multiplayer
+    // failure is silent and solo play is unaffected" (see this file's
+    // header comment and CLAUDE.md). No-op instead.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const players = (this.room.state as any).players as Map<string, RemotePlayerSnapshot>;
+    const players = (this.room.state as any)?.players as Map<string, RemotePlayerSnapshot> | undefined;
+    if (!players) return;
     const seen = new Set<string>();
 
     players.forEach((player, sessionId) => {
