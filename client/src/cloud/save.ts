@@ -1,9 +1,11 @@
 import { supabase } from "./supabaseClient";
-import { getCurrentUserId } from "./authState";
+import { getCurrentUserId, hasPendingOtpRequest } from "./authState";
 import { questEngine, type QuestStepChoiceOption } from "../questEngine";
 import { academy } from "../academy";
 import { logPersistence } from "./log";
 import { persistenceStatus } from "./persistenceStatus";
+import { getSession } from "../session";
+import { savePendingUpgrade } from "./pendingUpgrade";
 
 // The ongoing save loop — as opposed to cloud/profile.ts's one-shot
 // row creation at signup/upgrade time. Both saveProgress() and
@@ -18,16 +20,51 @@ let saveTimer: number | undefined;
 /** Upserts the progress row from current game state. Debounced 2s so a
  * burst of near-simultaneous triggers (a milestone that also raises
  * Clearance and awards XP in the same tick, say) collapses into one
- * write instead of three. */
+ * write instead of three. A guest with a magic link already in flight
+ * (see cloud/authState.ts's hasPendingOtpRequest()) gets the same
+ * triggers routed to refreshGuestPendingUpgrade() below instead — see
+ * its doc comment for why that's what actually makes the magic link
+ * populate profiles/progress at all. */
 export function saveProgress() {
   const userId = getCurrentUserId();
-  if (!supabase || !userId) return;
+  if (!supabase) return;
+
+  if (!userId) {
+    refreshGuestPendingUpgrade();
+    return;
+  }
 
   if (saveTimer !== undefined) window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     saveTimer = undefined;
     void flushSaveProgress(userId);
   }, SAVE_DEBOUNCE_MS);
+}
+
+/** Keeps a guest's pendingUpgrade snapshot (localStorage, see
+ * cloud/pendingUpgrade.ts) fresh while a magic link is in flight for
+ * them — Title.ts's low-friction gate fires signInWithOtp() but never
+ * waits to authenticate before letting the player in (see
+ * cloud/emailCapturePanel.ts's blockOnAuth option), so isAuthenticated()
+ * stays false for the rest of that guest session even after a
+ * successful signup. Without a snapshot to claim, Title.ts's boot()
+ * has nothing to restore when the player eventually clicks the link —
+ * it would only ever create profiles/progress rows if they redid
+ * character creation from scratch on that second visit, and any
+ * progress made as a guest in between would be silently lost. No
+ * debounce: this is a synchronous localStorage write, not a network
+ * call, so there's no cost to keeping it current on every trigger. */
+function refreshGuestPendingUpgrade() {
+  if (!hasPendingOtpRequest()) return;
+  const session = getSession();
+  savePendingUpgrade({
+    v: 1,
+    name: session.name,
+    spriteId: session.avatarId,
+    faction: session.faction,
+    questState: questEngine.serializeState(),
+    moduleState: academy.serializeState(),
+  });
 }
 
 async function flushSaveProgress(userId: string) {
