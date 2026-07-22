@@ -30,10 +30,22 @@ export interface EmailCapturePanelOptions {
    * to lock, so it leaves these unset. */
   onSubmitStart?: () => void;
   onSubmitEnd?: () => void;
-  /** Called when Supabase isn't configured at all, or the OTP send
-   * itself failed (bad config, rate limit) — either way there's no
-   * magic link coming, so the caller decides what "proceeding" means.
-   * waitlistOk reflects the independent /api/waitlist POST only. */
+  /** Default true (hud.ts's mid-session upgrade keeps this): wait for
+   * signInWithOtp and show "Check your inbox, Agent" on success. Set
+   * false for a first-touch gate like Title.ts's — a brand-new player
+   * has maybe 30 seconds before they're bored, and a screen telling
+   * them to go read their email before they've even seen the village
+   * is exactly the kind of friction that loses them. false fires the
+   * OTP request in the background (still logged, still arrives, still
+   * works whenever they get to it — see Title.ts's boot()) and calls
+   * onFallback the moment the (fast, local) waitlist POST settles,
+   * without waiting on email infrastructure at all. */
+  blockOnAuth?: boolean;
+  /** Called when Supabase isn't configured at all, the OTP send itself
+   * failed (bad config, rate limit), or — when blockOnAuth is false —
+   * unconditionally once the waitlist POST settles, regardless of the
+   * (still in-flight or already-failed) auth attempt. waitlistOk always
+   * reflects the independent /api/waitlist POST only. */
   onFallback: (email: string, waitlistOk: boolean) => void;
 }
 
@@ -87,26 +99,37 @@ function renderForm(container: HTMLElement, opts: EmailCapturePanelOptions) {
     }
 
     opts.beforeAuthSubmit?.(email);
-    opts.onSubmitStart?.();
 
+    const signInPromise = supabase.auth
+      .signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
+      .then(({ error }) => {
+        if (error) {
+          logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "error", error });
+          return false;
+        }
+        logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "ok" });
+        return true;
+      })
+      .catch((err: unknown) => {
+        logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "error", error: err });
+        return false;
+      });
+
+    if (opts.blockOnAuth === false) {
+      // Don't make a first-touch player wait on email infrastructure —
+      // the OTP request is already in flight and keeps running/logging
+      // in the background; entry proceeds the moment the fast, local
+      // waitlist POST settles. See the option's doc comment.
+      opts.onSubmitStart?.();
+      void signInPromise.finally(() => opts.onSubmitEnd?.());
+      const waitlistOk = await waitlistPromise;
+      opts.onFallback(email, waitlistOk);
+      return;
+    }
+
+    opts.onSubmitStart?.();
     try {
-      const [waitlistOk, authOk] = await Promise.all([
-        waitlistPromise,
-        supabase.auth
-          .signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
-          .then(({ error }) => {
-            if (error) {
-              logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "error", error });
-              return false;
-            }
-            logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "ok" });
-            return true;
-          })
-          .catch((err: unknown) => {
-            logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "error", error: err });
-            return false;
-          }),
-      ]);
+      const [waitlistOk, authOk] = await Promise.all([waitlistPromise, signInPromise]);
 
       if (authOk) {
         renderCheckInbox(container, opts, email);

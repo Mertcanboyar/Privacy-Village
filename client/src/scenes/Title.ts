@@ -20,7 +20,13 @@ import { withTimeout, HYDRATE_TIMEOUT_MS } from "../cloud/withTimeout";
 // network calls (waitlist POST, Supabase auth, profile/progress fetch)
 // must never block entry — see cloud/emailCapturePanel.ts's own
 // fallback path and this file's boot()/spawn methods, which all treat
-// "couldn't reach it" the same as "declined."
+// "couldn't reach it" the same as "declined." Submitting an email here
+// doesn't wait on the magic-link email either (blockOnAuth: false, see
+// buildGatePanel()) — a first-time player gets maybe 30 seconds to be
+// won over, and "go check your inbox" before they've even seen the
+// village is exactly the kind of friction that loses them. The OTP
+// request still fires and still works whenever they get around to
+// clicking it; it just doesn't gate anything here.
 
 // Module-level, not instance state — persists across a hypothetical
 // re-visit to this scene within the same page load ("never nag again in
@@ -162,6 +168,12 @@ export class Title extends Phaser.Scene {
       subline: "Early access to new Trials, the annual festival, and the first credentials.",
       buttonLabel: "Join & Enter the Village",
       showSkipLink: true,
+      // A first-time player has ~30 seconds before they're bored —
+      // never make them wait on the magic-link email before they've
+      // even seen the village. onFallback below fires the instant the
+      // waitlist POST settles; the OTP request itself keeps running in
+      // the background (see cloud/emailCapturePanel.ts's doc comment).
+      blockOnAuth: false,
       onSkip: () => {
         waitlistHandled = true;
         this.enter();
