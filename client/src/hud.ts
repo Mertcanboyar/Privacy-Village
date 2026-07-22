@@ -7,7 +7,7 @@ import { getSession } from "./session";
 import { academy } from "./academy";
 import { events } from "./events";
 import { supabase } from "./cloud/supabaseClient";
-import { isAuthenticated } from "./cloud/authState";
+import { isAuthenticated, hasPendingOtpRequest } from "./cloud/authState";
 import { savePendingUpgrade } from "./cloud/pendingUpgrade";
 import { buildEmailCapturePanel } from "./cloud/emailCapturePanel";
 import { net } from "./net/NetClient";
@@ -139,8 +139,16 @@ export class HUDController {
     // only, and only when persistence is actually configured at all
     // (no point offering it if Supabase env vars are absent). Opens the
     // same email-capture panel Title.ts's gate uses, in a floating
-    // modal over the game rather than replacing the whole screen. ---
-    if (supabase && !isAuthenticated()) {
+    // modal over the game rather than replacing the whole screen.
+    // Hidden once a magic link is already pending for this session
+    // (e.g. Title's low-friction gate, see cloud/emailCapturePanel.ts's
+    // blockOnAuth option, already fired one and never waits to confirm
+    // it — so isAuthenticated() alone stays false right after a real
+    // signup) — showing it anyway would just invite a second
+    // signInWithOtp() for the same address, which cloud/authState.ts's
+    // resend-cooldown guard would now skip silently, so this is a UX
+    // clarity fix on top of that, not the only thing preventing 429s. ---
+    if (supabase && !isAuthenticated() && !hasPendingOtpRequest()) {
       const saveRecordBtnEl = el("button", {
         className: "btn btn--ghost",
         text: "SAVE YOUR RECORD",

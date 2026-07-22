@@ -2,6 +2,7 @@ import { el } from "../ui/dom";
 import { playSound } from "../audio";
 import { supabase } from "./supabaseClient";
 import { logPersistence } from "./log";
+import { markOtpRequested, hasRequestedOtpFor } from "./authState";
 
 // Shared by Title.ts's "Become a Founding Privacy Villager" gate and
 // hud.ts's mid-session "SAVE YOUR RECORD" upgrade — same panel, same
@@ -76,14 +77,24 @@ function renderForm(container: HTMLElement, opts: EmailCapturePanelOptions) {
   let emailInput!: HTMLInputElement;
   let errorEl!: HTMLElement;
   let submitBtn!: HTMLButtonElement;
+  // Reentrancy guard for this one panel instance: submitBtn.disabled
+  // gets set synchronously below, but that alone doesn't stop the
+  // input's own Enter-triggered submit() (a separate listener,
+  // unaffected by the button's disabled state) from firing a second
+  // time if Enter and a click land in the same tick. Checked first,
+  // before anything else, so a double-fire can never reach
+  // signInWithOtp() at all.
+  let submitting = false;
 
   const submit = async () => {
+    if (submitting) return;
     const email = emailInput.value.trim();
     if (!EMAIL_RE.test(email)) {
       errorEl.textContent = "That doesn't look like an email address.";
       shake(emailInput);
       return;
     }
+    submitting = true;
     errorEl.textContent = "";
     playSound("confirm");
     submitBtn.disabled = true;
@@ -100,20 +111,35 @@ function renderForm(container: HTMLElement, opts: EmailCapturePanelOptions) {
 
     opts.beforeAuthSubmit?.(email);
 
-    const signInPromise = supabase.auth
-      .signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
-      .then(({ error }) => {
-        if (error) {
-          logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "error", error });
-          return false;
-        }
-        logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "ok" });
-        return true;
-      })
-      .catch((err: unknown) => {
-        logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "error", error: err });
-        return false;
-      });
+    // Supabase enforces a resend cooldown (~60s) per email address —
+    // firing a second signInWithOtp() for the SAME address this page
+    // load (e.g. a player who signed up via Title's low-friction gate,
+    // then also clicks the HUD's "SAVE YOUR RECORD" out of curiosity)
+    // is a genuine 429 from a single real signup, not abuse. If this
+    // exact email already has a request in flight, skip the network
+    // call entirely and just proceed as if it succeeded again — the
+    // original magic link is still the one that matters.
+    const alreadyRequested = hasRequestedOtpFor(email);
+    const signInPromise = alreadyRequested
+      ? Promise.resolve(true)
+      : supabase.auth
+          .signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
+          .then(({ error }) => {
+            if (error) {
+              logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "error", error });
+              return false;
+            }
+            logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "ok" });
+            markOtpRequested(email);
+            return true;
+          })
+          .catch((err: unknown) => {
+            logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "error", error: err });
+            return false;
+          });
+    if (alreadyRequested) {
+      logPersistence({ action: "signInWithOtp", table: "auth", payload: { email }, status: "skip" });
+    }
 
     if (opts.blockOnAuth === false) {
       // Don't make a first-touch player wait on email infrastructure —
