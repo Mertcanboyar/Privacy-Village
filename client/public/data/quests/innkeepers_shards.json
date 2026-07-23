@@ -67,7 +67,7 @@
       }
     },
     {
-      "objective": "Compare every entry's Trade, Age Range, and District. Find the one with no exact match — that's the k-anonymity flaw.",
+      "objective": "Talk to Herald. Compare every entry's Trade, Age Range, and District. Find the one with no exact match — that's the k-anonymity flaw.",
       "trigger": { "type": "talk_to", "npc": "herald", "requiresFlag": "mask_flaw_found" },
       "evidenceTables": {
         "tabs": [
