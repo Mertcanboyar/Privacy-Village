@@ -3,7 +3,7 @@
   "title": "The Breach in the Wall",
   "giver": "herald",
   "xp": 150,
-  "offer": "Talk to Herald and figure out which attacker poses a risk by looking at their characteristics in the dossier.",
+  "offer": "The Council calls these walls impregnable, Agent. I've hunted the Shadownet long enough to know better. Will you help me prove them wrong?",
   "nextHint": "Go to the village square and talk to Herald to start Mission 1",
   "debrief": "Map capabilities to vulnerabilities. Defend against the actor that fits the gap.",
   "milestone": "breach_m2",
@@ -19,7 +19,7 @@
       }
     },
     {
-      "objective": "Identify the threat actor who fits the gap",
+      "objective": "Talk to Herald and figure out which attacker poses a risk by looking at their characteristics in the dossier.",
       "trigger": { "type": "talk_to", "npc": "herald", "requiresFlag": "threat_identified" },
       "evidence": {
         "images": [
