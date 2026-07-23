@@ -28,7 +28,7 @@
       "toast": "MISSION UPDATED — Contained. The clock runs on."
     },
     {
-      "objective": "File While Blind",
+      "objective": "File While Blind by talking to Quill",
       "trigger": { "type": "talk_to", "npc": "quill", "requiresFlag": "notice_filed" },
       "clockCost": 40
     },
