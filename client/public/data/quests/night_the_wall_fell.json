@@ -14,7 +14,7 @@
   },
   "steps": [
     {
-      "objective": "Hear the Warden",
+      "objective": "Talk to Bram",
       "trigger": { "type": "talk_to", "npc": "bram", "requiresFlag": "warden_heard" },
       "clockCost": 2
     },
