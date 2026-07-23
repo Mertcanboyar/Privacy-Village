@@ -2,7 +2,9 @@ import { Room, Client } from "colyseus";
 import { Schema, type, MapSchema } from "@colyseus/schema";
 
 // Presence-only state — see PLAN.md's multiplayer section. Deliberately
-// tiny: no chat, no combat, no shared quest state, no persistence.
+// tiny: local room chat (ephemeral, not part of the synced schema —
+// see the "chat" message handler below), no combat, no shared quest
+// state, no persistence.
 export class PlayerState extends Schema {
   @type("string") name = "";
   @type("string") spriteId = "wizard";
@@ -32,6 +34,12 @@ interface MoveMessage {
   facing: string;
   moving: boolean;
 }
+
+interface ChatMessage {
+  text: string;
+}
+
+const CHAT_MAX_LEN = 120;
 
 // The server has no notion of a room's walkable polygon (that's
 // client-side art/collision data, see Room.ts) — clamping to the scene's
@@ -66,6 +74,19 @@ export class SceneRoom extends Room<SceneState> {
       player.y = clamp(message.y, 0, SCENE_HEIGHT);
       player.facing = message.facing || player.facing;
       player.moving = !!message.moving;
+    });
+
+    // Ephemeral, room-scoped chat — not part of SceneState, so it never
+    // touches the schema/patch pipeline. Relayed to everyone else in
+    // this same sceneId room (the partitioning filterBy already gives
+    // us "local chat" for free — see index.ts); the sender renders its
+    // own bubble immediately client-side rather than waiting on the
+    // round trip (see NetClient.sendChat()), so `except: client` here.
+    this.onMessage("chat", (client, message: ChatMessage) => {
+      if (!this.state.players.has(client.sessionId)) return;
+      const text = (message?.text ?? "").toString().trim().slice(0, CHAT_MAX_LEN);
+      if (!text) return;
+      this.broadcast("chat", { sessionId: client.sessionId, text }, { except: client });
     });
   }
 

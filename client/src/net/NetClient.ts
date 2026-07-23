@@ -24,6 +24,7 @@ const COLYSEUS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:2567";
 
 const SEND_INTERVAL_MS = 100; // 10Hz
 const RETRY_DELAY_MS = 5000;
+const CHAT_MAX_LEN = 120;
 
 export interface NetSession {
   name: string;
@@ -47,6 +48,7 @@ export interface RemotePlayerSnapshot {
 type PlayerAddHandler = (player: RemotePlayerSnapshot) => void;
 type PlayerChangeHandler = (player: RemotePlayerSnapshot) => void;
 type PlayerRemoveHandler = (sessionId: string) => void;
+type ChatHandler = (sessionId: string, text: string) => void;
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 type StatusChangeHandler = (status: ConnectionStatus, lastError: string | null) => void;
@@ -82,6 +84,7 @@ export class NetClient {
   private addHandler: PlayerAddHandler | null = null;
   private changeHandler: PlayerChangeHandler | null = null;
   private removeHandler: PlayerRemoveHandler | null = null;
+  private chatHandler: ChatHandler | null = null;
   // Unlike the three above, this one's set once by hud.ts (in UIOverlay,
   // constructed before Room.ts's first connect() call and never rebuilt
   // on room transitions) and never needs repointing — it's read by the
@@ -112,6 +115,10 @@ export class NetClient {
 
   onPlayerRemove(handler: PlayerRemoveHandler) {
     this.removeHandler = handler;
+  }
+
+  onChat(handler: ChatHandler) {
+    this.chatHandler = handler;
   }
 
   onStatusChange(handler: StatusChangeHandler) {
@@ -161,6 +168,14 @@ export class NetClient {
       this.setStatus("connected");
       this.sessionId = room.sessionId;
       this.resetSendState();
+      // Plain message dispatch, not schema-diffed state — unaffected by
+      // this file's header-comment bug (that's specifically about
+      // getStateCallbacks on room.state), so a normal onMessage listener
+      // is fine here. Re-registered on every (re)connect, same as the
+      // add/change/remove handlers repointing at a fresh scene below.
+      room.onMessage("chat", (message: { sessionId: string; text: string }) => {
+        this.chatHandler?.(message.sessionId, message.text);
+      });
     } catch (err) {
       // A dead/refused WebSocket typically throws a raw ProgressEvent or
       // CloseEvent from the browser, not an Error — those stringify to
@@ -264,6 +279,18 @@ export class NetClient {
     this.lastSentFacing = facing;
     this.lastSentMoving = moving;
     this.room.send("move", { x, y, facing, moving });
+  }
+
+  /** Fire-and-forget, like sendMove() — a chat message that never
+   * reaches the server (disconnected, or the send throws) still shows
+   * above the sender's own head, since Room.ts renders that bubble
+   * itself rather than waiting for this to round-trip (see
+   * ChatController's onSend callback). */
+  sendChat(text: string) {
+    if (!this.room) return;
+    const trimmed = text.trim().slice(0, CHAT_MAX_LEN);
+    if (!trimmed) return;
+    this.room.send("chat", { text: trimmed });
   }
 }
 

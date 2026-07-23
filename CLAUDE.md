@@ -55,6 +55,29 @@ contact-shadow system exist for any character in this project), lerped
 toward the network position at 12%/frame with a 150px snap for
 teleports/room changes.
 
+**Local room chat:** `client/src/chat.ts`'s `ChatController` (one per
+`Room.create()`, same lifecycle as `NPCController`/`QuestController`)
+opens a text input on `ENTER` (guarded by the same `uiOpen` check
+everything else in `Room.ts` respects, and folded into it too, so it
+also pauses movement/doors/zones while typing), and swallows every
+keystroke's propagation to the window while focused — otherwise WASD/E
+would leak through to Phaser and move the player or pop an NPC
+dialogue open mid-sentence. On submit, `NetClient.sendChat()` fires a
+`"chat"` message; `SceneRoom.ts` relays it to everyone else in that
+same partitioned room (`broadcast(..., { except: client })`) — "local"
+for free, since a door transition already disconnects/reconnects to a
+different `SceneRoom` instance, same as presence itself. It's
+fire-and-forget and never round-trips for the sender: `Room.ts` renders
+its own speech bubble immediately on submit regardless of connection
+state (same "garnish, never a dependency" rule as the rest of
+multiplayer), while `remotePlayers.ts`'s `RemotePlayerController`
+renders everyone else's via `showBubble(sessionId, text)`, called from
+`NetClient.onChat()`. Bubbles are plain `Phaser.GameObjects.Text` with
+a dark background style (`CHAT_BUBBLE_STYLE`/`CHAT_BUBBLE_DURATION_MS`,
+exported from `remotePlayers.ts` so `Room.ts` doesn't duplicate them),
+floating above the name tag, self-expiring after 5s — no chat log or
+history exists anywhere, on purpose.
+
 **Known quirk, worked around:** `colyseus.js`'s `getStateCallbacks`
 (`onAdd`/`onChange`) never fires inside this Vite/browser bundle, even
 though the raw schema state (`room.state.players.size`/`.forEach`)

@@ -10,8 +10,9 @@ import { events } from "../events";
 import { playSound } from "../audio";
 import type { RoomName } from "../rooms";
 import { net } from "../net/NetClient";
-import { RemotePlayerController } from "../net/remotePlayers";
+import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE } from "../net/remotePlayers";
 import { isUiLocked } from "../cloud/uiLock";
+import { ChatController } from "../chat";
 
 const PLAYER_SPEED = 160;
 const SCALE_FAR = 0.75;
@@ -120,6 +121,9 @@ export class Room extends Phaser.Scene {
   private incidentTint: Phaser.GameObjects.Rectangle | null = null;
   private pendingCourthouseDoorPing = false;
   private remotePlayers!: RemotePlayerController;
+  private chatController!: ChatController;
+  private localChatBubble: Phaser.GameObjects.Text | null = null;
+  private localChatBubbleExpiresAt = 0;
 
   constructor() {
     super("Room");
@@ -201,6 +205,10 @@ export class Room extends Phaser.Scene {
     net.onPlayerAdd((p) => this.remotePlayers.spawn(p));
     net.onPlayerChange((p) => this.remotePlayers.applySnapshot(p));
     net.onPlayerRemove((sessionId) => this.remotePlayers.remove(sessionId));
+    // Local room chat — "local" for free, since a door transition already
+    // disconnects from this scene's SceneRoom and joins the next one (see
+    // the comment above); a chat message never crosses that boundary.
+    net.onChat((sessionId, text) => this.remotePlayers.showBubble(sessionId, text));
     net.connect(this.roomName, {
       name: getSession().name,
       spriteId: avatar.id,
@@ -267,6 +275,11 @@ export class Room extends Phaser.Scene {
 
     this.npcController = new NPCController(this, this.roomName);
     this.questController = new QuestController(this, this.roomName);
+    this.chatController = new ChatController(
+      this,
+      (text) => this.sendChatMessage(text),
+      () => this.resetMovementKeys(),
+    );
 
     this.refreshZoneMarker();
     questEngine.on("questUpdated", this.refreshZoneMarker, this);
@@ -425,6 +438,32 @@ export class Room extends Phaser.Scene {
     this.player.setDepth(y);
   }
 
+  private resetMovementKeys() {
+    this.cursors.up.reset();
+    this.cursors.down.reset();
+    this.cursors.left.reset();
+    this.cursors.right.reset();
+    this.wasd.W.reset();
+    this.wasd.A.reset();
+    this.wasd.S.reset();
+    this.wasd.D.reset();
+  }
+
+  private sendChatMessage(text: string) {
+    net.sendChat(text);
+    // Rendered locally regardless of whether the send above actually
+    // reached the server — chat is garnish on top of garnish, same
+    // "never a dependency" rule multiplayer already follows (see
+    // NetClient.ts's header comment); a message you typed should always
+    // appear above your own head, solo or not.
+    this.localChatBubble?.destroy();
+    this.localChatBubble = this.add
+      .text(this.player.x, this.player.y - this.player.displayHeight - 24, text, CHAT_BUBBLE_STYLE)
+      .setOrigin(0.5, 1)
+      .setDepth(100001);
+    this.localChatBubbleExpiresAt = this.time.now + CHAT_BUBBLE_DURATION_MS;
+  }
+
   update(time: number) {
     if (this.transitioning) return;
 
@@ -433,7 +472,9 @@ export class Room extends Phaser.Scene {
     // the player or a wanderer warp straight through several waypoints.
     const dt = Math.min(this.game.loop.delta, 50) / 1000;
 
-    const uiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen || isUiLocked();
+    const otherUiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen || isUiLocked();
+    this.chatController.update(otherUiOpen);
+    const uiOpen = otherUiOpen || this.chatController.isOpen;
     let localMoving = false;
 
     if (!uiOpen) {
@@ -478,6 +519,15 @@ export class Room extends Phaser.Scene {
     net.sendMove(this.player.x, this.player.y, this.player.flipX ? "left" : "right", localMoving);
     net.pollPlayers();
     this.remotePlayers.update();
+
+    if (this.localChatBubble) {
+      if (time > this.localChatBubbleExpiresAt) {
+        this.localChatBubble.destroy();
+        this.localChatBubble = null;
+      } else {
+        this.localChatBubble.setPosition(this.player.x, this.player.y - this.player.displayHeight - 24);
+      }
+    }
 
     this.updateWanderers(time, dt);
     this.npcController.update(this.player.x, this.player.y);

@@ -13,6 +13,20 @@ const SCALE_FAR = 0.75;
 const SCALE_NEAR = 1.0;
 const LERP_FACTOR = 0.12;
 const SNAP_DISTANCE = 150;
+// Exported so Room.ts can render the local player's own bubble with
+// matching styling/lifetime — this file already owns the remote-side
+// half of the same feature (see showBubble() below), no reason for a
+// third copy of these constants to exist.
+export const CHAT_BUBBLE_DURATION_MS = 5000;
+export const CHAT_BUBBLE_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
+  fontFamily: '"JetBrains Mono", monospace',
+  fontSize: "13px",
+  color: "#ffffff",
+  backgroundColor: "rgba(20, 22, 31, 0.85)",
+  padding: { x: 8, y: 4 },
+  wordWrap: { width: 220 },
+  align: "center",
+};
 
 function depthScaleFor(y: number): number {
   const t = Phaser.Math.Clamp(y / GAME_HEIGHT, 0, 1);
@@ -31,6 +45,8 @@ interface RemoteSprite {
   targetX: number;
   targetY: number;
   facing: string;
+  chatBubble: Phaser.GameObjects.Text | null;
+  chatBubbleExpiresAt: number;
 }
 
 // Scene-scoped by design: instantiated fresh in Room.create() (same
@@ -76,6 +92,8 @@ export class RemotePlayerController {
       targetX: snapshot.x,
       targetY: snapshot.y,
       facing: snapshot.facing,
+      chatBubble: null,
+      chatBubbleExpiresAt: 0,
     });
   }
 
@@ -90,11 +108,27 @@ export class RemotePlayerController {
     remote.facing = snapshot.facing;
   }
 
+  /** A "chat" broadcast arriving for a sessionId this room doesn't (or
+   * no longer) have a sprite for — e.g. it left mid-flight — is dropped
+   * silently, same "presence is garnish" tolerance as everything else
+   * in this file. */
+  showBubble(sessionId: string, text: string) {
+    const remote = this.sprites.get(sessionId);
+    if (!remote) return;
+    remote.chatBubble?.destroy();
+    remote.chatBubble = this.scene.add
+      .text(remote.image.x, remote.image.y - remote.image.displayHeight - 24, text, CHAT_BUBBLE_STYLE)
+      .setOrigin(0.5, 1)
+      .setDepth(100001);
+    remote.chatBubbleExpiresAt = this.scene.time.now + CHAT_BUBBLE_DURATION_MS;
+  }
+
   remove(sessionId: string) {
     const remote = this.sprites.get(sessionId);
     if (!remote) return;
     remote.image.destroy();
     remote.nameTag.destroy();
+    remote.chatBubble?.destroy();
     this.sprites.delete(sessionId);
   }
 
@@ -117,6 +151,15 @@ export class RemotePlayerController {
       remote.image.setScale(remote.baseScale * depthScaleFor(remote.image.y));
       remote.image.setDepth(remote.image.y);
       remote.nameTag.setPosition(remote.image.x, remote.image.y - remote.image.displayHeight - 4);
+
+      if (remote.chatBubble) {
+        if (this.scene.time.now > remote.chatBubbleExpiresAt) {
+          remote.chatBubble.destroy();
+          remote.chatBubble = null;
+        } else {
+          remote.chatBubble.setPosition(remote.image.x, remote.image.y - remote.image.displayHeight - 24);
+        }
+      }
     }
   }
 }
