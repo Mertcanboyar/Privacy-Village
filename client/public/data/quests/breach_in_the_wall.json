@@ -10,7 +10,7 @@
   "unlocks": ["innkeepers_shards"],
   "steps": [
     {
-      "objective": "Identify the gate with no Detective Control",
+      "objective": "Talk to Herald (press E) to identify the gate with no Detective Control.",
       "trigger": { "type": "talk_to", "npc": "herald", "requiresFlag": "gate_identified" },
       "evidence": {
         "images": [{ "src": "/assets/quest/village_map_mission1.jpeg", "label": "Stronghold Defense Grid" }],
