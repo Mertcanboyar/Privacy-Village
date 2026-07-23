@@ -693,6 +693,7 @@ export class NPCController {
   private dialogueNameEl: HTMLElement;
   private dialogueBodyEl: HTMLElement;
   private dialogueHintEl: HTMLElement;
+  private dialogueBackBtn: HTMLButtonElement;
   private choiceRowEl: HTMLElement | null = null;
 
   // Big `.briefing`-styled panel — Herald's mission text (see the
@@ -706,6 +707,7 @@ export class NPCController {
   private briefingBodyEl: HTMLElement;
   private briefingEvidenceRowEl: HTMLElement;
   private briefingHintEl: HTMLElement;
+  private briefingBackBtn: HTMLButtonElement;
   private briefingChoiceRowEl: HTMLElement | null = null;
 
   private eKey: Phaser.Input.Keyboard.Key;
@@ -771,6 +773,17 @@ export class NPCController {
     this.dialogueNameEl = el("div", { className: "dialogue__name" });
     this.dialogueBodyEl = el("div", { className: "dialogue__body" });
     this.dialogueHintEl = el("div", { className: "dialogue__continue" });
+    this.dialogueBackBtn = el("button", {
+      className: "btn btn--ghost",
+      text: "◂ BACK",
+      style: { fontSize: "11px", padding: "6px 12px", visibility: "hidden" },
+      on: { click: () => this.back() },
+    });
+    const dialogueFooterEl = el(
+      "div",
+      { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } },
+      [this.dialogueBackBtn, this.dialogueHintEl],
+    );
     this.dialogueEl = el(
       "div",
       {
@@ -784,7 +797,7 @@ export class NPCController {
           display: "none",
         },
       },
-      [this.dialogueNameEl, this.dialogueBodyEl, this.dialogueHintEl],
+      [this.dialogueNameEl, this.dialogueBodyEl, dialogueFooterEl],
     );
 
     document.getElementById("ui-root")!.appendChild(this.dialogueEl);
@@ -801,9 +814,19 @@ export class NPCController {
         fontWeight: "700",
         letterSpacing: "0.08em",
         color: "var(--accent-gold)",
-        marginTop: "var(--space-2)",
       },
     });
+    this.briefingBackBtn = el("button", {
+      className: "btn btn--ghost",
+      text: "◂ BACK",
+      style: { fontSize: "11px", padding: "6px 12px", visibility: "hidden" },
+      on: { click: () => this.back() },
+    });
+    const briefingFooterEl = el(
+      "div",
+      { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "var(--space-2)" } },
+      [this.briefingBackBtn, this.briefingHintEl],
+    );
     this.briefingBackdropEl = el("div", { className: "ui-backdrop", style: { pointerEvents: "auto", display: "none" } });
     this.briefingEl = el(
       "div",
@@ -834,7 +857,7 @@ export class NPCController {
           this.briefingBodyEl,
           this.briefingEvidenceRowEl,
         ]),
-        this.briefingHintEl,
+        briefingFooterEl,
       ],
     );
     document.getElementById("ui-root")!.appendChild(this.briefingBackdropEl);
@@ -990,6 +1013,7 @@ export class NPCController {
     const quest = questEngine.getDef(this.offerQuestId);
     this.dialogueNameEl.textContent = this.activeNpc.name;
     this.dialogueHintEl.textContent = "";
+    this.dialogueBackBtn.style.visibility = "hidden";
     this.currentTypewriter = typewriter(this.dialogueBodyEl, quest?.offer ?? "", 18, () => {
       this.renderChoices([
         { label: "Accept mission", onClick: () => this.acceptOffer() },
@@ -1016,6 +1040,8 @@ export class NPCController {
     const isBriefing = this.mode === "briefing";
     const bodyEl = isBriefing ? this.briefingBodyEl : this.dialogueBodyEl;
     const hintEl = isBriefing ? this.briefingHintEl : this.dialogueHintEl;
+    const backBtn = isBriefing ? this.briefingBackBtn : this.dialogueBackBtn;
+    backBtn.style.visibility = this.lineIndex > 0 ? "visible" : "hidden";
 
     if (isBriefing && this.activeSet.briefing) {
       this.briefingCaseEl.textContent = this.activeSet.briefing.caseLabel;
@@ -1157,6 +1183,17 @@ export class NPCController {
     } else {
       this.showLine();
     }
+  }
+
+  // Mirrors advance(), one page backward instead of forward — click-only
+  // (the button hides itself at lineIndex 0, see showLine()), so there's
+  // no "closeDialogue() on underflow" case to mirror advance()'s.
+  private back() {
+    if (!this.activeNpc || !this.activeSet || this.lineIndex <= 0) return;
+    if (this.currentTypewriter && !this.currentTypewriter.finished) this.currentTypewriter.skip();
+    this.clearChoices();
+    this.lineIndex--;
+    this.showLine();
   }
 
   private closeDialogue() {
