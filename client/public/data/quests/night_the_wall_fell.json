@@ -58,7 +58,7 @@
       }
     },
     {
-      "objective": "The Record",
+      "objective": "The Record — go to the Courthouse desk and talk to Quill",
       "trigger": { "type": "talk_to", "npc": "quill", "requiresFlag": "incident_recorded" },
       "clockCost": 2
     }
