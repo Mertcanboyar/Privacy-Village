@@ -262,12 +262,16 @@ Chain them: Room → Ticket → Item & Time → Name.`,
 const SHARDS_MISSION_2_PAGES = [
   `Word of your trick reached the Archive. Quill's scribes have "sanitized" the Summit's safehouse log — GENERALIZATION (specifics become ranges) and SUPPRESSION (values become *). They claim the log now satisfies k-anonymity with k=2: every row identical to at least one other. If true, no guest stands alone in the data.
 
-They made a mistake. One entry's remaining attributes are STILL unique. If the Shadownet intercepts this log, it can mathematically prove who that person is. Audit the mask. Find the flaw.`,
+They made a mistake. One entry's remaining attributes are STILL unique. If the Shadownet intercepts this log, it can mathematically prove who that person is. Your job: find the ONE row with no twin.`,
   `💾 THE EVIDENCE: SAFEHOUSE LOG (SANITIZED)
 Quasi-identifiers: Trade | Age Range | District
 
-Twelve entries, generalized and suppressed. Eleven of them should each have at least one identical twin elsewhere in the log. One does not.`,
+Twelve entries, generalized and suppressed. Eleven of them should each have at least one identical twin elsewhere in the log. One does not.
+
+HOW TO CHECK A TWIN: a match must be exact across all three columns together — same Trade, same Age Range, AND same District. Matching on only one or two columns doesn't count.`,
   `k-anonymity is a chain of twins, Ranger. Compare every row against every other — a single unmatched row breaks the promise for that one person, even if everyone else is safely hidden in a crowd.
+
+TIP: group the rows by Trade first (Wardens, Scribes, Smiths, Couriers, Weavers) — each group should be internally identical. One group has a row that doesn't match its groupmates.
 
 🔍 Which Entry ID violates k=2?`,
 ];
