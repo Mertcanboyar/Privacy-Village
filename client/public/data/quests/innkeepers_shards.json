@@ -9,7 +9,7 @@
   "milestone": "innkeepers_shards",
   "steps": [
     {
-      "objective": "Trace the guest sleeping in Room 7",
+      "objective": "Trace the guest sleeping in Room 7 by talking to Odile",
       "trigger": { "type": "talk_to", "npc": "odile", "requiresFlag": "guest_identified" },
       "evidenceTables": {
         "tabs": [
