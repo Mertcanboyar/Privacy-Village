@@ -226,6 +226,33 @@ export class Room extends Phaser.Scene {
         .setDepth(100000);
     }
 
+    // Every other door hotspot (village's own doors into Tavern/
+    // Courthouse, plus each interior's single door back out) gets the
+    // same floating-label treatment as the Academy door above, so entry
+    // and exit points read clearly without guessing from the art alone.
+    // Village entry doors sit mid-facade, right where these buildings'
+    // painted hanging signs already are — labeling above them (like the
+    // Academy) collides with that art, so entry labels go below the
+    // door, at ground level, instead. The two interior exit doors sit
+    // right at the bottom edge of their rooms with no room below them,
+    // so those keep the above-door placement.
+    for (const door of this.doors) {
+      if (door.target === "academy") continue;
+      const isEntry = this.roomName === "village";
+      const label = isEntry ? `\u{1F6AA} ENTER ${door.target.toUpperCase()}` : "\u{1F6AA} EXIT";
+      const labelY = isEntry ? door.y + door.height + 6 : door.y - 8;
+      this.add
+        .text(door.x + door.width / 2, labelY, label, {
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: "14px",
+          color: "#f0b429",
+          stroke: "#000000",
+          strokeThickness: 3,
+        })
+        .setOrigin(0.5, isEntry ? 0 : 1)
+        .setDepth(100000);
+    }
+
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys("W,A,S,D") as typeof this.wasd;
 
