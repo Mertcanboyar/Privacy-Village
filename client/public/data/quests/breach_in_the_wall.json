@@ -3,7 +3,7 @@
   "title": "The Breach in the Wall",
   "giver": "herald",
   "xp": 150,
-  "offer": "The Council calls these walls impregnable, Agent. I've hunted the Shadownet long enough to know better. Will you help me prove them wrong?",
+  "offer": "Talk to Herald and figure out which attacker poses a risk by looking at their characteristics in the dossier.",
   "debrief": "Map capabilities to vulnerabilities. Defend against the actor that fits the gap.",
   "milestone": "breach_m2",
   "unlocks": ["innkeepers_shards"],
