@@ -283,6 +283,16 @@ export class Room extends Phaser.Scene {
 
     this.refreshZoneMarker();
     questEngine.on("questUpdated", this.refreshZoneMarker, this);
+    // Re-checked on every questUpdated (not just at scene creation, see
+    // below) so the incident starts the instant the k-anonymity puzzle
+    // that unlocks it wraps up — that puzzle's giver (Herald) stands in
+    // the Village Square, so completing it typically happens with the
+    // player already standing in this exact scene. Without this, the
+    // only check was the one at the bottom of create(), which only ever
+    // ran on the NEXT village-room (re)entry — a confusing, disconnected
+    // jump-scare if the player wandered off to the Tavern/Courthouse
+    // first and only got shaken awake on their way back.
+    questEngine.on("questUpdated", this.checkIncidentTrigger, this);
 
     this.refreshIncidentTint();
     const onQuestCompleted = (id: string) => {
@@ -296,17 +306,17 @@ export class Room extends Phaser.Scene {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       questEngine.off("questUpdated", this.refreshZoneMarker, this);
+      questEngine.off("questUpdated", this.checkIncidentTrigger, this);
       questEngine.off("questCompleted", onQuestCompleted);
       questEngine.off("sceneBeat", onSceneBeat);
       this.zoneMarker?.destroy();
     });
 
-    // Auto-trigger: the incident starts the moment the player is standing
-    // in the Village Square with the quest unlocked but not yet begun —
-    // no NPC offers it (see QuestDef.giver's "auto" convention).
-    if (this.roomName === "village" && questEngine.getState("night_the_wall_fell") === "available") {
-      this.triggerIncidentStart();
-    }
+    // Covers the other path: the quest was already unlocked (e.g. the
+    // player finished the puzzle, then walked to another room) before
+    // this particular village scene instance was created — the listener
+    // above only fires on a NEW questUpdated event, not retroactively.
+    this.checkIncidentTrigger();
 
     if (this.roomName === "village" && this.pendingCourthouseDoorPing) {
       this.pendingCourthouseDoorPing = false;
@@ -329,6 +339,22 @@ export class Room extends Phaser.Scene {
       this.incidentTint = null;
       // The fade-out IS the reward ("warm dusk returns") — no snap-cut.
       this.tweens.add({ targets: tint, alpha: 0, duration: 1500, onComplete: () => tint.destroy() });
+    }
+  }
+
+  // Auto-trigger: the incident starts the moment the player is standing
+  // in the Village Square with the quest unlocked but not yet begun —
+  // no NPC offers it (see QuestDef.giver's "auto" convention). Called
+  // both reactively (questUpdated, so it fires immediately if this is
+  // already the live scene) and once at the bottom of create() (so it
+  // still fires if the quest unlocked while the player was elsewhere).
+  // `!this.transitioning` guards against a second questUpdated firing
+  // mid-sequence (acceptQuest() inside triggerIncidentStart() below
+  // emits its own) re-entering this while the bell/shake/dash is still
+  // playing out.
+  private checkIncidentTrigger() {
+    if (this.roomName === "village" && !this.transitioning && questEngine.getState("night_the_wall_fell") === "available") {
+      this.triggerIncidentStart();
     }
   }
 
