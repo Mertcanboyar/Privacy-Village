@@ -278,7 +278,24 @@ export class HUDController {
 
   private refreshTracker() {
     const quest = questEngine.getActiveQuest();
-    if (!quest || !this.trackerVisible) {
+    if (!quest) {
+      // Between one quest completing and the player finding/accepting
+      // the next one, getActiveQuest() is null — show that next quest's
+      // nextHint (if it has one) rather than leaving the corner blank
+      // with no clue what to do (see QuestDef.nextHint).
+      const hint = questEngine.getNextHint();
+      if (!hint || !this.trackerVisible) {
+        this.trackerEl.style.display = "none";
+        return;
+      }
+      this.trackerEl.style.display = "block";
+      this.trackerTitleEl.textContent = "NEXT OBJECTIVE";
+      this.trackerObjectiveEl.textContent = hint;
+      this.trackerEvidenceRowEl.innerHTML = "";
+      this.trackerCounterEl.textContent = "";
+      return;
+    }
+    if (!this.trackerVisible) {
       this.trackerEl.style.display = "none";
       return;
     }

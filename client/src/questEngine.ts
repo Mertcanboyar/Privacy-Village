@@ -145,6 +145,14 @@ export interface QuestDef {
    * unlike `unlocks`, this isn't tied to any specific other quest
    * completing, so it stays correct regardless of milestone order. */
   unlockAtClearance?: number;
+  /** Shown in the HUD tracker in place of an objective while this quest
+   * is `available` but not yet accepted — the gap between one quest
+   * completing and the player finding/talking to this quest's giver,
+   * where getActiveQuest() alone has nothing to show (see
+   * QuestManager.getNextHint()). Quests with an NPC giver the player
+   * must go find (not "hq"/"auto", which auto-activate) should set
+   * this so that gap is never a silent, unguided HUD. */
+  nextHint?: string;
   /** "The Night the Wall Fell"'s two Decision Clock outcome variants,
    * shown as a "reveal" panel on completion instead of the generic
    * debrief toast alone — mastery through consequence, not blockage: the
@@ -479,8 +487,31 @@ class QuestManager extends Phaser.Events.EventEmitter {
   private unlockQuest(id: string) {
     if (this.getState(id) !== "locked") return;
     const def = this.defs.get(id);
-    if (def?.giver === "hq") this.bootstrapHqQuest(id);
-    else this.states.set(id, "available");
+    if (def?.giver === "hq") {
+      this.bootstrapHqQuest(id); // acceptQuest() inside fires its own questUpdated
+      return;
+    }
+    this.states.set(id, "available");
+    // completeQuest()'s own questUpdated (see its caller) fires before
+    // this — whether directly (quest.unlocks) or via completeMilestone()
+    // -> setClearance() (quest.unlockAtClearance) — so without this the
+    // HUD tracker never learns a new quest is there to accept and stays
+    // hung on "nothing active" until the player stumbles onto the giver.
+    this.emit("questUpdated");
+  }
+
+  /** The first `available` quest's nextHint, if it has one — what
+   * hud.ts's tracker shows in place of an objective while
+   * getActiveQuest() is null but a quest is sitting there waiting to be
+   * accepted (see QuestDef.nextHint). Realistically at most one quest is
+   * ever `available` at a time in this content, so "first" is fine. */
+  getNextHint(): string | null {
+    for (const [id, state] of this.states) {
+      if (state !== "available") continue;
+      const hint = this.defs.get(id)?.nextHint;
+      if (hint) return hint;
+    }
+    return null;
   }
 
   addPoints(amount: number) {

@@ -4,6 +4,7 @@
   "giver": "herald",
   "xp": 150,
   "offer": "Talk to Herald and figure out which attacker poses a risk by looking at their characteristics in the dossier.",
+  "nextHint": "Go to the village square and talk to Herald to start Mission 1",
   "debrief": "Map capabilities to vulnerabilities. Defend against the actor that fits the gap.",
   "milestone": "breach_m2",
   "unlocks": ["innkeepers_shards"],
