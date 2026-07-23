@@ -3,12 +3,12 @@
   "title": "The Welcome",
   "giver": "hq",
   "xp": 50,
-  "opener": "You're inside the wire, Agent. Get your bearings before the festival swallows you whole — a Warden guards these gates, and an Innkeeper keeps her own kind of ledger. Both are worth knowing.",
+  "opener": "You're inside the wire, Agent. Get your bearings before the festival swallows you whole — a Warden guards these gates, and an Innkeeper keeps his own kind of ledger. Both are worth knowing.",
   "debrief": "Your welcome is complete — the village opens fully to you.",
   "milestone": "welcome",
   "unlocks": ["breach_in_the_wall"],
   "steps": [
     { "objective": "Greet Bram at the gates", "trigger": { "type": "talk_to", "npc": "bram" } },
-    { "objective": "Find Odile. Go to Griffin's Drink and talk to her.", "trigger": { "type": "talk_to", "npc": "odile" } }
+    { "objective": "Find Odile. Go to Griffin's Drink and talk to him.", "trigger": { "type": "talk_to", "npc": "odile" } }
   ]
 }

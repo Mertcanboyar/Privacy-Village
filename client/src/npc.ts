@@ -241,9 +241,9 @@ We are looking for a threat actor with high Stealth (to avoid the tower) and hig
 // question).
 
 const SHARDS_MISSION_1_PAGES = [
-  `The innkeeper has "sharded" her data into three isolated logs to prevent anyone from identifying her guests. The Room List knows only a Coat Check Ticket. The Coat Check Log knows only items and timestamps. The City Gate Log knows names and appearances — but nothing of the inn.
+  `The innkeeper has "sharded" his data into three isolated logs to prevent anyone from identifying his guests. The Room List knows only a Coat Check Ticket. The Coat Check Log knows only items and timestamps. The City Gate Log knows names and appearances — but nothing of the inn.
 
-She believes separation makes the data anonymous. The Shadownet knows better. By CHAINING these three datasets, anyone can de-anonymize anyone.
+He believes separation makes the data anonymous. The Shadownet knows better. By CHAINING these three datasets, anyone can de-anonymize anyone.
 
 Trace the chain. Find the name of the guest in Room 7.`,
   `💾 THE EVIDENCE: THE SHARDED LOGS
@@ -889,7 +889,7 @@ export class NPCController {
   }
 
   // Same technique, gold-pulsing Odile once Clearance 4 unlocks "The
-  // Innkeeper's Shards" — she's the giver, not Herald, for this quest.
+  // Innkeeper's Shards" — he's the giver, not Herald, for this quest.
   private refreshOdilePulse(scene: Phaser.Scene) {
     if (this.odilePulse || questEngine.getClearance() < 4) return;
     const odile = this.npcs.find((n) => n.def.id === "odile");
