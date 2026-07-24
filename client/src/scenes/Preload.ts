@@ -67,6 +67,13 @@ export class Preload extends Phaser.Scene {
     // placeholder + a console.warn.
     this.load.spritesheet("npc-maren", "assets/npc/healer/maren.png", { frameWidth: 501, frameHeight: 461 });
 
+    // Courier + Villager ("The Blueprint of the Post Road" — see
+    // npc.ts) — 30-frame greeting-animation strips, same union-bbox-
+    // crop-across-all-frames treatment as Maren above, from two more
+    // user-provided character packs.
+    this.load.spritesheet("npc-courier", "assets/npc/courier/courier.png", { frameWidth: 426, frameHeight: 583 });
+    this.load.spritesheet("npc-villager", "assets/npc/villager/villager.png", { frameWidth: 472, frameHeight: 633 });
+
     // Kenney character sheet — not used by the player anymore, kept
     // loaded for the NPC system (Week 2, see PLAN.md).
     this.load.spritesheet("characters", "assets/sprites/rpg-urban-pack/Tilemap/tilemap.png", {
@@ -143,6 +150,21 @@ export class Preload extends Phaser.Scene {
     this.anims.create({
       key: "npc-maren-idle",
       frames: this.anims.generateFrameNumbers("npc-maren", { start: 0, end: 9 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+
+    // Courier + Villager idle loops — all 30 frames of their greeting
+    // strips, same 6fps convention.
+    this.anims.create({
+      key: "npc-courier-idle",
+      frames: this.anims.generateFrameNumbers("npc-courier", { start: 0, end: 29 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "npc-villager-idle",
+      frames: this.anims.generateFrameNumbers("npc-villager", { start: 0, end: 29 }),
       frameRate: 6,
       repeat: -1,
     });

@@ -511,19 +511,20 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
     },
     {
       // Generic role-based flavor NPC, not a named lore character (see
-      // "The Blueprint of the Post Road") — reuses the knight placeholder
-      // texture, tinted so she doesn't read as literally the same person
-      // as the courier below (who shares the same texture).
+      // "The Blueprint of the Post Road") — a 30-frame greeting strip
+      // (hooded/cloaked variant), distinct from the courier's own strip.
       id: "post_villager",
       name: "Villager",
       x: 1000,
       y: 560,
-      texture: "npc-knight",
-      baseScale: 72.5 / 475,
-      tint: 0x6f9b6f,
+      texture: "npc-villager",
+      baseScale: 75 / 633,
+      idleAnim: "npc-villager-idle",
       dialogue: [
         {
-          if: { questActive: "post_road_blueprint", flag: "note_villager" },
+          // Flag is "note_post_villager" (see POST_ROAD_NOTES/
+          // recordPostRoadNote() below, keyed by this NPCDef's own id).
+          if: { questActive: "post_road_blueprint", flag: "note_post_villager" },
           lines: ["Go find the courier if you haven't — I only know my end of it."],
         },
         {
@@ -540,9 +541,9 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       // the gates, same reasoning as Bram vetting faces there.
       x: 220,
       y: 610,
-      texture: "npc-knight",
-      baseScale: 72.5 / 475,
-      tint: 0x9b7f4f,
+      texture: "npc-courier",
+      baseScale: 75 / 583,
+      idleAnim: "npc-courier-idle",
       dialogue: [
         {
           if: { questActive: "post_road_blueprint", flag: "note_courier" },
