@@ -6,12 +6,14 @@ import { showImageOverlay, type EvidenceImage } from "./ui/imageOverlay";
 import { showTableOverlay, type EvidenceTableTab } from "./ui/tableOverlay";
 import { openHealersLedgerSort } from "./ui/ledgerSortOverlay";
 import { openHealersLedgerLock } from "./ui/ledgerLockOverlay";
+import { openBlueprintOverlay } from "./ui/blueprintOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine, type MilestoneId } from "./questEngine";
 import { playSound, playBlip } from "./audio";
 import { logDecision } from "./cloud/save";
 import { healersLedgerState } from "./healersLedgerState";
 import { postRoadFieldNotes } from "./postRoadFieldNotes";
+import { postRoadBuilderState } from "./postRoadBuilderState";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
 // dialogue box (see PLAN.md Days 11-12, Phase 2 Days 2-3). Not
@@ -1183,6 +1185,16 @@ export class NPCController {
       return;
     }
 
+    // Bram re-opens the Post Road builder if the player Escaped out of
+    // it early (see openPostRoadBuilder()'s doc comment) — the normal
+    // first-time open happens automatically right after the courier
+    // interview (see closeDialogue()), not via talking to Bram at all,
+    // so this only ever fires on a resume.
+    if (def.id === "bram" && questEngine.isActive("post_road_blueprint") && questEngine.getActiveStepIndex() === 3) {
+      this.openPostRoadBuilder();
+      return;
+    }
+
     // Maren's two Healer's Ledger mini-games are full-screen DOM
     // overlays, not compact dialogue/briefing text — see DialogueMode's
     // "minigame" doc comment for why this still needs to occupy `mode`
@@ -1444,6 +1456,33 @@ export class NPCController {
     this.clearChoices();
     if (npcId && hadRealDialogue) this.recordPostRoadNote(npcId);
     if (npcId) questEngine.notifyTalkTo(npcId);
+    // The courier is the third and last interview — if that just landed
+    // the quest on its synthetic 4th step (see post_road_blueprint.json's
+    // reach_zone step), open the builder immediately rather than making
+    // the player find a fourth thing to click.
+    if (npcId === "courier" && questEngine.isActive("post_road_blueprint") && questEngine.getActiveStepIndex() === 3) {
+      this.openPostRoadBuilder();
+    }
+  }
+
+  // Opens "The Blueprint of the Post Road"'s Phase 2-4 builder — called
+  // both right after the courier interview (above) and again if the
+  // player talks to Bram after Escaping out of it early (see open()'s
+  // special-case for "bram"), since the builder itself has no partial-
+  // resume (a fresh Escape restarts Phase 2-4 from scratch, same
+  // simplification as Maren's two Healer's Ledger mini-games).
+  private openPostRoadBuilder() {
+    this.mode = "minigame";
+    openBlueprintOverlay((completed) => {
+      this.mode = "closed";
+      if (!completed) return;
+      const { slotErrors, arrowErrors, rogueArrowFoundSeconds, cipherToggleAttempts } = postRoadBuilderState;
+      logDecision("post_road_blueprint", { slotErrors, arrowErrors, rogueArrowFoundSeconds, cipherToggleAttempts });
+      if (slotErrors === 0 && arrowErrors === 0 && cipherToggleAttempts === 1) {
+        questEngine.toast("COMMENDATION — The Post Road mapped without a wrong stroke.");
+      }
+      questEngine.notifyReachZone("post_road_blueprint_complete");
+    });
   }
 
   // "The Blueprint of the Post Road"'s Phase 1 — the first time each of

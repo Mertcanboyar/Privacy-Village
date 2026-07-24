@@ -20,10 +20,7 @@
     {
       "objective": "Interview the courier near the gates (press E)",
       "trigger": { "type": "talk_to", "npc": "courier" },
-      "reveal": {
-        "text": "Every system has a map, Ranger. Most have two — the one they drew, and the one they actually run. Draw the first. Then we find the second.",
-        "speaker": "HERALD"
-      }
+      "toast": "HERALD — Every system has a map, Ranger. Most have two — the one they drew, and the one they actually run. Draw the first. Then we find the second."
     },
     {
       "objective": "Draw the blueprint of the post road",
