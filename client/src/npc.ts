@@ -4,10 +4,13 @@ import type { RoomName } from "./rooms";
 import { el, typewriter, type TypewriterHandle } from "./ui/dom";
 import { showImageOverlay, type EvidenceImage } from "./ui/imageOverlay";
 import { showTableOverlay, type EvidenceTableTab } from "./ui/tableOverlay";
+import { openHealersLedgerSort } from "./ui/ledgerSortOverlay";
+import { openHealersLedgerLock } from "./ui/ledgerLockOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine, type MilestoneId } from "./questEngine";
 import { playSound, playBlip } from "./audio";
 import { logDecision } from "./cloud/save";
+import { healersLedgerState } from "./healersLedgerState";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
 // dialogue box (see PLAN.md Days 11-12, Phase 2 Days 2-3). Not
@@ -181,6 +184,16 @@ interface NPCDef {
   dialogue: DialogueSet[];
   /** Quest id this NPC offers when that quest is `available`. */
   questGiver?: string;
+  /** Falls back to this texture (already loaded by Preload.ts) if
+   * `texture` never loaded — e.g. a real sprite that hasn't been
+   * dropped into the repo yet. Logs a console.warn naming the expected
+   * asset path so the eventual one-file swap is obvious; the fallback
+   * is otherwise silent and the game plays on. */
+  fallbackTexture?: { key: string; expectedPath: string };
+  /** Gentle idle scale-pulse ("breathing") for a static single-frame
+   * texture with no `idleAnim` sprite sheet — see Maren, whose real
+   * sprite (when dropped in) may or may not turn out to be a strip. */
+  breathingBob?: boolean;
 }
 
 // --- "The Breach in the Wall" — Herald's mission briefings -----------
@@ -611,6 +624,38 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         { lines: ["The Griffin's Drink serves stories alongside the ale. Pull up a stool."] },
       ],
     },
+    {
+      id: "maren",
+      name: "Maren",
+      // Right-corner table cluster, clear of Odile (340,470) and the
+      // "portrait" zone (790,450,r60) — see tavern.json's walkable rect
+      // ([256,422]-[930,720]).
+      x: 850,
+      y: 600,
+      texture: "npc-maren",
+      // Her real sprite's dimensions aren't known yet (see
+      // fallbackTexture below) — this targets the same ~72.5px
+      // on-screen height every other NPC uses, matching npc-knight's
+      // own frame height (475px) exactly, so the fallback texture at
+      // least always renders at the correct size; once the real asset
+      // lands this may need a manual retune if its proportions differ.
+      baseScale: 72.5 / 475,
+      fallbackTexture: { key: "npc-knight", expectedPath: "client/public/assets/npc/healer/maren.png" },
+      breathingBob: true,
+      questGiver: "healers_ledger",
+      dialogue: [
+        {
+          if: { questComplete: "healers_ledger" },
+          lines: ["The chest holds tight, Agent. My apprentices grumble about the key, but grumbling I can live with."],
+        },
+        // Everything else about her interaction while the quest is
+        // active-but-unresolved is handled by NPCController.open()'s
+        // special case (the sorting board and lock puzzle are full-
+        // screen mini-games, not compact dialogue) — this fallback only
+        // ever shows before Clearance 3 unlocks the quest offer.
+        { lines: ["Odile lets me keep a corner. Says my patients drink more after bad news."] },
+      ],
+    },
   ],
   courthouse: [
     {
@@ -684,7 +729,14 @@ interface NPCView {
   nameText: Phaser.GameObjects.Text;
 }
 
-type DialogueMode = "closed" | "dialogue" | "offer" | "briefing";
+// "minigame" — Maren's two Healer's Ledger mini-games (see open()'s
+// special case): a real DOM overlay owns the interaction start to
+// finish, this mode only exists so dialogueOpen (and therefore Room.ts's
+// uiOpen, which gates WASD/door/zone checks) stays true for its
+// duration, and so a stray E press routes into advance()'s existing
+// "no activeSet, no-op" guard instead of leaking through to whatever
+// NPCController would otherwise do while nothing else is open.
+type DialogueMode = "closed" | "dialogue" | "offer" | "briefing" | "minigame";
 
 export class NPCController {
   private npcs: NPCView[] = [];
@@ -720,15 +772,32 @@ export class NPCController {
   private currentTypewriter: TypewriterHandle | null = null;
   private heraldPulse: Phaser.GameObjects.Arc | null = null;
   private odilePulse: Phaser.GameObjects.Arc | null = null;
+  private marenPulse: Phaser.GameObjects.Arc | null = null;
 
   constructor(scene: Phaser.Scene, roomName: RoomName) {
     this.eKey = scene.input.keyboard!.addKey("E");
 
     for (const def of NPC_SPAWNS[roomName] ?? []) {
-      const image = scene.add.sprite(def.x, def.y, def.texture).setOrigin(0.5, 1);
+      let textureKey = def.texture;
+      if (def.fallbackTexture && !scene.textures.exists(textureKey)) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[npc.ts] "${def.name}" sprite not found (expected at ${def.fallbackTexture.expectedPath}) — using a placeholder texture. Drop the real asset in at that path and it swaps automatically, no code changes needed.`,
+        );
+        textureKey = def.fallbackTexture.key;
+      }
+      const image = scene.add.sprite(def.x, def.y, textureKey).setOrigin(0.5, 1);
       image.setScale(def.baseScale * depthScaleFor(def.y));
       image.setDepth(def.y);
       if (def.idleAnim) image.play(def.idleAnim);
+      // Cheap idle motion for a static single-frame texture with no
+      // idleAnim strip — a slow scale pulse reads as "breathing" without
+      // touching position (which would desync the name tag/depth, both
+      // set once here and never recomputed for a stationary NPC).
+      if (def.breathingBob) {
+        const baseScale = image.scale;
+        scene.tweens.add({ targets: image, scale: baseScale * 1.015, duration: 1400, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+      }
 
       const nameText = scene.add
         .text(def.x, def.y - image.displayHeight - 4, def.name.toUpperCase(), {
@@ -753,9 +822,28 @@ export class NPCController {
 
     if (roomName === "tavern") {
       this.refreshOdilePulse(scene);
-      const onLevelUp = () => this.refreshOdilePulse(scene);
+      this.refreshMarenPulse(scene);
+      const onLevelUp = () => {
+        this.refreshOdilePulse(scene);
+        this.refreshMarenPulse(scene);
+      };
       questEngine.on("levelUp", onLevelUp);
       scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
+
+      // Ledger book prop beside Maren — no dedicated art asset for this
+      // yet, so a small painted rectangle (same "simple sprite is fine"
+      // latitude as her own placeholder texture) rather than blocking on
+      // one. Sits just in front of her, low depth so it never occludes.
+      const bookX = 810;
+      const bookY = 630;
+      const book = scene.add.graphics().setDepth(bookY);
+      book.fillStyle(0x3d2b1f, 1);
+      book.fillRoundedRect(bookX - 22, bookY - 14, 44, 20, 3);
+      book.fillStyle(0xe8dcc0, 1);
+      book.fillRect(bookX - 19, bookY - 11, 17, 14);
+      book.fillRect(bookX + 2, bookY - 11, 17, 14);
+      book.lineStyle(1, 0x3d2b1f, 1);
+      book.lineBetween(bookX, bookY - 11, bookX, bookY + 3);
     }
 
     this.promptText = scene.add
@@ -899,6 +987,17 @@ export class NPCController {
     this.odilePulse = g;
   }
 
+  // Same technique, gold-pulsing Maren once Clearance 3 unlocks "The
+  // Healer's Ledger" (see healers_ledger.json's unlockAtClearance).
+  private refreshMarenPulse(scene: Phaser.Scene) {
+    if (this.marenPulse || questEngine.getClearance() < 3) return;
+    const maren = this.npcs.find((n) => n.def.id === "maren");
+    if (!maren) return;
+    const g = scene.add.circle(maren.image.x, maren.image.y - 20, 34, 0xf0b429, 0.22).setDepth(maren.image.y - 1);
+    scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.marenPulse = g;
+  }
+
   // One-shot bright flash on the Herald, distinct from the steady
   // ambient pulse above — used when the Academy's "IN THE VILLAGE →"
   // pip sends the player back to find him (see academy.ts).
@@ -992,6 +1091,45 @@ export class NPCController {
       this.offerQuestId = def.questGiver;
       this.dialogueEl.style.display = "block";
       this.showOffer();
+      return;
+    }
+
+    // Maren's two Healer's Ledger mini-games are full-screen DOM
+    // overlays, not compact dialogue/briefing text — see DialogueMode's
+    // "minigame" doc comment for why this still needs to occupy `mode`
+    // for the overlay's whole lifetime. The two flags below are exactly
+    // what healers_ledger.json's two steps trigger on (talk_to maren,
+    // requiresFlag) — setting them and calling notifyTalkTo() here
+    // reuses the engine's normal step-advance path instead of needing a
+    // bespoke one for this quest.
+    if (def.id === "maren" && questEngine.isActive("healers_ledger")) {
+      this.mode = "minigame";
+      if (!questEngine.getFlag("ledger_sorted")) {
+        openHealersLedgerSort((completed) => {
+          this.mode = "closed";
+          if (!completed) return;
+          questEngine.setFlag("ledger_sorted");
+          questEngine.notifyTalkTo("maren");
+        });
+      } else if (!questEngine.getFlag("chest_locked")) {
+        openHealersLedgerLock((completed) => {
+          this.mode = "closed";
+          if (!completed) return;
+          questEngine.setFlag("chest_locked");
+          const { breachCount, overClassifyCount, accessChoiceAttempts } = healersLedgerState;
+          logDecision("healers_ledger_complete", { breachCount, overClassifyCount, accessChoiceAttempts });
+          if (breachCount === 0 && overClassifyCount === 0) {
+            questEngine.toast("COMMENDATION — The Healer's Ledger sorted without a single slip.");
+          }
+          questEngine.notifyTalkTo("maren");
+        });
+      } else {
+        // Both flags already set but the quest hasn't completed yet —
+        // shouldn't happen (the second flag's notifyTalkTo() above always
+        // completes the quest, its last step), but don't leave the
+        // player stuck in "minigame" mode with nothing open if it does.
+        this.mode = "closed";
+      }
       return;
     }
 

@@ -41,9 +41,12 @@ export function isLedgerLockOverlayOpen(): boolean {
   return openCount > 0;
 }
 
-/** Opens Mission 2. `onComplete` fires once the sensitive chest is
- * sealed AND the correct access-control option is chosen. */
-export function openHealersLedgerLock(onComplete: () => void) {
+/** Opens Mission 2. `onClose(completed)` fires exactly once, whenever
+ * the overlay goes away — `true` once the sensitive chest is sealed AND
+ * the correct access-control option is chosen, `false` if the player
+ * backed out early (Escape) — so the caller (npc.ts) can reliably
+ * restore NPCController's mode either way. */
+export function openHealersLedgerLock(onClose: (completed: boolean) => void) {
   openCount++;
   let view: "choose" | "puzzle" | "access" = "choose";
   let rings: RingState[] = [];
@@ -198,8 +201,8 @@ export function openHealersLedgerLock(onComplete: () => void) {
     healersLedgerState.accessChoiceAttempts++;
     if (kind === "correct") {
       questEngine.toast("HERALD — Least privilege, Ranger — not the fewest hands possible, the fewest hands NECESSARY. She cannot heal alone.");
-      close();
-      onComplete();
+      teardown();
+      onClose(true);
       return;
     }
     if (kind === "aloneOnly") {
@@ -210,13 +213,16 @@ export function openHealersLedgerLock(onComplete: () => void) {
     render();
   }
 
-  function close() {
+  function teardown() {
     openCount--;
     document.removeEventListener("keydown", onKeydown);
     wrapper.remove();
   }
   function onKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") close();
+    if (e.key === "Escape") {
+      teardown();
+      onClose(false);
+    }
   }
   document.addEventListener("keydown", onKeydown);
 

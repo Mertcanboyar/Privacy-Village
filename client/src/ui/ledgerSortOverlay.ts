@@ -57,10 +57,13 @@ export function isLedgerSortOverlayOpen(): boolean {
   return openCount > 0;
 }
 
-/** Opens Mission 1. `onComplete` fires once all 10 shards are correctly
- * placed — breachCount/overClassifyCount for this attempt are left in
- * healersLedgerState for the caller (npc.ts) to read afterward. */
-export function openHealersLedgerSort(onComplete: () => void) {
+/** Opens Mission 1. `onClose(completed)` fires exactly once, whenever
+ * the overlay goes away — `true` if all 10 shards were sorted, `false`
+ * if the player backed out early (Escape) — so the caller (npc.ts) can
+ * reliably restore NPCController's mode either way. breachCount/
+ * overClassifyCount for this attempt are left in healersLedgerState for
+ * the caller to read on a `true` close. */
+export function openHealersLedgerSort(onClose: (completed: boolean) => void) {
   openCount++;
   resetHealersLedgerState();
 
@@ -256,17 +259,20 @@ export function openHealersLedgerSort(onComplete: () => void) {
 
   function finish() {
     questEngine.toast(debriefLine());
-    close();
-    onComplete();
+    teardown();
+    onClose(true);
   }
 
-  function close() {
+  function teardown() {
     openCount--;
     document.removeEventListener("keydown", onKeydown);
     wrapper.remove();
   }
   function onKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") close();
+    if (e.key === "Escape") {
+      teardown();
+      onClose(false);
+    }
   }
   document.addEventListener("keydown", onKeydown);
 }

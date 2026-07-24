@@ -56,6 +56,15 @@ export class Preload extends Phaser.Scene {
     this.load.image("npc-knight", "assets/sprites/npc/knight.png");
     this.load.image("npc-herald", "assets/sprites/npc/herald.png");
 
+    // Maren the Healer ("The Healer's Ledger" — see npc.ts) — a single
+    // user-provided image, not part of the LORE_NPC_IDS spritesheet
+    // convention above (unknown frame layout). Lives at a different
+    // asset path than every other NPC on purpose (see npc.ts's
+    // fallbackTexture doc comment): missing files 404 quietly, same
+    // convention as the room assets below, and npc.ts falls back to the
+    // knight placeholder + a console.warn if it never loads.
+    this.load.image("npc-maren", "assets/npc/healer/maren.png");
+
     // Kenney character sheet — not used by the player anymore, kept
     // loaded for the NPC system (Week 2, see PLAN.md).
     this.load.spritesheet("characters", "assets/sprites/rpg-urban-pack/Tilemap/tilemap.png", {
