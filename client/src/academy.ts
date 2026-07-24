@@ -28,6 +28,7 @@ export const ACADEMY_MODULE_IDS = [
   "lawful_bases_in_the_wild",
   "the_three_locks",
   "seventy_two_hour_clock",
+  "data_flow_mapping",
 ] as const;
 
 export interface AcademyModuleSummary {
@@ -86,12 +87,13 @@ export interface AcademyFieldWork {
   questId: string;
   room: RoomName;
   /** What the module list's "IN THE VILLAGE →"-style pip visually pings
-   * once the player is where it sent them — an NPC sprite (the default,
-   * "herald", used by Threat Modeling) or the Courthouse door hotspot
-   * ("courthouseDoor", used by "The 72-Hour Clock" — its field work,
-   * "The Night the Wall Fell," auto-triggers on village entry rather
-   * than being offered by any NPC, so there's no sprite to ping). */
-  ping?: "herald" | "courthouseDoor";
+   * once the player is where it sent them — an NPC sprite ("herald", the
+   * default, used by Threat Modeling; "bram", used by "Mapping the
+   * Flow"'s "The Blueprint of the Post Road") or the Courthouse door
+   * hotspot ("courthouseDoor", used by "The 72-Hour Clock" — its field
+   * work, "The Night the Wall Fell," auto-triggers on village entry
+   * rather than being offered by any NPC, so there's no sprite to ping). */
+  ping?: "herald" | "bram" | "courthouseDoor";
 }
 
 interface AcademyModuleBase {
@@ -100,6 +102,13 @@ interface AcademyModuleBase {
   title: string;
   clearanceRequired: number;
   fieldWork?: AcademyFieldWork;
+  /** Renders the module list's theory pip as a disabled "IN DEVELOPMENT"
+   * chip instead of a clickable "THEORY: BEGIN" button — for a module
+   * whose field work exists but whose lesson/quiz content doesn't yet
+   * (see "Mapping the Flow"). theoryDone can never become true this way,
+   * so the module never joins completedCount()'s numerator — the
+   * track's credential bar stays put until real theory content ships. */
+  theoryInDevelopment?: boolean;
 }
 
 // Lesson content blocks + a 3-question mastery quiz. `type` is omittable

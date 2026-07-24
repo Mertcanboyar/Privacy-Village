@@ -298,6 +298,7 @@ export class AcademyOverlay {
     const ping = fieldWork.ping ?? "herald";
     if (alreadyThere) {
       if (fieldWork.room === "village" && ping === "herald") roomScene.pingHerald();
+      else if (fieldWork.room === "village" && ping === "bram") roomScene.pingBram();
       else if (fieldWork.room === "village" && ping === "courthouseDoor") roomScene.pingCourthouseDoor();
     } else {
       manager.start("Room", { room: fieldWork.room, pingCourthouseDoor: fieldWork.room === "village" && ping === "courthouseDoor" });
@@ -413,11 +414,15 @@ export class AcademyOverlay {
       );
     }
 
-    pips.push(
-      progress.theoryDone
-        ? el("span", { className: "chip chip--gold", text: "THEORY ✓" })
-        : el("button", { className: "btn btn--gold", text: "THEORY: BEGIN", style: { fontSize: "11px", padding: "8px 12px" }, on: { click: () => this.goToTheory(summary.id) } }),
-    );
+    if (module?.theoryInDevelopment) {
+      pips.push(el("span", { className: "chip", text: "THEORY: IN DEVELOPMENT" }));
+    } else {
+      pips.push(
+        progress.theoryDone
+          ? el("span", { className: "chip chip--gold", text: "THEORY ✓" })
+          : el("button", { className: "btn btn--gold", text: "THEORY: BEGIN", style: { fontSize: "11px", padding: "8px 12px" }, on: { click: () => this.goToTheory(summary.id) } }),
+      );
+    }
 
     return el("div", { className: "quest-card" }, [
       el("div", { className: "quest-card__icon" }),

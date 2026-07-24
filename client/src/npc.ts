@@ -11,6 +11,7 @@ import { questEngine, type MilestoneId } from "./questEngine";
 import { playSound, playBlip } from "./audio";
 import { logDecision } from "./cloud/save";
 import { healersLedgerState } from "./healersLedgerState";
+import { postRoadFieldNotes } from "./postRoadFieldNotes";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
 // dialogue box (see PLAN.md Days 11-12, Phase 2 Days 2-3). Not
@@ -193,6 +194,10 @@ interface NPCDef {
   /** Gentle idle scale-pulse ("breathing") for a static single-frame
    * texture with no `idleAnim` sprite sheet. */
   breathingBob?: boolean;
+  /** Tints a reused placeholder texture (e.g. npc-knight) so two minor
+   * flavor NPCs sharing that texture don't read as literally the same
+   * person — see "The Blueprint of the Post Road"'s Villager/Courier. */
+  tint?: number;
 }
 
 // --- "The Breach in the Wall" — Herald's mission briefings -----------
@@ -448,7 +453,22 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       texture: "npc-bram",
       baseScale: loreNpcBaseScale("bram"),
       idleAnim: "npc-bram-idle",
+      questGiver: "post_road_blueprint",
       dialogue: [
+        {
+          if: { questComplete: "post_road_blueprint" },
+          lines: ["The Blueprint's filed with the Herald now. Funny — twenty years sorting that desk, and I never once drew the map. Wish I hadn't had to."],
+        },
+        {
+          if: { questActive: "post_road_blueprint", flag: "note_bram" },
+          lines: ["Go on, Agent — the villager who posts and the courier who carries. I've told you my half of the road."],
+        },
+        {
+          if: { questActive: "post_road_blueprint" },
+          lines: [
+            "Mail comes in from villagers at the drop box. I sort it at my desk by region — I read the ADDRESS, nothing else, I'm no gossip. Sorted bundles sleep in the vault overnight. Couriers take them at dawn.",
+          ],
+        },
         {
           if: { questComplete: "night_the_wall_fell" },
           lines: ["The gate's mended, the wax is set. I still check that padlock twice a night, though."],
@@ -485,6 +505,52 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           ],
         },
         { lines: ["Keep exploring — the gates never truly close, and neither does the fun."] },
+      ],
+    },
+    {
+      // Generic role-based flavor NPC, not a named lore character (see
+      // "The Blueprint of the Post Road") — reuses the knight placeholder
+      // texture, tinted so she doesn't read as literally the same person
+      // as the courier below (who shares the same texture).
+      id: "post_villager",
+      name: "Villager",
+      x: 1000,
+      y: 560,
+      texture: "npc-knight",
+      baseScale: 72.5 / 475,
+      tint: 0x6f9b6f,
+      dialogue: [
+        {
+          if: { questActive: "post_road_blueprint", flag: "note_villager" },
+          lines: ["Go find the courier if you haven't — I only know my end of it."],
+        },
+        {
+          if: { questActive: "post_road_blueprint" },
+          lines: ["I post letters twice a week. Never see where they go after the box."],
+        },
+        { lines: ["Best festival in memory, if you ask me. Mind the drop box — the seal's fresh paint."] },
+      ],
+    },
+    {
+      id: "courier",
+      name: "Courier",
+      // Near the west_gate_marker zone (see village.json) — couriers work
+      // the gates, same reasoning as Bram vetting faces there.
+      x: 220,
+      y: 610,
+      texture: "npc-knight",
+      baseScale: 72.5 / 475,
+      tint: 0x9b7f4f,
+      dialogue: [
+        {
+          if: { questActive: "post_road_blueprint", flag: "note_courier" },
+          lines: ["Told you what I know, Agent. The vault, not the desk."],
+        },
+        {
+          if: { questActive: "post_road_blueprint" },
+          lines: ["We collect from the vault at dawn. We never touch the sorting desk — Bram would have our ears."],
+        },
+        { lines: ["Can't stop long — dawn route waits for no one, festival or not."] },
       ],
     },
   ],
@@ -769,6 +835,7 @@ export class NPCController {
   private heraldPulse: Phaser.GameObjects.Arc | null = null;
   private odilePulse: Phaser.GameObjects.Arc | null = null;
   private marenPulse: Phaser.GameObjects.Arc | null = null;
+  private bramPulse: Phaser.GameObjects.Arc | null = null;
 
   constructor(scene: Phaser.Scene, roomName: RoomName) {
     this.eKey = scene.input.keyboard!.addKey("E");
@@ -785,6 +852,7 @@ export class NPCController {
       const image = scene.add.sprite(def.x, def.y, textureKey).setOrigin(0.5, 1);
       image.setScale(def.baseScale * depthScaleFor(def.y));
       image.setDepth(def.y);
+      if (def.tint !== undefined) image.setTint(def.tint);
       if (def.idleAnim) image.play(def.idleAnim);
       // Cheap idle motion for a static single-frame texture with no
       // idleAnim strip — a slow scale pulse reads as "breathing" without
@@ -811,7 +879,11 @@ export class NPCController {
 
     if (roomName === "village") {
       this.refreshHeraldPulse(scene);
-      const onLevelUp = () => this.refreshHeraldPulse(scene);
+      this.refreshBramPulse(scene);
+      const onLevelUp = () => {
+        this.refreshHeraldPulse(scene);
+        this.refreshBramPulse(scene);
+      };
       questEngine.on("levelUp", onLevelUp);
       scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
     }
@@ -1001,6 +1073,27 @@ export class NPCController {
     const herald = this.npcs.find((n) => n.def.id === "herald");
     if (!herald) return;
     const g = scene.add.circle(herald.image.x, herald.image.y - 20, 10, 0xf0b429, 0.9).setDepth(herald.image.y + 1);
+    scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
+  }
+
+  // Same technique, gold-pulsing Bram once Clearance 4 unlocks "The
+  // Blueprint of the Post Road" — he's the giver for this one, not Herald.
+  private refreshBramPulse(scene: Phaser.Scene) {
+    if (this.bramPulse || questEngine.getClearance() < 4) return;
+    const bram = this.npcs.find((n) => n.def.id === "bram");
+    if (!bram) return;
+    const g = scene.add.circle(bram.image.x, bram.image.y - 20, 34, 0xf0b429, 0.22).setDepth(bram.image.y - 1);
+    scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.bramPulse = g;
+  }
+
+  // One-shot flash on Bram, same technique as pingHerald() — used by the
+  // Academy's "IN THE VILLAGE →" pip for field work he gives (see
+  // academy.ts's AcademyFieldWork.ping).
+  pingBram(scene: Phaser.Scene) {
+    const bram = this.npcs.find((n) => n.def.id === "bram");
+    if (!bram) return;
+    const g = scene.add.circle(bram.image.x, bram.image.y - 20, 10, 0xf0b429, 0.9).setDepth(bram.image.y + 1);
     scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
   }
 
@@ -1332,6 +1425,15 @@ export class NPCController {
 
   private closeDialogue() {
     const npcId = this.activeNpc?.id;
+    // Captured before activeSet is cleared below — true only when a real
+    // conditional dialogue line was shown (see pickDialogueSet()), false
+    // for the offer flow's Accept/Not-yet, which never sets activeSet at
+    // all (see open()'s early return). Distinguishes "Bram's interview
+    // line actually played" from "the player just accepted the quest by
+    // talking to its giver" — both call notifyTalkTo(npcId) with the same
+    // npcId, but only the former should record a field note (see
+    // recordPostRoadNote() below).
+    const hadRealDialogue = this.activeSet !== null;
     this.mode = "closed";
     this.activeNpc = null;
     this.activeSet = null;
@@ -1340,6 +1442,31 @@ export class NPCController {
     this.briefingEl.style.display = "none";
     this.briefingBackdropEl.style.display = "none";
     this.clearChoices();
+    if (npcId && hadRealDialogue) this.recordPostRoadNote(npcId);
     if (npcId) questEngine.notifyTalkTo(npcId);
   }
+
+  // "The Blueprint of the Post Road"'s Phase 1 — the first time each of
+  // the three interview NPCs actually delivers their line (not the
+  // accept-offer close, see hadRealDialogue above), record its condensed
+  // note to the Field Notes panel and set the flag their quest step's
+  // requiresFlag waits on (see post_road_blueprint.json). Flag-gated so
+  // revisiting any of the three afterward doesn't duplicate the note.
+  private recordPostRoadNote(npcId: string) {
+    const note = POST_ROAD_NOTES[npcId];
+    const flag = `note_${npcId}`;
+    if (!note || !questEngine.isActive("post_road_blueprint") || questEngine.getFlag(flag)) return;
+    questEngine.setFlag(flag);
+    postRoadFieldNotes.add(note);
+  }
 }
+
+// Condensed DFD-shorthand notes for "The Blueprint of the Post Road"'s
+// three interviews — deliberately terser than the interview dialogue
+// lines themselves (see NPC_SPAWNS.village above), since these are the
+// player's own field documentation, not a transcript.
+const POST_ROAD_NOTES: Record<string, string> = {
+  bram: "IN: villagers → drop box. PROCESS: sorting desk (address only). STORE: overnight vault. OUT: couriers.",
+  post_villager: "Villagers are external — they hand off and lose sight.",
+  courier: "Couriers draw from the VAULT, not the desk.",
+};

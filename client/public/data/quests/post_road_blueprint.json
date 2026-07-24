@@ -1,0 +1,33 @@
+{
+  "id": "post_road_blueprint",
+  "title": "The Blueprint of the Post Road",
+  "giver": "bram",
+  "xp": 250,
+  "offer": "Agent — a moment. I check every face that passes through that gate, and I check every letter that leaves this village too. Been doing both since before the Council started calling it \"infrastructure.\" But nobody's ever mapped where the letters actually GO once they leave my hands — not really, not the way the Herald wants it mapped. Walk the route with me. Talk to the folk who post it, the courier who carries it. See the road as it's actually run — not just as I've always assumed it runs.",
+  "nextHint": "Find Bram in the Village Square",
+  "debrief": "Map the flows, find the flow nobody drew, and encrypt what travels — no more, no less.",
+  "milestone": "post_road_blueprint",
+  "unlockAtClearance": 4,
+  "steps": [
+    {
+      "objective": "Interview Bram about the mail's route (press E)",
+      "trigger": { "type": "talk_to", "npc": "bram", "requiresFlag": "note_bram" }
+    },
+    {
+      "objective": "Interview a villager at the square (press E)",
+      "trigger": { "type": "talk_to", "npc": "post_villager" }
+    },
+    {
+      "objective": "Interview the courier near the gates (press E)",
+      "trigger": { "type": "talk_to", "npc": "courier" },
+      "reveal": {
+        "text": "Every system has a map, Ranger. Most have two — the one they drew, and the one they actually run. Draw the first. Then we find the second.",
+        "speaker": "HERALD"
+      }
+    },
+    {
+      "objective": "Draw the blueprint of the post road",
+      "trigger": { "type": "reach_zone", "zone": "post_road_blueprint_complete" }
+    }
+  ]
+}
