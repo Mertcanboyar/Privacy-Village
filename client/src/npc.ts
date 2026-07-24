@@ -191,8 +191,7 @@ interface NPCDef {
    * is otherwise silent and the game plays on. */
   fallbackTexture?: { key: string; expectedPath: string };
   /** Gentle idle scale-pulse ("breathing") for a static single-frame
-   * texture with no `idleAnim` sprite sheet — see Maren, whose real
-   * sprite (when dropped in) may or may not turn out to be a strip. */
+   * texture with no `idleAnim` sprite sheet. */
   breathingBob?: boolean;
 }
 
@@ -633,15 +632,12 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       x: 850,
       y: 600,
       texture: "npc-maren",
-      // Her real sprite's dimensions aren't known yet (see
-      // fallbackTexture below) — this targets the same ~72.5px
-      // on-screen height every other NPC uses, matching npc-knight's
-      // own frame height (475px) exactly, so the fallback texture at
-      // least always renders at the correct size; once the real asset
-      // lands this may need a manual retune if its proportions differ.
-      baseScale: 72.5 / 475,
+      // Real sprite: a 10-frame idle strip (501x461/frame, see
+      // Preload.ts), cropped from a fairy character pack. Targets the
+      // same ~75px on-screen height every other NPC uses.
+      baseScale: 75 / 461,
+      idleAnim: "npc-maren-idle",
       fallbackTexture: { key: "npc-knight", expectedPath: "client/public/assets/npc/healer/maren.png" },
-      breathingBob: true,
       questGiver: "healers_ledger",
       dialogue: [
         {

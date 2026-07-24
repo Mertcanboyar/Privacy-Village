@@ -56,14 +56,16 @@ export class Preload extends Phaser.Scene {
     this.load.image("npc-knight", "assets/sprites/npc/knight.png");
     this.load.image("npc-herald", "assets/sprites/npc/herald.png");
 
-    // Maren the Healer ("The Healer's Ledger" — see npc.ts) — a single
-    // user-provided image, not part of the LORE_NPC_IDS spritesheet
-    // convention above (unknown frame layout). Lives at a different
-    // asset path than every other NPC on purpose (see npc.ts's
-    // fallbackTexture doc comment): missing files 404 quietly, same
-    // convention as the room assets below, and npc.ts falls back to the
-    // knight placeholder + a console.warn if it never loads.
-    this.load.image("npc-maren", "assets/npc/healer/maren.png");
+    // Maren the Healer ("The Healer's Ledger" — see npc.ts) — a 10-frame
+    // idle strip, user-provided (a fairy character pack), cropped to a
+    // shared bounding box across all 10 source frames so she doesn't
+    // jitter as the animation loops. Not part of the LORE_NPC_IDS/
+    // LORE_NPC_FRAME_SIZE convention above since she isn't from that
+    // source pack. Lives at a different asset path on purpose (see
+    // npc.ts's fallbackTexture doc comment): if this file is ever
+    // missing, it 404s quietly and npc.ts falls back to the knight
+    // placeholder + a console.warn.
+    this.load.spritesheet("npc-maren", "assets/npc/healer/maren.png", { frameWidth: 501, frameHeight: 461 });
 
     // Kenney character sheet — not used by the player anymore, kept
     // loaded for the NPC system (Week 2, see PLAN.md).
@@ -135,6 +137,15 @@ export class Preload extends Phaser.Scene {
         repeat: -1,
       });
     }
+
+    // Maren's idle loop — all 10 frames of her strip (see preload()'s
+    // load.spritesheet call above), same 6fps as the lore NPCs.
+    this.anims.create({
+      key: "npc-maren-idle",
+      frames: this.anims.generateFrameNumbers("npc-maren", { start: 0, end: 9 }),
+      frameRate: 6,
+      repeat: -1,
+    });
 
     // Canvas text doesn't reflow when a webfont finishes loading late (unlike
     // DOM text), so make sure the 3 design-system fonts are ready before any
