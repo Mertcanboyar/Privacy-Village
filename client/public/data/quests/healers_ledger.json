@@ -1,0 +1,22 @@
+{
+  "id": "healers_ledger",
+  "title": "The Healer's Ledger",
+  "giver": "maren",
+  "xp": 200,
+  "offer": "Agent! You're the one who found the leak in Odile's drawers, yes? Then look at mine and tell me I'm fine. One ledger. Everything in it. Names, what they paid, what ails them, how their hearts raced on the fever-draught... it's ALL in one book because that's how I remember things.\n\nA merchant from the east has been asking after it. Twice. Offering coin. He says he collects \"village histories.\" Agent — he collects leverage.",
+  "opener": "HERALD — Not all personal data is equal, Ranger. What a villager PAID is one thing. What ails them is another kind entirely — the kind that ends marriages, guild memberships, and lives. Sort her book. Then lock what must be locked.",
+  "debrief": "Special category data demands separation and stronger protection. Proportion, not paranoia.",
+  "milestone": "healers_ledger",
+  "unlockAtClearance": 3,
+  "nextHint": "Go to the Tavern's right corner and talk to Maren",
+  "steps": [
+    {
+      "objective": "Sort Maren's ledger by talking to her (press E)",
+      "trigger": { "type": "talk_to", "npc": "maren", "requiresFlag": "ledger_sorted" }
+    },
+    {
+      "objective": "Lock the sensitive records and set access control by talking to Maren",
+      "trigger": { "type": "talk_to", "npc": "maren", "requiresFlag": "chest_locked" }
+    }
+  ]
+}

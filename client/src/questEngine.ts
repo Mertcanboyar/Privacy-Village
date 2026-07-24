@@ -18,7 +18,7 @@ import type { EvidenceTableTab } from "./ui/tableOverlay";
 
 // Referenced by Preload.ts to load client/public/data/quests/*.json
 // without duplicating the id list in two places.
-export const QUEST_IDS = ["arrival", "breach_in_the_wall", "innkeepers_shards", "night_the_wall_fell"] as const;
+export const QUEST_IDS = ["arrival", "breach_in_the_wall", "innkeepers_shards", "night_the_wall_fell", "healers_ledger"] as const;
 
 // Clearance is 1 + however many of these narrative milestones are done,
 // in ANY order (see setClearance() history — this replaced an earlier
@@ -26,9 +26,18 @@ export const QUEST_IDS = ["arrival", "breach_in_the_wall", "innkeepers_shards", 
 // hardcoded a specific quest ordering into the level numbers themselves).
 // "courthouse_trial" has no quest wired to it yet (see PLAN.md) — it's
 // reserved so completing it later needs no further engine changes, but
-// it means Clearance 7 isn't reachable in the current build; 6 is, once
-// all five live milestones are done.
-export const MILESTONE_IDS = ["welcome", "breach_m1", "breach_m2", "innkeepers_shards", "courthouse_trial", "night_the_wall_fell"] as const;
+// it means the ladder's true ceiling (1 + all seven) isn't reachable in
+// the current build; six of the seven are live once "The Healer's
+// Ledger" is added.
+export const MILESTONE_IDS = [
+  "welcome",
+  "breach_m1",
+  "breach_m2",
+  "innkeepers_shards",
+  "courthouse_trial",
+  "night_the_wall_fell",
+  "healers_ledger",
+] as const;
 export type MilestoneId = (typeof MILESTONE_IDS)[number];
 
 export type QuestState = "locked" | "available" | "active" | "complete";
