@@ -1177,7 +1177,16 @@ export class NPCController {
     this.promptText.setVisible(false);
     this.clearChoices();
 
-    if (def.questGiver && questEngine.isAvailable(def.questGiver)) {
+    // The `!getActiveQuest()` guard matters now that an NPC can be both
+    // a giver for one quest and a dialogue host for another (Bram: gives
+    // "The Blueprint of the Post Road," also hosts "The Night the Wall
+    // Fell"'s opening step) — without it, a quest sitting `available`
+    // but not yet accepted would hijack this NPC's dialogue even while a
+    // DIFFERENT quest is the one currently active and using them for its
+    // own content. Matches acceptQuest()'s existing "one active quest at
+    // a time" invariant: there's no point offering a quest the engine
+    // would silently refuse to activate anyway.
+    if (def.questGiver && questEngine.isAvailable(def.questGiver) && !questEngine.getActiveQuest()) {
       this.mode = "offer";
       this.offerQuestId = def.questGiver;
       this.dialogueEl.style.display = "block";
