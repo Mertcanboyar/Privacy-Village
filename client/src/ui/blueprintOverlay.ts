@@ -1,8 +1,16 @@
+import Phaser from "phaser";
 import { el } from "./dom";
 import { GAME_WIDTH, GAME_HEIGHT } from "../config";
 import { playSound } from "../audio";
 import { questEngine } from "../questEngine";
 import { postRoadBuilderState, resetPostRoadBuilderState } from "../postRoadBuilderState";
+
+// "opened"/"closed" — lets ui/fieldNotesPanel.ts show the Field Notes
+// panel only while this overlay is actually up (it has no visible
+// village NPCs to block), rather than during free-roam Phase 1 where
+// it would sit on top of the Courier/Villager NPCs in that same
+// bottom-left corner.
+export const blueprintOverlayEvents = new Phaser.Events.EventEmitter();
 
 // "The Blueprint of the Post Road" — Phases 2-4 in one continuous
 // full-screen DOM overlay/state machine (see the quest spec: guided DFD
@@ -112,6 +120,7 @@ export function isBlueprintOverlayOpen(): boolean {
  * this project's other full-screen minigames. */
 export function openBlueprintOverlay(onClose: (completed: boolean) => void) {
   openCount++;
+  blueprintOverlayEvents.emit("opened");
   resetPostRoadBuilderState();
 
   let stage: Stage = "placing";
@@ -132,10 +141,18 @@ export function openBlueprintOverlay(onClose: (completed: boolean) => void) {
     style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)", textAlign: "center", marginTop: "8px", minHeight: "16px" },
   });
   const paletteEl = el("div", { style: { display: "flex", flexDirection: "column", gap: "10px", width: "170px", flex: "none" } });
+  // Each layer covers the whole canvas (inset:0) so its EMPTY area, not
+  // just its drawn content, would otherwise intercept every real mouse
+  // click meant for a layer underneath it — arrowsLayerEl/nodesLayerEl/
+  // packetsLayerEl stack on top of each other in that order, so without
+  // this a click on a node box (in nodesLayerEl) never even reached it:
+  // packetsLayerEl's transparent full-canvas div silently ate it first.
+  // Individual interactive elements (node boxes, the clickable rogue-
+  // arrow line) opt back in with their own explicit pointerEvents:"auto".
   const slotsLayerEl = el("div", { style: { position: "absolute", inset: "0" } });
-  const arrowsLayerEl = el("div", { style: { position: "absolute", inset: "0" } });
-  const nodesLayerEl = el("div", { style: { position: "absolute", inset: "0" } });
-  const packetsLayerEl = el("div", { style: { position: "absolute", inset: "0" } });
+  const arrowsLayerEl = el("div", { style: { position: "absolute", inset: "0", pointerEvents: "none" } });
+  const nodesLayerEl = el("div", { style: { position: "absolute", inset: "0", pointerEvents: "none" } });
+  const packetsLayerEl = el("div", { style: { position: "absolute", inset: "0", pointerEvents: "none" } });
   const canvasEl = el("div", { style: { position: "relative", flex: "1", height: "560px", background: "rgba(0,0,0,0.15)", borderRadius: "var(--radius)", border: "1px solid var(--border-strong)" } }, [
     slotsLayerEl,
     arrowsLayerEl,
@@ -233,6 +250,7 @@ export function openBlueprintOverlay(onClose: (completed: boolean) => void) {
           color: "var(--text-primary)",
           textAlign: "center",
           cursor: "default",
+          pointerEvents: "auto",
         },
       },
       [
@@ -800,6 +818,7 @@ export function openBlueprintOverlay(onClose: (completed: boolean) => void) {
   // --- Teardown -------------------------------------------------------
   function teardown() {
     openCount--;
+    blueprintOverlayEvents.emit("closed");
     document.removeEventListener("keydown", onKeydown);
     wrapper.remove();
   }

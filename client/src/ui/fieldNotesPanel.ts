@@ -1,14 +1,19 @@
 import { el } from "./dom";
 import { postRoadFieldNotes } from "../postRoadFieldNotes";
 import { questEngine } from "../questEngine";
+import { isBlueprintOverlayOpen, blueprintOverlayEvents } from "./blueprintOverlay";
 
 // Small persistent bottom-left panel for "The Blueprint of the Post
 // Road"'s Phase 1 interview notes — mounted once from UIOverlay.ts, same
 // lifetime as HUDController/ChatController, so it survives room
 // transitions. High z-index (see blueprintOverlay.ts's own 1000) so it
-// stays visible over the Phase 2-4 full-screen builder too — the whole
-// point of these notes is that they're the player's own documentation,
-// carried into the overlay that replaces the free-form village view.
+// stays visible over the Phase 2-4 full-screen builder — the whole point
+// of these notes is that they're the player's own documentation, carried
+// into the overlay that replaces the free-form village view. Only shown
+// while that overlay is actually open, though: during free-roam Phase 1
+// (interviewing Bram/the villager/the courier), this same bottom-left
+// corner is where the Courier NPC stands, and the panel used to sit
+// directly on top of him.
 export class FieldNotesPanel {
   private rootEl: HTMLElement;
   private listEl: HTMLElement;
@@ -58,6 +63,8 @@ export class FieldNotesPanel {
     questEngine.on("questCompleted", (id: string) => {
       if (id === "post_road_blueprint") this.render();
     });
+    blueprintOverlayEvents.on("opened", () => this.render());
+    blueprintOverlayEvents.on("closed", () => this.render());
 
     this.render();
   }
@@ -69,7 +76,7 @@ export class FieldNotesPanel {
 
   private render() {
     const notes = postRoadFieldNotes.all;
-    if (notes.length === 0 || questEngine.isComplete("post_road_blueprint")) {
+    if (notes.length === 0 || questEngine.isComplete("post_road_blueprint") || !isBlueprintOverlayOpen()) {
       this.rootEl.style.display = "none";
       return;
     }
