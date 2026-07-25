@@ -8,7 +8,7 @@
   "debrief": "Special category data demands separation and stronger protection. Proportion, not paranoia.",
   "milestone": "healers_ledger",
   "unlockAtClearance": 3,
-  "nextHint": "Go to the Tavern's right corner and talk to Maren",
+  "nextHint": "Talk to Maren in the Tavern",
   "steps": [
     {
       "objective": "Sort Maren's ledger by talking to her (press E)",

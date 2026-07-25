@@ -98,7 +98,7 @@ export function openHealersLedgerLock(onClose: (completed: boolean) => void) {
         on: {
           click: () => {
             if (!sensitive) {
-              questEngine.toast("Standard records need care, not a vault. Locks cost effort — spend them where the risk is.");
+              questEngine.toast("Standard records are already behind a chest lid — that's protection enough. Save the extra lock for what actually needs it.");
               return;
             }
             playSound("select");
@@ -109,7 +109,7 @@ export function openHealersLedgerLock(onClose: (completed: boolean) => void) {
         },
       });
     return [
-      el("p", { className: "briefing__body", text: "Which chest gets the lock?" }),
+      el("p", { className: "briefing__body", text: "Which chest needs an additional lock?" }),
       el("div", { style: { display: "flex", gap: "16px", marginTop: "var(--space-2)" } }, [
         chestBtn("🧺 STANDARD RECORDS", false),
         chestBtn("🔒 SENSITIVE RECORDS", true),
