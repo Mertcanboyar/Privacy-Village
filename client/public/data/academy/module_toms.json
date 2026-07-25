@@ -4,8 +4,91 @@
   "title": "Measures that Interlock",
   "clearanceRequired": 5,
   "type": "lesson",
-  "theoryInDevelopment": true,
   "fieldWork": { "questId": "treasury_two_keys", "label": "The Treasury's Two Keys", "room": "great_hall", "ping": "mayor" },
-  "lesson": [],
-  "quiz": []
+  "lesson": [
+    { "type": "heading", "text": "You cannot lock your way to security." },
+    {
+      "type": "paragraph",
+      "text": "The law requires \"appropriate technical AND organizational measures\" to keep personal data safe — TOMs. You built both in the Town Hall. The word that matters is AND: they are not alternatives, and neither is sufficient alone."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "TWO KINDS OF MEASURE\n\nTECHNICAL MEASURES — the hardware and software barriers. Encryption, access controls, vaults, keys, network segmentation, backups. They act on the SYSTEM. (The Iron Vault; the Brass Key.)\n\nORGANIZATIONAL MEASURES — the policies and procedures governing how the tools are used and by whom. Access policies, staff training, role separation, logging, incident procedures, vetting. They act on PEOPLE. (The Shift Roster; the Countersign; the Logbook.)"
+    },
+    {
+      "type": "paragraph",
+      "text": "The reason you need both is that they defend against DIFFERENT ATTACKERS — this is the lesson of the three thieves."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "WHO EACH MEASURE STOPS\n\nTHE OUTSIDER (no right to the data) — stopped by TECHNICAL measures. A vault keeps out those who were never allowed in.\n\nTHE OFF-HOURS INSIDER (a right, misused outside its bounds) — stopped by ORGANIZATIONAL rules. A key that only works 8-to-5 governs the trusted.\n\nTHE AUTHORIZED ABUSER (every right, wrong purpose) — no barrier stops him; he belongs there. Only ACCOUNTABILITY reaches him: audit logs that record who did what, so misuse is seen, deterred, and provable after the fact."
+    },
+    {
+      "type": "paragraph",
+      "text": "That third figure is why audit logging is not bureaucracy. You cannot always PREVENT the trusted; you can always ACCOUNT for them. This is the accountability principle in law — not only must you protect data, you must be able to DEMONSTRATE that you did."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "DEFENCE IN DEPTH — THEY INTERLOCK\n\nMeasures are layered, and they depend on each other. Separation of duties (two people to authorize) means nothing if there is no lock on the door — the two people simply stand before an open vault. Access control means nothing if the key never expires. A log means nothing if no one ever reads it. Security is not a pile of measures; it is measures that INTERLOCK, each covering another's blind spot."
+    },
+    {
+      "type": "paragraph",
+      "text": "One more legal anchor: the law asks for measures \"APPROPRIATE to the risk.\" More sensitive data and greater potential harm demand stronger, more layered measures — the Master Tax Ledger earns a vault, a roster, a countersign, AND a logbook precisely because a leak ruins lives. A cabbage-stall's tally does not. Proportion again: enough, not everything."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "Classify the measure: \"The vault key only functions between 8 AM and 5 PM.\"",
+      "choices": ["Technical", "Organizational", "Neither"],
+      "answer": 1,
+      "explain": [
+        "The key and vault are technical — but a RULE about when a tool may be used isn't itself the hardware.",
+        "Exactly — the LOCK is technical; the RULE about WHEN it may be used is organizational, a policy governing how the tool is used. TOMs often pair a technical tool with an organizational rule about it.",
+        "This is very much a measure — a schedule restriction on access is one of the most common organizational controls there is."
+      ]
+    },
+    {
+      "q": "A thief with no connection to the Town Hall tries to grab the ledger. Which measure stops him?",
+      "choices": ["Audit logging", "Encryption/physical vault (technical)", "Staff training"],
+      "answer": 1,
+      "explain": [
+        "Logging records what happened — it doesn't stop the outsider from getting in, it only proves it afterward.",
+        "Exactly — an outsider is stopped by a barrier: he was never authorized, so a lock does the job. Organizational measures govern the trusted, not the stranger.",
+        "Training shapes how authorized staff behave — it has no effect on someone with no legitimate access at all."
+      ]
+    },
+    {
+      "q": "A clerk with full, legitimate daytime access reads a neighbour's debts out of pure curiosity. Which measure best addresses this?",
+      "choices": ["A heavier lock", "A shorter key schedule", "Audit logging & accountability"],
+      "answer": 2,
+      "explain": [
+        "He's already inside the hours the lock permits — a heavier lock doesn't change who's allowed to turn the key.",
+        "He's browsing during his own authorized hours — narrowing the schedule further doesn't touch this specific abuse.",
+        "Exactly — he has every right to be there at that hour with that key; no barrier or schedule excludes him. Accountability (a record of who accessed what, why) deters and catches authorized abuse. You can't always prevent the trusted; you can always account for them."
+      ]
+    },
+    {
+      "q": "The Mayor requires two officials to co-authorize emptying the vault, but no one ever installed a lock. What's the flaw?",
+      "choices": ["Two officials is too many", "Separation of duties without a technical barrier is theatre — the door is open", "Nothing, it's secure"],
+      "answer": 1,
+      "explain": [
+        "The number of required signatures isn't the problem — the missing barrier underneath them is.",
+        "Exactly — organizational controls need technical ones beneath them. Countersigning an unlocked door stops no one. Defence in depth means the measures INTERLOCK; a control with nothing under it is decoration.",
+        "It is not secure — two people solemnly authorizing access to an unlocked vault stops absolutely no one."
+      ]
+    },
+    {
+      "q": "Why does the Master Tax Ledger get a vault, roster, countersign AND logbook, while the cabbage-stall's tally gets none of it?",
+      "choices": ["The Mayor is important", "Measures must be APPROPRIATE to the risk", "Vaults are cheap"],
+      "answer": 1,
+      "explain": [
+        "The Mayor's standing has nothing to do with it — the ledger's contents, not its owner's title, drive the requirement.",
+        "Exactly — the law scales required measures to the sensitivity of the data and the harm a breach would cause. High-harm data earns layered protection; trivial data does not. Proportion, not paranoia — enough, not everything.",
+        "Cost isn't the deciding factor here — even a free measure would be overkill on data whose exposure harms no one."
+      ]
+    }
+  ]
 }

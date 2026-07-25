@@ -29,6 +29,7 @@ const MODULE_COMPLETE_XP = 100;
 function roomCallToAction(room: AcademyFieldWork["room"]): string {
   if (room === "courthouse") return "IN THE COURTHOUSE →";
   if (room === "tavern") return "IN THE TAVERN →";
+  if (room === "great_hall") return "IN THE GREAT HALL →";
   return "IN THE VILLAGE →";
 }
 

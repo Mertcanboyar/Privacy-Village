@@ -269,6 +269,7 @@ export interface AcademyEngineState {
 function roomLabel(room: RoomName): string {
   if (room === "tavern") return "the tavern";
   if (room === "courthouse") return "the courthouse";
+  if (room === "great_hall") return "the Great Hall";
   return "the village";
 }
 
