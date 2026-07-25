@@ -208,6 +208,9 @@ interface NPCDef {
    * flavor NPCs sharing that texture don't read as literally the same
    * person — see "The Blueprint of the Post Road"'s Villager/Courier. */
   tint?: number;
+  /** Static mirror flip at spawn — for two NPCs sharing one sprite sheet
+   * who should face each other (e.g. the Great Hall's throne guards). */
+  flipX?: boolean;
 }
 
 // --- "The Breach in the Wall" — Herald's mission briefings -----------
@@ -823,6 +826,51 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         { lines: ["The Treasury doesn't lock itself, Agent. Mind the steps — I had them polished for the festival."] },
       ],
     },
+    {
+      // Pure flavor — no quest ties, just funny lines when pressed.
+      // Flanking the dais steps, one per side (see the crop analysis in
+      // the commit that added them): symmetric distance from the
+      // throne, both facing inward via flipX.
+      id: "throne_guard_reginald",
+      name: "Sir Reginald",
+      x: 650,
+      y: 495,
+      texture: "npc-knight-guard",
+      // Real sprite: a 10-frame idle strip (559x510/frame, see
+      // Preload.ts), cropped from a "Knight_02" character pack.
+      baseScale: 75 / 510,
+      idleAnim: "npc-knight-guard-idle",
+      dialogue: [
+        {
+          lines: [
+            "State your business... actually, never mind, I already know why everyone's here. It's the throne. Everyone wants a look at the throne.",
+            "Standing perfectly still for six hours builds real character. Or a permanent limp. Still deciding which.",
+            "The Mayor tips well. Percival over there says HE'S the reason the Mayor tips well. I say I'm the reason Percival still has a job.",
+            "Move along, Agent — nothing to see here except me, magnificently guarding a chair.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "throne_guard_percival",
+      name: "Sir Percival",
+      x: 1015,
+      y: 495,
+      texture: "npc-knight-guard",
+      baseScale: 75 / 510,
+      flipX: true,
+      idleAnim: "npc-knight-guard-idle",
+      dialogue: [
+        {
+          lines: [
+            "HALT. ...Just kidding, come on through. We don't actually stop anyone. Mostly for show.",
+            "Fun fact: this armor has never once stopped a sword. It has, however, stopped three arguments about who has to stand in the draft.",
+            "Reginald thinks he's funnier than me. He is not. Please tell him I said that, Agent — quote me directly.",
+            "Guarding a throne is ten percent vigilance, ninety percent not falling asleep standing up. I am currently at ninety-one.",
+          ],
+        },
+      ],
+    },
   ],
 };
 
@@ -895,6 +943,7 @@ export class NPCController {
       image.setScale(def.baseScale * depthScaleFor(def.y));
       image.setDepth(def.y);
       if (def.tint !== undefined) image.setTint(def.tint);
+      if (def.flipX) image.setFlipX(true);
       if (def.idleAnim) image.play(def.idleAnim);
       // Cheap idle motion for a static single-frame texture with no
       // idleAnim strip — a slow scale pulse reads as "breathing" without

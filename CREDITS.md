@@ -72,6 +72,16 @@ https://craftpix.net/file-licenses/, not CC0 — **verify licensing
 before any public release.**
 Location: `client/public/assets/npc/{courier,villager,mayor}/{courier,villager,mayor}.png`
 
+## Great Hall throne guards (Sir Reginald, Sir Percival)
+
+"Knight_02" (CraftPix.net 2D Fantasy Knight pack) — one 10-frame idle
+strip, same union-bbox-crop treatment, reused for both flavor NPCs and
+mirrored via a static flipX so they face each other instead of reading
+as the same person twice. License per
+https://craftpix.net/file-licenses/, not CC0 — **verify licensing
+before any public release.**
+Location: `client/public/assets/npc/knight_guard/knight_guard.png`
+
 ## Quest evidence — "The Breach in the Wall"
 
 Blueprint + 3 character dossiers shown in the full-screen evidence

@@ -79,6 +79,12 @@ export class Preload extends Phaser.Scene {
     // strip (a "Blacksmith" character pack), same treatment.
     this.load.spritesheet("npc-mayor", "assets/npc/mayor/mayor.png", { frameWidth: 414, frameHeight: 567 });
 
+    // Throne guards (Great Hall, flanking the Mayor) — one 10-frame idle
+    // strip (a "Knight_02" character pack) reused for both, mirrored via
+    // NPCDef.flipX so they face each other rather than reading as the
+    // same person twice over.
+    this.load.spritesheet("npc-knight-guard", "assets/npc/knight_guard/knight_guard.png", { frameWidth: 559, frameHeight: 510 });
+
     // Kenney character sheet — not used by the player anymore, kept
     // loaded for the NPC system (Week 2, see PLAN.md).
     this.load.spritesheet("characters", "assets/sprites/rpg-urban-pack/Tilemap/tilemap.png", {
@@ -176,6 +182,12 @@ export class Preload extends Phaser.Scene {
     this.anims.create({
       key: "npc-mayor-idle",
       frames: this.anims.generateFrameNumbers("npc-mayor", { start: 0, end: 29 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "npc-knight-guard-idle",
+      frames: this.anims.generateFrameNumbers("npc-knight-guard", { start: 0, end: 9 }),
       frameRate: 6,
       repeat: -1,
     });
