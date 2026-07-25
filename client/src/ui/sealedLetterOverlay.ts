@@ -126,20 +126,25 @@ export function openSealedLetterOverlay(onClose: (completed: boolean) => void) {
     return cardEl;
   }
 
-  // --- Letter prop, reused by the intro + integrity stages. `fold`
-  // draws a horizontal seam through the letter body; `sealVariant` picks
-  // which wax seal renders where the seam meets the edge. `broken`
-  // visibly cracks/offsets that seal. ---
-  function letterProp(opts: { fold?: boolean; sealVariant?: "authentic" | "forged"; broken?: boolean }): HTMLElement {
+  // --- Letter prop, reused by the intro + integrity stages, and (in
+  // `compact` form) kept visible as a reference during Measure 1's two
+  // beats — see referenceLetter() below. `fold` draws a horizontal seam
+  // through the letter body; `sealVariant` picks which wax seal renders
+  // where the seam meets the edge. `broken` visibly cracks/offsets that
+  // seal. ---
+  function letterProp(opts: { fold?: boolean; sealVariant?: "authentic" | "forged"; broken?: boolean; compact?: boolean }): HTMLElement {
     const children: (Node | string)[] = [
-      el("p", { text: FORGED_LETTER_TEXT, style: { whiteSpace: "pre-line", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-primary)", margin: "0" } }),
+      el("p", {
+        text: FORGED_LETTER_TEXT,
+        style: { whiteSpace: "pre-line", fontFamily: "var(--font-body)", fontSize: opts.compact ? "11px" : "13px", color: "var(--text-primary)", margin: "0" },
+      }),
     ];
     const letterEl = el(
       "div",
       {
         style: {
           position: "relative",
-          padding: "var(--space-3)",
+          padding: opts.compact ? "10px" : "var(--space-3)",
           background: "#e8dcc0",
           color: "#2a2013",
           borderRadius: "4px",
@@ -184,6 +189,19 @@ export function openSealedLetterOverlay(onClose: (completed: boolean) => void) {
     return el("button", { className: "btn btn--gold", text: label, style: { marginTop: "var(--space-3)" }, on: { click: onClick } });
   }
 
+  // A compact, always-visible copy of the letter — Measure 1's two beats
+  // both ask the player to recall something about the letter shown back
+  // in the intro stage (the watchword text, the seal), and it's easy to
+  // forget the exact wording/seal once that stage is gone. Smaller than
+  // letterIntro's full-size prop so it reads as a reference, not the
+  // main event.
+  function referenceLetter(): HTMLElement {
+    return el("div", { style: { marginBottom: "var(--space-2)" } }, [
+      el("div", { text: "REFERENCE — THE LETTER", style: { fontFamily: "var(--font-mono)", fontSize: "10px", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: "4px" } }),
+      letterProp({ sealVariant: "forged", compact: true }),
+    ]);
+  }
+
   // --- Stage: letter intro --------------------------------------------
   function renderLetterIntro(): HTMLElement[] {
     return [
@@ -205,6 +223,7 @@ export function openSealedLetterOverlay(onClose: (completed: boolean) => void) {
     const children: HTMLElement[] = [
       el("div", { className: "briefing__case", text: "MEASURE 1 — AUTHENTICATION" }),
       el("h3", { text: "Is it really from who it claims?", style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px", margin: "6px 0 var(--space-2)" } }),
+      referenceLetter(),
       el("p", {
         className: "briefing__body",
         text: "HERALD — The old village way: a shared watchword. The Council's letters used to end with a secret word only the Council knew — \"GREENHOLLOW\". Check this letter.",
@@ -252,6 +271,7 @@ export function openSealedLetterOverlay(onClose: (completed: boolean) => void) {
     const revealed = stageResolved.seal;
     const children: HTMLElement[] = [
       el("div", { className: "briefing__case", text: "MEASURE 1 — AUTHENTICATION" }),
+      referenceLetter(),
       el("p", {
         className: "briefing__body",
         text: 'HERALD — Every Council member now carries a SEAL RING — a mark no other can forge, because making it requires the ring itself, which never leaves their hand.',
