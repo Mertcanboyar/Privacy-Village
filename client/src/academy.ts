@@ -30,6 +30,7 @@ export const ACADEMY_MODULE_IDS = [
   "seventy_two_hour_clock",
   "data_flow_mapping",
   "secure_channels",
+  "toms",
 ] as const;
 
 export interface AcademyModuleSummary {
@@ -90,11 +91,12 @@ export interface AcademyFieldWork {
   /** What the module list's "IN THE VILLAGE →"-style pip visually pings
    * once the player is where it sent them — an NPC sprite ("herald", the
    * default, used by Threat Modeling; "bram", used by "Mapping the
-   * Flow"'s "The Blueprint of the Post Road") or the Courthouse door
+   * Flow"'s "The Blueprint of the Post Road"; "mayor", used by "Measures
+   * that Interlock"'s "The Treasury's Two Keys") or the Courthouse door
    * hotspot ("courthouseDoor", used by "The 72-Hour Clock" — its field
    * work, "The Night the Wall Fell," auto-triggers on village entry
    * rather than being offered by any NPC, so there's no sprite to ping). */
-  ping?: "herald" | "bram" | "courthouseDoor";
+  ping?: "herald" | "bram" | "mayor" | "courthouseDoor";
 }
 
 interface AcademyModuleBase {

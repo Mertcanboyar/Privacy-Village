@@ -145,6 +145,12 @@ export class Room extends Phaser.Scene {
     this.npcController.pingBram(this);
   }
 
+  // Same technique, anchored to the Mayor — "The Treasury's Two Keys"'s
+  // giver (see academy.ts's AcademyFieldWork.ping).
+  pingMayor() {
+    this.npcController.pingMayor(this);
+  }
+
   // One-shot flash on the Village Square's door hotspot leading to the
   // Courthouse — same technique as pingHerald(), just anchored to a door
   // hotspot's coordinates instead of an NPC sprite (see academy.ts's

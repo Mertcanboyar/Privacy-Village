@@ -18,7 +18,16 @@ import type { EvidenceTableTab } from "./ui/tableOverlay";
 
 // Referenced by Preload.ts to load client/public/data/quests/*.json
 // without duplicating the id list in two places.
-export const QUEST_IDS = ["arrival", "breach_in_the_wall", "innkeepers_shards", "night_the_wall_fell", "healers_ledger", "post_road_blueprint", "sealed_letter"] as const;
+export const QUEST_IDS = [
+  "arrival",
+  "breach_in_the_wall",
+  "innkeepers_shards",
+  "night_the_wall_fell",
+  "healers_ledger",
+  "post_road_blueprint",
+  "sealed_letter",
+  "treasury_two_keys",
+] as const;
 
 // Clearance is 1 + however many of these narrative milestones are done,
 // in ANY order (see setClearance() history — this replaced an earlier
@@ -39,6 +48,7 @@ export const MILESTONE_IDS = [
   "healers_ledger",
   "post_road_blueprint",
   "sealed_letter",
+  "treasury_two_keys",
 ] as const;
 export type MilestoneId = (typeof MILESTONE_IDS)[number];
 

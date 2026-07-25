@@ -1,0 +1,18 @@
+{
+  "id": "treasury_two_keys",
+  "title": "The Treasury's Two Keys",
+  "giver": "mayor",
+  "xp": 300,
+  "offer": "Agent! A disgruntled clerk walked out the FRONT DOOR with the Master Tax Ledger — every citizen's debts and holdings — and SOLD it to the Mega-Mart! I want the heaviest lock coin can buy. The HEAVIEST.",
+  "opener": "HERALD — A heavier lock on a door the thief was allowed to open. Mayor, you don't have a lock problem. You have a RULES problem. Agent — show him the difference. Both kinds of measure, or neither works.",
+  "nextHint": "Find the Mayor in the Village Square",
+  "debrief": "Interlock technical and organizational measures — locks stop strangers, rules govern the trusted, logs judge everyone.",
+  "milestone": "treasury_two_keys",
+  "unlockAtClearance": 5,
+  "steps": [
+    {
+      "objective": "Secure the Treasury against all three threats",
+      "trigger": { "type": "reach_zone", "zone": "treasury_two_keys_complete" }
+    }
+  ]
+}

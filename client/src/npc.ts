@@ -8,6 +8,7 @@ import { openHealersLedgerSort } from "./ui/ledgerSortOverlay";
 import { openHealersLedgerLock } from "./ui/ledgerLockOverlay";
 import { openBlueprintOverlay } from "./ui/blueprintOverlay";
 import { openSealedLetterOverlay } from "./ui/sealedLetterOverlay";
+import { openTreasuryOverlay } from "./ui/treasuryOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine, type MilestoneId } from "./questEngine";
 import { playSound, playBlip } from "./audio";
@@ -16,6 +17,7 @@ import { healersLedgerState } from "./healersLedgerState";
 import { postRoadFieldNotes } from "./postRoadFieldNotes";
 import { postRoadBuilderState } from "./postRoadBuilderState";
 import { sealedLetterState } from "./sealedLetterState";
+import { treasuryKeysState } from "./treasuryKeysState";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
 // dialogue box (see PLAN.md Days 11-12, Phase 2 Days 2-3). Not
@@ -566,6 +568,31 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         { lines: ["Can't stop long — dawn route waits for no one, festival or not."] },
       ],
     },
+    {
+      // No dedicated sprite sourced for the Mayor — reuses the generic
+      // "npc-knight" placeholder texture with a distinct tint, same
+      // mechanism NPCDef.tint documents (Villager/Courier used this
+      // before their real sprites arrived).
+      id: "mayor",
+      name: "Mayor",
+      // Just south of the Courthouse door (village.json: x 1126-1195,
+      // y 389-492) — "Courthouse-adjacent in the square" per the quest
+      // spec, clear of the Villager (1000,560).
+      x: 1120,
+      y: 470,
+      texture: "npc-knight",
+      baseScale: 75 / 475,
+      tint: 0x6b4c9a,
+      breathingBob: true,
+      questGiver: "treasury_two_keys",
+      dialogue: [
+        {
+          if: { questComplete: "treasury_two_keys" },
+          lines: ["So the lock was the easy half. I bought iron when I needed... rules. And a logbook. Fine. FINE. Well done, Agent."],
+        },
+        { lines: ["The Treasury doesn't lock itself, Agent. Mind the steps — I had them polished for the festival."] },
+      ],
+    },
   ],
   tavern: [
     {
@@ -849,6 +876,7 @@ export class NPCController {
   private odilePulse: Phaser.GameObjects.Arc | null = null;
   private marenPulse: Phaser.GameObjects.Arc | null = null;
   private bramPulse: Phaser.GameObjects.Arc | null = null;
+  private mayorPulse: Phaser.GameObjects.Arc | null = null;
 
   constructor(scene: Phaser.Scene, roomName: RoomName) {
     this.eKey = scene.input.keyboard!.addKey("E");
@@ -893,9 +921,11 @@ export class NPCController {
     if (roomName === "village") {
       this.refreshHeraldPulse(scene);
       this.refreshBramPulse(scene);
+      this.refreshMayorPulse(scene);
       const onLevelUp = () => {
         this.refreshHeraldPulse(scene);
         this.refreshBramPulse(scene);
+        this.refreshMayorPulse(scene);
       };
       questEngine.on("levelUp", onLevelUp);
       scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
@@ -1095,6 +1125,27 @@ export class NPCController {
     scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
   }
 
+  // Same technique, gold-pulsing the Mayor once Clearance 5 unlocks
+  // "The Treasury's Two Keys" — he's the giver for this one.
+  private refreshMayorPulse(scene: Phaser.Scene) {
+    if (this.mayorPulse || questEngine.getClearance() < 5) return;
+    const mayor = this.npcs.find((n) => n.def.id === "mayor");
+    if (!mayor) return;
+    const g = scene.add.circle(mayor.image.x, mayor.image.y - 20, 34, 0xf0b429, 0.22).setDepth(mayor.image.y - 1);
+    scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.mayorPulse = g;
+  }
+
+  // One-shot flash on the Mayor, same technique as pingHerald()/pingBram()
+  // — used by the Academy's "IN THE VILLAGE →" pip for "Measures that
+  // Interlock" (see academy.ts's AcademyFieldWork.ping).
+  pingMayor(scene: Phaser.Scene) {
+    const mayor = this.npcs.find((n) => n.def.id === "mayor");
+    if (!mayor) return;
+    const g = scene.add.circle(mayor.image.x, mayor.image.y - 20, 10, 0xf0b429, 0.9).setDepth(mayor.image.y + 1);
+    scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
+  }
+
   // "The Night the Wall Fell"'s opening beat — Bram slides straight to
   // the player (no pathfinding, just a tween) rather than the player
   // needing to hunt him down mid-alarm. Only tweens the sprite — never
@@ -1213,6 +1264,14 @@ export class NPCController {
     // separate resume check needed).
     if (def.id === "bram" && questEngine.isActive("sealed_letter")) {
       this.openSealedLetter();
+      return;
+    }
+
+    // "The Treasury's Two Keys" — one continuous full-screen overlay,
+    // same "no partial resume" pattern as the Post Road builder / Sealed
+    // Letter above (a resumed Escape just restarts the board).
+    if (def.id === "mayor" && questEngine.isActive("treasury_two_keys")) {
+      this.openTreasuryOverlay();
       return;
     }
 
@@ -1520,6 +1579,22 @@ export class NPCController {
         questEngine.toast("COMMENDATION — The forgery never fooled you for a moment.");
       }
       questEngine.notifyReachZone("sealed_letter_complete");
+    });
+  }
+
+  // "The Treasury's Two Keys" — same "no partial resume" simplification
+  // as the other full-screen minigames in this file.
+  private openTreasuryOverlay() {
+    this.mode = "minigame";
+    openTreasuryOverlay((completed) => {
+      this.mode = "closed";
+      if (!completed) return;
+      const { banditStopped, nightClerkStopped, dayClerkAudited, separationUsed, resetCount, brokeDefenseInDepth } = treasuryKeysState;
+      logDecision("treasury_two_keys", { banditStopped, nightClerkStopped, dayClerkAudited, separationUsed, resetCount, brokeDefenseInDepth });
+      if (resetCount <= 1 && !brokeDefenseInDepth) {
+        questEngine.toast("COMMENDATION — You built it interlocked on the first true try.");
+      }
+      questEngine.notifyReachZone("treasury_two_keys_complete");
     });
   }
 
