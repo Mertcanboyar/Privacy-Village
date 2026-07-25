@@ -51,11 +51,21 @@ left-to-right. License per https://craftpix.net/file-licenses/, not
 CC0 — **verify licensing before any public release.** Mapping (a
 curatorial choice, not a hard requirement — swap freely): Bram→Citizen,
 Odile→Forest Ranger 3, Quill→Artist, Sabine→Forest Ranger 2. Fennick and
-the Frightened Patron (and their Astrologer/Forest Ranger 1 sprites)
-were removed along with the 5-quest "Battle for AI" content they
-belonged to (see PLAN.md "The Breach in the Wall") — no sprite exists
-for "The Cat" either; that NPC was never built.
+the Frightened Patron (and their Astrologer sprite) were removed along
+with the 5-quest "Battle for AI" content they belonged to (see PLAN.md
+"The Breach in the Wall") — no sprite exists for "The Cat" either; that
+NPC was never built. Forest Ranger 1, also unused at the time, was
+later repurposed for the Courier (see below).
 Location: `client/public/assets/sprites/npc-pack/{bram,odile,quill,sabine}.png`
+
+## Field NPCs (Courier, Villager)
+
+"Forest Ranger 1" (CraftPix.net) — the Courier's 18-frame idle strip,
+same union-bbox-crop treatment as the Lore NPCs above. "Astrologer"
+(CraftPix.net) — the Villager's 30-frame greeting strip. License per
+https://craftpix.net/file-licenses/, not CC0 — **verify licensing
+before any public release.**
+Location: `client/public/assets/npc/{courier,villager}/{courier,villager}.png`
 
 ## Quest evidence — "The Breach in the Wall"
 

@@ -554,7 +554,9 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       x: 220,
       y: 610,
       texture: "npc-courier",
-      baseScale: 75 / 583,
+      // Real sprite: an 18-frame idle strip (414x554/frame, see
+      // Preload.ts), cropped from a "Forest Ranger" character pack.
+      baseScale: 75 / 554,
       idleAnim: "npc-courier-idle",
       dialogue: [
         {
