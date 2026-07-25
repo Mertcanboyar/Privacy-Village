@@ -4,8 +4,95 @@
   "title": "Secure Channels",
   "clearanceRequired": 4,
   "type": "lesson",
-  "theoryInDevelopment": true,
   "fieldWork": { "questId": "sealed_letter", "label": "The Sealed Letter", "room": "village", "ping": "bram" },
-  "lesson": [],
-  "quiz": []
+  "lesson": [
+    { "type": "heading", "text": "The road is hostile. The message must not be helpless." },
+    {
+      "type": "paragraph",
+      "text": "Secure communication rests on four guarantees — you enforced all four yourself, on the Post Road and in the forged-letter affair. Name them plainly now, because every real protocol you meet afterward is some arrangement of these four."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "THE FOUR GUARANTEES\n\nAUTHENTICATION — proof the sender is who they claim. (The seal ring only its holder can press.)\n\nINTEGRITY — proof the message arrived unchanged. (The wax seal across the fold, broken if opened.)\n\nCONFIDENTIALITY — only the intended reader can read it. (The locked box on the hostile road.)\n\nNON-REPUDIATION — the sender cannot later deny sending it. (One's own seal, undeniable.)"
+    },
+    {
+      "type": "paragraph",
+      "text": "Two of these look alike but point opposite ways. AUTHENTICATION protects you FROM impostors pretending to be the sender. NON-REPUDIATION protects the RECIPIENT from a real sender who later denies their own message. Same unforgeable-identity property; opposite direction of defence."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "THE SEAL vs THE WATCHWORD\n\nA shared WATCHWORD — a secret both sides know — is weak proof of identity: anyone who ever learned it can use it, and you cannot tell who did. A SEAL bound to one person — something only they can produce — is strong, because producing it requires something they alone hold. This is the leap from a shared password to a cryptographic identity: the single most important upgrade in the history of secure messaging."
+    },
+    {
+      "type": "paragraph",
+      "text": "Which raises the real question of authentication: how do we bind proof to a PERSON? There are three kinds of evidence, called the three FACTORS."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "THE THREE FACTORS OF AUTHENTICATION\n\nSOMETHING YOU KNOW — a password, a watchword, a secret phrase. Weakest alone: it can be told, guessed, or stolen without you ever noticing.\n\nSOMETHING YOU HAVE — a seal ring, a key, a physical token. Stronger: stealing it usually means you NOTICE it's gone.\n\nSOMETHING YOU ARE — a face, a voice, a fingerprint (biometrics). Hard to copy, impossible to forget — but impossible to change if it's ever compromised.\n\nCombine two or more from DIFFERENT categories and you have MULTI-FACTOR authentication: a stolen watchword is useless without the ring; a stolen ring is useless without the face. The forged Council letter failed precisely because it carried only the watchword — one factor, and the weakest one."
+    },
+    {
+      "type": "paragraph",
+      "text": "One caution the village already learned the hard way, back at Maren's ledger: the \"something you are\" factor is BIOMETRIC, which is special-category personal data. Strong authentication and heavy data-protection duty arrive together — the more powerful the proof of identity, the more sensitive the thing you must now protect."
+    },
+    {
+      "type": "paragraph",
+      "text": "These guarantees are not a menu to pick from. A serious channel wants all four, layered, on the assumption that the road is always hostile. Assume breach; build anyway."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "A letter arrives bearing a watchword known to the whole Council. What does the watchword actually prove?",
+      "choices": ["That the sender is a Council member", "That someone LEARNED the watchword", "That the message wasn't altered"],
+      "answer": 1,
+      "explain": [
+        "A watchword can't prove membership — it only proves someone knows the word, Council member or not.",
+        "Exactly — a shared secret proves knowledge of the secret, not identity. Anyone who acquired it — a bribed clerk, a leak — passes. Authentication needs something unforgeable, not just something known.",
+        "That's integrity's job. A watchword says nothing about whether the contents were changed in transit."
+      ]
+    },
+    {
+      "q": "You crack open a letter and find the wax seal spanning its fold broken and re-pressed. Which guarantee is now in doubt?",
+      "choices": ["Confidentiality", "Integrity", "Non-repudiation"],
+      "answer": 1,
+      "explain": [
+        "Confidentiality is about who can READ the message — a broken seal doesn't tell you that.",
+        "Exactly — the tamper-seal binds to the sealed contents; a broken seal means the message may have been altered in transit. Confidentiality is about who can read it; integrity is about whether it changed.",
+        "Non-repudiation is about the sender denying the message later — a broken seal is a road-tampering problem, not a denial problem."
+      ]
+    },
+    {
+      "q": "The Council sends Bram a sensitive reply across bandit country. They lock the contents in a sealed box but leave the destination address on the outside, plainly readable. Why leave the address plain?",
+      "choices": ["Laziness — nobody got around to hiding it", "So couriers can route it — purpose limitation in practice", "Addresses can't be sealed"],
+      "answer": 1,
+      "explain": [
+        "Not laziness — it's deliberate. Leaving anything unnecessary exposed would BE the failure here.",
+        "Exactly — the courier needs the routing data and nothing more; sealing the contents protects the secret while the plain address keeps the system working. Seal what must be hidden, not what must be used to make the system function.",
+        "Addresses can absolutely be sealed too — the choice to leave this one plain is deliberate, not a technical limit."
+      ]
+    },
+    {
+      "q": "A signature only its owner can produce, that they cannot later disown, provides —",
+      "choices": ["Confidentiality", "Non-repudiation", "Integrity"],
+      "answer": 1,
+      "explain": [
+        "Confidentiality is about who can read the message — it says nothing about who sent it or whether they can later deny it.",
+        "Exactly — an identity-bound mark only the sender can produce, which they can't later disown. It protects the recipient FROM the sender, where authentication protects the recipient FROM impostors.",
+        "Integrity is about whether the message changed in transit, not about the sender disowning it afterward."
+      ]
+    },
+    {
+      "q": "The gate guard admits only someone who speaks the watchword AND presents their seal ring AND is recognized by face. Which authentication factors are in play?",
+      "choices": ["Three times 'something you know'", "Something you know + have + are (multi-factor)", "Only 'something you have'"],
+      "answer": 1,
+      "explain": [
+        "Not quite — the seal ring and the face aren't things you KNOW, they're things you HAVE and something you ARE.",
+        "Exactly — watchword = something you KNOW, seal ring = something you HAVE, face = something you ARE: three different factors, the strongest posture, because compromising one doesn't compromise the others. Note that the \"something you are\" check (the face) is biometric — special-category data that must itself be protected.",
+        "The watchword and the face aren't 'something you have' — this gate genuinely combines three different factor types."
+      ]
+    }
+  ]
 }
