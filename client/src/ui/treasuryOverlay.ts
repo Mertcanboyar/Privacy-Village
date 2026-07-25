@@ -185,6 +185,9 @@ export function openTreasuryOverlay(onClose: (completed: boolean) => void) {
       finalPanelEl.style.display = "none";
       return;
     }
+    if (!clerkAuthorized && !mayorAuthorized) {
+      setInstructions("STEP 6 of 6 — Toggle CLERK AUTHORIZES and MAYOR AUTHORIZES, then click EMPTY THE LEDGER.");
+    }
     finalPanelEl.style.display = "flex";
     finalPanelEl.innerHTML = "";
     finalPanelEl.append(
@@ -615,6 +618,7 @@ export function openTreasuryOverlay(onClose: (completed: boolean) => void) {
         treasuryKeysState.banditStopped = true;
         questEngine.toast("External threat stopped. A lock keeps out those with no right to be here.");
         hideNode("bandit");
+        if (!keyed) setInstructions("STEP 2 of 6 — Drag BRASS KEY onto the Clerk so the Treasury still works by day.");
         maybeAdvanceToNight();
       });
     }, 500);
@@ -641,7 +645,7 @@ export function openTreasuryOverlay(onClose: (completed: boolean) => void) {
   function maybeAdvanceToNight() {
     if (!(vaulted && keyed) || nightTriggered) return;
     nightTriggered = true;
-    setInstructions("The Treasury runs day and night. Watch what the same key does after dark...");
+    setInstructions("STEP 3 of 6 — Night is coming. Drag SHIFT ROSTER onto the Clerk now, or watch what happens if you don't.");
     window.setTimeout(() => enterNight(), 2400);
   }
 
@@ -663,7 +667,7 @@ export function openTreasuryOverlay(onClose: (completed: boolean) => void) {
     questEngine.toast(
       "HERALD — Your lock worked perfectly. It let in exactly who you told it to — at midnight. A key with no rule is a key with no conscience.",
     );
-    setInstructions("An unlocked hour is an unlocked door. Fix it with an ORGANIZATIONAL rule.");
+    setInstructions("STEP 3 of 6 — Drag SHIFT ROSTER onto the Clerk to stop the key from working at night.");
   }
 
   function applyRoster() {
@@ -686,7 +690,7 @@ export function openTreasuryOverlay(onClose: (completed: boolean) => void) {
     const ledgerEl = nodeEls.get("ledger");
     if (ledgerEl) flashRed(ledgerEl);
     questEngine.toast("An ORGANIZATIONAL rule — the key works only 8-to-5. The lock didn't change. The RULE did.");
-    setInstructions("Night secured. Watching for what daylight alone cannot stop...");
+    setInstructions("STEP 4 of 6 — Night secured. Watch for what happens next, during the day.");
     window.setTimeout(() => enterDay(), 2200);
   }
 
@@ -707,7 +711,7 @@ export function openTreasuryOverlay(onClose: (completed: boolean) => void) {
     questEngine.toast(
       "HERALD — This one has every right to open the vault — at the right hour, with the right key. No barrier will stop him. So we do the other thing: we make sure he's SEEN.",
     );
-    setInstructions("He's allowed to be here. No lock, no roster, stops this. Attach something that WATCHES.");
+    setInstructions("STEP 4 of 6 — Drag WATCHMAN'S LOGBOOK onto the Ledger to log this access.");
     if (logbookApplied) resolveDaySuccess(true);
   }
 
@@ -730,7 +734,7 @@ export function openTreasuryOverlay(onClose: (completed: boolean) => void) {
       playSound("chime");
     });
     questEngine.toast("You can't always prevent. You can always ACCOUNT. Audit logging is how trust survives access.");
-    setInstructions("Logged. One more signature stands between the vault and a single hand.");
+    setInstructions("STEP 5 of 6 — Drag MAYOR'S COUNTERSIGN onto the Ledger to require two-person authorization.");
     renderFinalPanel();
   }
 
@@ -779,7 +783,7 @@ export function openTreasuryOverlay(onClose: (completed: boolean) => void) {
   canvasEl.append(logPanelEl, finalPanelEl);
   for (const id of ALWAYS_ON) showNode(id);
   renderDayNight();
-  setInstructions("Two trays: TECHNICAL measures (solid barriers) and ORGANIZATIONAL measures (rules). Start by securing the Ledger against the Bandit outside.");
+  setInstructions("STEP 1 of 6 — Drag IRON VAULT onto the Ledger to stop the Bandit outside.");
 
   // --- Teardown -----------------------------------------------------------
   function teardown() {
