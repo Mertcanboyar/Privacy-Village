@@ -570,28 +570,6 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         { lines: ["Can't stop long — dawn route waits for no one, festival or not."] },
       ],
     },
-    {
-      id: "mayor",
-      name: "Mayor",
-      // Just south of the Courthouse door (village.json: x 1126-1195,
-      // y 389-492) — "Courthouse-adjacent in the square" per the quest
-      // spec, clear of the Villager (1000,560).
-      x: 1120,
-      y: 470,
-      texture: "npc-mayor",
-      // Real sprite: a 30-frame idle strip (414x567/frame, see
-      // Preload.ts), cropped from a "Blacksmith" character pack.
-      baseScale: 75 / 567,
-      idleAnim: "npc-mayor-idle",
-      questGiver: "treasury_two_keys",
-      dialogue: [
-        {
-          if: { questComplete: "treasury_two_keys" },
-          lines: ["So the lock was the easy half. I bought iron when I needed... rules. And a logbook. Fine. FINE. Well done, Agent."],
-        },
-        { lines: ["The Treasury doesn't lock itself, Agent. Mind the steps — I had them polished for the festival."] },
-      ],
-    },
   ],
   tavern: [
     {
@@ -822,6 +800,30 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [{ lines: ["Sit, if you wish. The bench asks nothing of you but patience."] }],
     },
   ],
+  great_hall: [
+    {
+      id: "mayor",
+      name: "Mayor",
+      // Beside the throne, on the dais (great_hall_bg.png) — "The
+      // Treasury's Two Keys"'s giver, holding court where a Mayor
+      // actually would rather than loitering in the town square.
+      x: 935,
+      y: 350,
+      texture: "npc-mayor",
+      // Real sprite: a 30-frame idle strip (414x567/frame, see
+      // Preload.ts), cropped from a "Blacksmith" character pack.
+      baseScale: 75 / 567,
+      idleAnim: "npc-mayor-idle",
+      questGiver: "treasury_two_keys",
+      dialogue: [
+        {
+          if: { questComplete: "treasury_two_keys" },
+          lines: ["So the lock was the easy half. I bought iron when I needed... rules. And a logbook. Fine. FINE. Well done, Agent."],
+        },
+        { lines: ["The Treasury doesn't lock itself, Agent. Mind the steps — I had them polished for the festival."] },
+      ],
+    },
+  ],
 };
 
 interface NPCView {
@@ -920,12 +922,19 @@ export class NPCController {
     if (roomName === "village") {
       this.refreshHeraldPulse(scene);
       this.refreshBramPulse(scene);
-      this.refreshMayorPulse(scene);
       const onLevelUp = () => {
         this.refreshHeraldPulse(scene);
         this.refreshBramPulse(scene);
-        this.refreshMayorPulse(scene);
       };
+      questEngine.on("levelUp", onLevelUp);
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
+    }
+
+    // The Mayor moved to the Great Hall (see NPC_SPAWNS.great_hall) —
+    // same pulse technique, just scoped to that room now.
+    if (roomName === "great_hall") {
+      this.refreshMayorPulse(scene);
+      const onLevelUp = () => this.refreshMayorPulse(scene);
       questEngine.on("levelUp", onLevelUp);
       scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
     }
