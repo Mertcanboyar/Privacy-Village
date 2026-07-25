@@ -3,9 +3,157 @@
   "track": "privacy_ops",
   "title": "Mapping the Flow",
   "clearanceRequired": 4,
-  "type": "lesson",
-  "theoryInDevelopment": true,
+  "type": "lesson_diagramquiz",
   "fieldWork": { "questId": "post_road_blueprint", "label": "The Blueprint of the Post Road", "room": "village", "ping": "bram" },
-  "lesson": [],
-  "quiz": []
+  "lesson": [
+    { "type": "heading", "text": "Every system tells two stories: what it does, and where the data goes." },
+    {
+      "type": "paragraph",
+      "text": "A DATA FLOW DIAGRAM (DFD) maps the movement of data through a system so both engineers and lawyers can see the same picture. Four symbols, that's the whole alphabet — you already drew them on the Post Road."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "THE FOUR SYMBOLS\n\n▭ EXTERNAL ENTITY (square) — a person, system, or store OUTSIDE your control that interacts with your system. Villagers and couriers; patients and doctors. These mark your system's BOUNDARY and are where privacy risk enters and exits.\n\n◯ PROCESS (circle) — an activity INSIDE the system that acts on data: transforms, routes, or redirects it. Bram's sorting desk; a hospital management system.\n\n═ DATA STORE (parallel lines) — where data rests, briefly or forever. The overnight vault; a patient database. Usually where the sensitive material accumulates.\n\n→ DATA FLOW (arrow) — the movement of data from source to destination. The arrows ARE the privacy story: follow them to see who touches what."
+    },
+    {
+      "type": "paragraph",
+      "text": "The power of a DFD is that it makes the invisible legible. You cannot protect a flow you cannot see — and most breaches happen on a flow nobody drew. When you mapped the Post Road and the rogue arrow to the Bandit Camp appeared, you were doing THREAT MODELING: comparing the system as documented against the system as run."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "DEPTH LAYERS\n\nA DFD can zoom. LAYER 0 (a \"context diagram\") shows the whole system as a single process with its external entities — the view for a boardroom. LAYER 1 breaks that process into its major sub-processes. LAYERS 2-3 drill deeper still. Match the depth to the risk: a high-risk system earns a deeper map. Draw only as deep as the decision in front of you requires."
+    },
+    {
+      "type": "paragraph",
+      "text": "Two privacy lenses ride on top of the diagram. PURPOSE LIMITATION asks, at every arrow: does this destination need everything in this flow, or only part? (The sorting desk needed the address, not the contents.) And DATA MINIMISATION asks, at every store: must this rest here at all? A DFD turns both questions from abstract principles into things you can point at."
+    },
+    { "type": "paragraph", "text": "Below is the Village Post Road, drawn properly at last. Read it like a Ranger." }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "villagers",
+        "label": "Villagers",
+        "type": "entity",
+        "x": 80,
+        "y": 150,
+        "roleExplain": "Villagers are an EXTERNAL ENTITY — outside the system, sending mail in. They don't process or store anything themselves."
+      },
+      {
+        "id": "cipher_desk",
+        "label": "Cipher Desk",
+        "type": "process",
+        "x": 260,
+        "y": 60,
+        "roleExplain": "The Cipher Desk is a PROCESS — it seals contents before they reach the sorting desk. It doesn't hold anything long-term."
+      },
+      {
+        "id": "sorting_desk",
+        "label": "Sorting Desk",
+        "type": "process",
+        "x": 260,
+        "y": 150,
+        "roleExplain": "The Sorting Desk is a PROCESS — it routes mail by address. It doesn't store anything overnight, and needs only the address, not the contents."
+      },
+      {
+        "id": "vault",
+        "label": "Overnight Vault",
+        "type": "store",
+        "x": 440,
+        "y": 150,
+        "roleExplain": "The Overnight Vault is a DATA STORE — sorted bundles rest here till dawn. This is where accumulated data, and accumulated risk, sits."
+      },
+      {
+        "id": "couriers",
+        "label": "Couriers",
+        "type": "entity",
+        "x": 610,
+        "y": 150,
+        "roleExplain": "Couriers are an EXTERNAL ENTITY — outside the system, carrying mail onward. They don't process or store anything themselves."
+      },
+      {
+        "id": "bandit_camp",
+        "label": "Bandit Camp",
+        "type": "entity",
+        "x": 260,
+        "y": 255,
+        "danger": true,
+        "roleExplain": "The Bandit Camp is an unauthorized EXTERNAL ENTITY receiving a flow it was never meant to see — that IS the information disclosure threat."
+      }
+    ],
+    "arrows": [
+      {
+        "id": "arrow_villagers_cipher",
+        "from": "villagers",
+        "to": "cipher_desk",
+        "roleExplain": "This arrow carries villagers' mail into the Cipher Desk — a normal, authorized flow."
+      },
+      {
+        "id": "arrow_cipher_sorting",
+        "from": "cipher_desk",
+        "to": "sorting_desk",
+        "label": "contents-sealed",
+        "roleExplain": "This arrow carries contents-sealed mail from the Cipher Desk to the Sorting Desk — the desk gets the address, not the contents."
+      },
+      {
+        "id": "arrow_sorting_vault",
+        "from": "sorting_desk",
+        "to": "vault",
+        "roleExplain": "This arrow moves sorted bundles into the Overnight Vault — a normal, authorized flow."
+      },
+      {
+        "id": "arrow_vault_couriers",
+        "from": "vault",
+        "to": "couriers",
+        "roleExplain": "This arrow shows couriers drawing bundles from the vault at dawn — a normal, authorized flow."
+      },
+      {
+        "id": "arrow_sorting_bandit",
+        "from": "sorting_desk",
+        "to": "bandit_camp",
+        "dashed": true,
+        "danger": true,
+        "roleExplain": "This dashed arrow is the rogue flow — mail leaving the system through an entity that was never authorized to receive it."
+      }
+    ]
+  },
+  "questions": [
+    {
+      "kind": "diagram",
+      "prompt": "Click the DATA STORE in this system.",
+      "correctIds": ["vault"],
+      "explain": "Parallel lines = where data rests. The vault holds sorted mail overnight, so it's where accumulated data — and risk — sits."
+    },
+    {
+      "kind": "diagram",
+      "prompt": "Click an EXTERNAL ENTITY that the system does NOT control but must account for.",
+      "correctIds": ["villagers", "couriers"],
+      "explain": "Squares outside the boundary; you can't govern them, but your privacy analysis must include them."
+    },
+    {
+      "kind": "diagram",
+      "prompt": "Click the PROCESS whose job requires ONLY the address, not the contents.",
+      "correctIds": ["sorting_desk"],
+      "explain": "Purpose limitation — it routes by address; giving it the contents would violate \"need to know.\" This is why the Cipher Desk sits before it."
+    },
+    {
+      "kind": "diagram",
+      "prompt": "Click the element that represents an INFORMATION DISCLOSURE threat.",
+      "correctIds": ["bandit_camp", "arrow_sorting_bandit"],
+      "explain": "An unauthorized external entity receiving a flow = information disclosure; the whole reason you encrypt the contents upstream."
+    },
+    {
+      "kind": "choice",
+      "prompt": "The Council wants a single-picture summary for a village meeting — no internal detail. Which DEPTH LAYER do you draw?",
+      "choices": ["Layer 0 (context)", "Layer 2", "The full detailed diagram"],
+      "answerIndex": 0,
+      "explain": [
+        "Exactly — the context diagram shows the system as one process with its external entities. No internals exposed, the boardroom view.",
+        "Too deep. Layer 2 already exposes internal sub-processes the Council doesn't need for a summary.",
+        "Far too deep. The full diagram is a working document, not a summary — it would bury the one picture they asked for."
+      ]
+    }
+  ]
 }

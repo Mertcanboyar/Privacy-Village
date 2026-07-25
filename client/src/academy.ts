@@ -176,7 +176,76 @@ export interface AcademyDataSieveModule extends AcademyModuleBase {
   cards: DataSieveCard[];
 }
 
-export type AcademyModule = AcademyLessonModule | AcademyCardDrillModule | AcademyCardDrillMultiModule | AcademyDataSieveModule;
+export type DiagramNodeType = "entity" | "process" | "store";
+
+// A DFD node/arrow the player can click on as an answer — see
+// ui/diagramReader.ts for the rendering, same node-shape/color language
+// as ui/blueprintOverlay.ts's Post Road builder (kept as a separate,
+// smaller copy there rather than a cross-import — Academy and the
+// village quests are deliberately different subsystems). roleExplain is
+// shown when the player clicks this element for the WRONG question —
+// a fixed "here's what this actually is" line, independent of which
+// diagram question is currently active.
+export interface DiagramQuizNode {
+  id: string;
+  label: string;
+  type: DiagramNodeType;
+  x: number;
+  y: number;
+  danger?: boolean;
+  roleExplain: string;
+}
+
+export interface DiagramQuizArrow {
+  id: string;
+  from: string;
+  to: string;
+  label?: string;
+  dashed?: boolean;
+  danger?: boolean;
+  roleExplain: string;
+}
+
+// "Click the right part of the diagram" — correctIds lists every id that
+// counts as correct (Q2's "Villagers OR Couriers", Q4's "Bandit Camp or
+// its arrow"); all of them flash gold together on a correct pick so the
+// player sees every valid answer, not just the one they happened to hit.
+export interface DiagramClickQuestion {
+  kind: "diagram";
+  prompt: string;
+  correctIds: string[];
+  explain: string;
+}
+
+// A few diagram questions are about ZOOM LEVEL, not a clickable part of
+// THIS diagram (Q5) — ordinary text multiple-choice, same mastery/retry
+// convention as QuizQuestion.
+export interface DiagramChoiceQuestion {
+  kind: "choice";
+  prompt: string;
+  choices: string[];
+  answerIndex: number;
+  explain: string[];
+}
+
+export type DiagramQuizQuestion = DiagramClickQuestion | DiagramChoiceQuestion;
+
+// "Mapping the Flow" — lesson blocks (same LessonBlock union as
+// AcademyLessonModule) followed by an interactive-diagram assessment
+// instead of a text quiz (see academyOverlay.ts's renderDiagramQuiz()).
+export interface AcademyLessonDiagramQuizModule extends AcademyModuleBase {
+  type: "lesson_diagramquiz";
+  lesson: LessonBlock[];
+  diagram: { nodes: DiagramQuizNode[]; arrows: DiagramQuizArrow[] };
+  questions: DiagramQuizQuestion[];
+}
+
+export type AcademyModule =
+  | AcademyLessonModule
+  | AcademyCardDrillModule
+  | AcademyCardDrillMultiModule
+  | AcademyDataSieveModule
+  | AcademyLessonDiagramQuizModule;
 
 export interface ModuleProgress {
   theoryDone: boolean;

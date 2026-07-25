@@ -8,16 +8,19 @@ import {
   type AcademyCardDrillModule,
   type AcademyCardDrillMultiModule,
   type AcademyDataSieveModule,
+  type AcademyLessonDiagramQuizModule,
   type AcademyFieldWork,
   type CardDrillCard,
   type CardDrillMultiCard,
   type DataSieveCard,
   type LessonBlock,
   type QuizQuestion,
+  type DiagramQuizQuestion,
 } from "./academy";
 import { questEngine } from "./questEngine";
 import { getSession } from "./session";
 import { showImageOverlay, isImageOverlayOpen } from "./ui/imageOverlay";
+import { buildDiagram } from "./ui/diagramReader";
 import { logDecision } from "./cloud/save";
 import type { Room } from "./scenes/Room";
 
@@ -43,7 +46,7 @@ function roomCallToAction(room: AcademyFieldWork["room"]): string {
 const FADE_MS = 200;
 const CARD_DRILL_AUTO_ADVANCE_MS = 1500;
 
-type AcademyView = "hub" | "moduleList" | "lesson" | "quiz" | "cardDrillIntro" | "cardDrill" | "cardDrillMultiIntro" | "cardDrillMulti" | "dataSieve";
+type AcademyView = "hub" | "moduleList" | "lesson" | "quiz" | "cardDrillIntro" | "cardDrill" | "cardDrillMultiIntro" | "cardDrillMulti" | "dataSieve" | "diagramQuiz";
 
 // Attempt counter for decision-log rows (see answerQuiz()/answerCardDrill()/
 // answerCardDrillMulti()) — keyed by module+question/item so a retry on
@@ -75,6 +78,18 @@ export class AcademyOverlay {
   private quizIndex = 0;
   private quizRevealedChoice: number | null = null;
   private quizCorrect = false;
+
+  // "Mapping the Flow"'s interactive-diagram assessment — same one-
+  // question-at-a-time mastery/retry convention as the quiz above, but
+  // Q1-4 answer by clicking an element on a rendered DFD instead of
+  // picking text (see renderDiagramQuiz()/answerDiagramQuizClick()).
+  // pickedElementId is only meaningful for "diagram" questions,
+  // pickedChoiceIndex only for the one "choice" question (Q5).
+  private diagramQuizIndex = 0;
+  private diagramQuizRevealed = false;
+  private diagramQuizCorrect = false;
+  private diagramQuizPickedElementId: string | null = null;
+  private diagramQuizPickedChoiceIndex: number | null = null;
 
   // Card drill state — a working queue (not the original module.cards
   // array): correct answers shift the front card off, wrong answers
@@ -201,7 +216,8 @@ export class AcademyOverlay {
     else if (this.currentView === "cardDrill") this.renderCardDrill();
     else if (this.currentView === "cardDrillMultiIntro") this.renderCardDrillMultiIntro();
     else if (this.currentView === "cardDrillMulti") this.renderCardDrillMulti();
-    else this.renderDataSieve();
+    else if (this.currentView === "dataSieve") this.renderDataSieve();
+    else this.renderDiagramQuiz();
   }
 
   private goToHub() {
@@ -281,6 +297,17 @@ export class AcademyOverlay {
     this.currentView = "dataSieve";
     this.sieveRemoved = new Set();
     this.sieveValidated = false;
+    this.render();
+  }
+
+  private goToDiagramQuiz(moduleId: string) {
+    this.currentModuleId = moduleId;
+    this.currentView = "diagramQuiz";
+    this.diagramQuizIndex = 0;
+    this.diagramQuizRevealed = false;
+    this.diagramQuizCorrect = false;
+    this.diagramQuizPickedElementId = null;
+    this.diagramQuizPickedChoiceIndex = null;
     this.render();
   }
 
@@ -452,11 +479,12 @@ export class AcademyOverlay {
       module.lesson.map((block) => this.renderLessonBlock(block)),
     );
 
+    const isDiagramQuiz = module.type === "lesson_diagramquiz";
     const assessmentBtn = el("button", {
       className: "btn btn--gold",
-      text: "TAKE THE ASSESSMENT",
+      text: isDiagramQuiz ? "READ THE DIAGRAM" : "TAKE THE ASSESSMENT",
       style: { marginTop: "var(--space-3)" },
-      on: { click: () => this.goToQuiz(module.id) },
+      on: { click: () => (isDiagramQuiz ? this.goToDiagramQuiz(module.id) : this.goToQuiz(module.id)) },
     });
 
     this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "720px", maxHeight: "640px", overflowY: "auto" } }, [header, blocks, assessmentBtn]));
@@ -482,6 +510,11 @@ export class AcademyOverlay {
           fontFamily: "var(--font-body)",
           fontSize: "14px",
           color: "var(--text-primary)",
+          // \n-separated multi-item callouts (e.g. "Mapping the Flow"'s
+          // four-symbols/depth-layers lists) need this to actually break
+          // lines — every prior callout was a single sentence, so this
+          // was never load-bearing before.
+          whiteSpace: "pre-line",
         },
       });
     }
@@ -494,7 +527,7 @@ export class AcademyOverlay {
 
   private renderQuiz() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    if (!module || module.type === "card_drill" || module.type === "card_drill_multi" || module.type === "data_sieve") {
+    if (!module || module.type === "card_drill" || module.type === "card_drill_multi" || module.type === "data_sieve" || module.type === "lesson_diagramquiz") {
       this.goToHub();
       return;
     }
@@ -1051,6 +1084,159 @@ export class AcademyOverlay {
   private completeDataSieve(module: AcademyDataSieveModule) {
     academy.markTheoryDone(module.id);
     this.goToModuleList(module.track);
+  }
+
+  // "Mapping the Flow"'s interactive-diagram assessment — same mastery/
+  // retry shell as renderQuiz() (question counter, explanation on
+  // reveal, NEXT/FINISH once correct), but Q1-4 render a clickable DFD
+  // instead of text choices. No back button, matching renderQuiz()'s
+  // own precedent (once a quiz/assessment starts, ESC to fully close
+  // the Academy is the only way out — not a per-question back step).
+  private renderDiagramQuiz() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "lesson_diagramquiz") {
+      this.goToHub();
+      return;
+    }
+    const question = module.questions[this.diagramQuizIndex];
+    if (!question) {
+      this.goToHub();
+      return;
+    }
+
+    const header = el("div", {
+      text: `QUESTION ${this.diagramQuizIndex + 1} / ${module.questions.length}`,
+      style: { fontFamily: "var(--font-mono)", fontSize: "12px", letterSpacing: "0.08em", color: "var(--text-muted)", marginBottom: "var(--space-2)" },
+    });
+    const questionEl = el("h3", { text: question.prompt, style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px", marginBottom: "var(--space-2)" } });
+
+    const children: HTMLElement[] = [header, questionEl];
+
+    if (question.kind === "diagram") {
+      const reader = buildDiagram(module.diagram.nodes, module.diagram.arrows, (id) => this.answerDiagramQuizElement(id, question));
+      if (this.diagramQuizRevealed) {
+        if (this.diagramQuizCorrect) {
+          for (const id of question.correctIds) reader.setHighlight(id, "correct");
+        } else if (this.diagramQuizPickedElementId) {
+          reader.setHighlight(this.diagramQuizPickedElementId, "wrong");
+        }
+      }
+      children.push(reader.containerEl);
+    } else {
+      children.push(
+        el(
+          "div",
+          { style: { display: "flex", flexDirection: "column", gap: "var(--space-2)" } },
+          question.choices.map((choice, i) => this.renderDiagramQuizChoice(question, i, choice)),
+        ),
+      );
+    }
+
+    if (this.diagramQuizRevealed) {
+      const explainText =
+        question.kind === "diagram"
+          ? this.diagramQuizCorrect
+            ? question.explain
+            : this.roleExplainFor(module, this.diagramQuizPickedElementId)
+          : question.explain[this.diagramQuizPickedChoiceIndex!];
+      children.push(
+        el("p", {
+          text: explainText,
+          style: { marginTop: "var(--space-3)", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" },
+        }),
+      );
+    }
+
+    if (this.diagramQuizCorrect) {
+      const isLast = this.diagramQuizIndex >= module.questions.length - 1;
+      children.push(
+        el("button", {
+          className: "btn btn--gold",
+          text: isLast ? "FINISH" : "NEXT",
+          style: { marginTop: "var(--space-3)" },
+          on: { click: () => this.nextDiagramQuizQuestion(module) },
+        }),
+      );
+    }
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "820px", maxHeight: "720px", overflowY: "auto" } }, children));
+  }
+
+  private renderDiagramQuizChoice(question: DiagramQuizQuestion & { kind: "choice" }, index: number, text: string): HTMLElement {
+    const isRevealed = this.diagramQuizRevealed && this.diagramQuizPickedChoiceIndex === index;
+    const isAnswer = index === question.answerIndex;
+    const style: Partial<CSSStyleDeclaration> = { width: "100%", justifyContent: "flex-start", textAlign: "left" };
+    if (isRevealed) {
+      if (isAnswer) {
+        style.borderColor = "var(--accent-gold)";
+        style.animation = "ds-quiz-correct 500ms ease-out";
+      } else {
+        style.borderColor = "var(--accent-red)";
+        style.animation = "ds-shake 400ms ease-in-out";
+      }
+    }
+    return el("button", { className: "btn btn--ghost", text, style, on: { click: () => this.answerDiagramQuizChoice(index, question) } });
+  }
+
+  // A clicked WRONG element explains what it actually is (not the
+  // question's own correct-answer explanation) — see DiagramQuizNode/
+  // DiagramQuizArrow's roleExplain doc comment in academy.ts.
+  private roleExplainFor(module: AcademyLessonDiagramQuizModule, elementId: string | null): string {
+    if (!elementId) return "";
+    const node = module.diagram.nodes.find((n) => n.id === elementId);
+    if (node) return node.roleExplain;
+    return module.diagram.arrows.find((a) => a.id === elementId)?.roleExplain ?? "";
+  }
+
+  // No penalty, no score — a wrong click just explains what was
+  // actually clicked and stays retryable, same mastery convention as
+  // answerQuiz(). Ignores further clicks once this question is
+  // correctly answered (the NEXT/FINISH button is the only way on).
+  private answerDiagramQuizElement(elementId: string, question: DiagramQuizQuestion & { kind: "diagram" }) {
+    if (this.diagramQuizRevealed && this.diagramQuizCorrect) return;
+    this.diagramQuizRevealed = true;
+    this.diagramQuizPickedElementId = elementId;
+    this.diagramQuizCorrect = question.correctIds.includes(elementId);
+    logDecision("module_diagram_quiz_answer", {
+      module: this.currentModuleId,
+      question: question.prompt,
+      questionIndex: this.diagramQuizIndex,
+      picked: elementId,
+      correct: this.diagramQuizCorrect,
+      attempt: nextAnswerAttempt(`${this.currentModuleId}:${this.diagramQuizIndex}`),
+    });
+    this.render();
+  }
+
+  private answerDiagramQuizChoice(index: number, question: DiagramQuizQuestion & { kind: "choice" }) {
+    if (this.diagramQuizRevealed && this.diagramQuizCorrect) return;
+    this.diagramQuizRevealed = true;
+    this.diagramQuizPickedChoiceIndex = index;
+    this.diagramQuizCorrect = index === question.answerIndex;
+    logDecision("module_diagram_quiz_answer", {
+      module: this.currentModuleId,
+      question: question.prompt,
+      questionIndex: this.diagramQuizIndex,
+      picked: question.choices[index],
+      correct: this.diagramQuizCorrect,
+      attempt: nextAnswerAttempt(`${this.currentModuleId}:${this.diagramQuizIndex}`),
+    });
+    this.render();
+  }
+
+  private nextDiagramQuizQuestion(module: AcademyLessonDiagramQuizModule) {
+    const isLast = this.diagramQuizIndex >= module.questions.length - 1;
+    if (isLast) {
+      academy.markTheoryDone(module.id);
+      this.goToModuleList(module.track);
+      return;
+    }
+    this.diagramQuizIndex++;
+    this.diagramQuizRevealed = false;
+    this.diagramQuizCorrect = false;
+    this.diagramQuizPickedElementId = null;
+    this.diagramQuizPickedChoiceIndex = null;
+    this.render();
   }
 
   private badgeIconSvg(): Node {
