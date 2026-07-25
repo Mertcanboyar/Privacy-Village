@@ -1,0 +1,27 @@
+{
+  "room": "great_hall",
+  "background": "great_hall_bg.png",
+  "walkable": [
+    [51, 390],
+    [1229, 390],
+    [1229, 720],
+    [51, 720]
+  ],
+  "doors": [
+    {
+      "x": 540,
+      "y": 689,
+      "width": 116,
+      "height": 31,
+      "target": "village"
+    }
+  ],
+  "lights": [
+    { "x": 340, "y": 460, "radius": 30 },
+    { "x": 700, "y": 400, "radius": 34 },
+    { "x": 1090, "y": 470, "radius": 30 },
+    { "x": 175, "y": 660, "radius": 26 }
+  ],
+  "npcSpawns": [],
+  "zones": []
+}

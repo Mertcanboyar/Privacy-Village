@@ -4,12 +4,15 @@ Placeholder assets chosen Day 1 to unblock building (see [PLAN.md](PLAN.md)).
 All CC0 — no attribution required, credit given anyway. Swap for paid
 tilesets/sprites later without blocking progress.
 
-## Room backgrounds — Village, Tavern, Courthouse
+## Room backgrounds — Village, Tavern, Courthouse, Great Hall
 
-Painted background art for the 3 rooms (see [CLAUDE.md](CLAUDE.md) for the
-painted-scene architecture). Replaces the Kenney Roguelike/RPG tileset used
-by the Week 1 tilemap prototype, which is now retired.
-Location: `client/public/assets/rooms/{village,tavern,courthouse}_bg.png`
+Painted background art for the 4 rooms (see [CLAUDE.md](CLAUDE.md) for the
+painted-scene architecture). Village/Tavern/Courthouse replace the Kenney
+Roguelike/RPG tileset used by the Week 1 tilemap prototype, which is now
+retired. The Great Hall (behind the village square's clock-tower building)
+is a later, user-provided addition — no separate foreground occlusion PNG
+exists for it yet (see CLAUDE.md's asset-convention note).
+Location: `client/public/assets/rooms/{village,tavern,courthouse,great_hall}_bg.png`
 
 ## Player avatar
 

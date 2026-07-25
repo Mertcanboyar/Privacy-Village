@@ -9,7 +9,7 @@ this project is and why. This file is about how the client is built.
 The village is **not** a scrolling Tiled tilemap. It's a set of fixed,
 screen-sized "rooms," each a hand-painted background/foreground pair:
 
-- **3 rooms:** Village, Tavern, Courthouse.
+- **4 rooms:** Village, Tavern, Courthouse, Great Hall.
 - Each room = `background PNG` + `foreground occlusion PNG` + a `room JSON`
   (walkable polygon, door hotspots, light positions, NPC spawns).
 - **Render order:** background → NPCs/players (Y-sorted) → foreground PNG.
@@ -34,7 +34,14 @@ assets/rooms/tavern.json
 assets/rooms/courthouse_bg.png
 assets/rooms/courthouse_fg.png
 assets/rooms/courthouse.json
+assets/rooms/great_hall_bg.png
+assets/rooms/great_hall.json
 ```
+
+Great Hall has no foreground occlusion PNG yet — `Preload.ts` 404s
+quietly on the missing `great_hall_fg.png` and `Room.ts` skips
+rendering it (`this.textures.exists(fgKey)`), same fallback every room
+without one already relies on.
 
 Room JSON shape (per room): walkable polygon (for movement clamping),
 door hotspots (rect or polygon + target room), light positions (for any

@@ -41,6 +41,13 @@
       "width": 69,
       "height": 103,
       "target": "courthouse"
+    },
+    {
+      "x": 430,
+      "y": 400,
+      "width": 65,
+      "height": 75,
+      "target": "great_hall"
     }
   ],
   "lights": [

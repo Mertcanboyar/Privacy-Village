@@ -259,7 +259,7 @@ export class Room extends Phaser.Scene {
     for (const door of this.doors) {
       if (door.target === "academy") continue;
       const isEntry = this.roomName === "village";
-      const label = isEntry ? `\u{1F6AA} ENTER ${door.target.toUpperCase()}` : "\u{1F6AA} EXIT";
+      const label = isEntry ? `\u{1F6AA} ENTER ${door.target.toUpperCase().replace(/_/g, " ")}` : "\u{1F6AA} EXIT";
       const labelY = isEntry ? door.y + door.height + 6 : door.y - 8;
       this.add
         .text(door.x + door.width / 2, labelY, label, {
