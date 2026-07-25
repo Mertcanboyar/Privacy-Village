@@ -7,6 +7,7 @@ import { showTableOverlay, type EvidenceTableTab } from "./ui/tableOverlay";
 import { openHealersLedgerSort } from "./ui/ledgerSortOverlay";
 import { openHealersLedgerLock } from "./ui/ledgerLockOverlay";
 import { openBlueprintOverlay } from "./ui/blueprintOverlay";
+import { openSealedLetterOverlay } from "./ui/sealedLetterOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine, type MilestoneId } from "./questEngine";
 import { playSound, playBlip } from "./audio";
@@ -14,6 +15,7 @@ import { logDecision } from "./cloud/save";
 import { healersLedgerState } from "./healersLedgerState";
 import { postRoadFieldNotes } from "./postRoadFieldNotes";
 import { postRoadBuilderState } from "./postRoadBuilderState";
+import { sealedLetterState } from "./sealedLetterState";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
 // dialogue box (see PLAN.md Days 11-12, Phase 2 Days 2-3). Not
@@ -185,8 +187,12 @@ interface NPCDef {
   baseScale: number;
   idleAnim?: string;
   dialogue: DialogueSet[];
-  /** Quest id this NPC offers when that quest is `available`. */
-  questGiver?: string;
+  /** Quest id(s) this NPC offers when `available` — an array for an NPC
+   * who gives more than one quest over the course of the game (Bram:
+   * "The Blueprint of the Post Road," then "The Sealed Letter"); the
+   * first id in the list that's actually `available` right now wins,
+   * see open()'s giverQuestIds resolution. */
+  questGiver?: string | string[];
   /** Falls back to this texture (already loaded by Preload.ts) if
    * `texture` never loaded — e.g. a real sprite that hasn't been
    * dropped into the repo yet. Logs a console.warn naming the expected
@@ -455,8 +461,12 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       texture: "npc-bram",
       baseScale: loreNpcBaseScale("bram"),
       idleAnim: "npc-bram-idle",
-      questGiver: "post_road_blueprint",
+      questGiver: ["post_road_blueprint", "sealed_letter"],
       dialogue: [
+        {
+          if: { questComplete: "sealed_letter" },
+          lines: ["The gate stayed shut, Agent. Four measures, and a lie can't wear the Council's face past me now."],
+        },
         {
           if: { questComplete: "post_road_blueprint" },
           lines: ["The Blueprint's filed with the Herald now. Funny — twenty years sorting that desk, and I never once drew the map. Wish I hadn't had to."],
@@ -1165,16 +1175,21 @@ export class NPCController {
 
     // The `!getActiveQuest()` guard matters now that an NPC can be both
     // a giver for one quest and a dialogue host for another (Bram: gives
-    // "The Blueprint of the Post Road," also hosts "The Night the Wall
-    // Fell"'s opening step) — without it, a quest sitting `available`
-    // but not yet accepted would hijack this NPC's dialogue even while a
-    // DIFFERENT quest is the one currently active and using them for its
-    // own content. Matches acceptQuest()'s existing "one active quest at
-    // a time" invariant: there's no point offering a quest the engine
-    // would silently refuse to activate anyway.
-    if (def.questGiver && questEngine.isAvailable(def.questGiver) && !questEngine.getActiveQuest()) {
+    // "The Blueprint of the Post Road," then "The Sealed Letter," also
+    // hosts "The Night the Wall Fell"'s opening step) — without it, a
+    // quest sitting `available` but not yet accepted would hijack this
+    // NPC's dialogue even while a DIFFERENT quest is the one currently
+    // active and using them for its own content. Matches acceptQuest()'s
+    // existing "one active quest at a time" invariant: there's no point
+    // offering a quest the engine would silently refuse to activate
+    // anyway. `questGiver` may list more than one quest id (see NPCDef's
+    // doc comment) — offer whichever one of them is actually available
+    // right now.
+    const giverQuestIds = def.questGiver ? (Array.isArray(def.questGiver) ? def.questGiver : [def.questGiver]) : [];
+    const availableGiverQuestId = giverQuestIds.find((id) => questEngine.isAvailable(id));
+    if (availableGiverQuestId && !questEngine.getActiveQuest()) {
       this.mode = "offer";
-      this.offerQuestId = def.questGiver;
+      this.offerQuestId = availableGiverQuestId;
       this.dialogueEl.style.display = "block";
       this.showOffer();
       return;
@@ -1187,6 +1202,17 @@ export class NPCController {
     // so this only ever fires on a resume.
     if (def.id === "bram" && questEngine.isActive("post_road_blueprint") && questEngine.getActiveStepIndex() === 3) {
       this.openPostRoadBuilder();
+      return;
+    }
+
+    // "The Sealed Letter" is one continuous full-screen overlay covering
+    // the whole quest (hook + all four measures) — unlike the Post
+    // Road's dialogue-then-builder split, there's no interview phase
+    // first, so every Bram interaction while this quest is active opens
+    // it directly (also how a mid-quest Escape gets resumed — no
+    // separate resume check needed).
+    if (def.id === "bram" && questEngine.isActive("sealed_letter")) {
+      this.openSealedLetter();
       return;
     }
 
@@ -1477,6 +1503,23 @@ export class NPCController {
         questEngine.toast("COMMENDATION — The Post Road mapped without a wrong stroke.");
       }
       questEngine.notifyReachZone("post_road_blueprint_complete");
+    });
+  }
+
+  // "The Sealed Letter" — one continuous overlay (hook + all four
+  // measures), same "no partial resume" simplification as the other
+  // full-screen minigames in this file.
+  private openSealedLetter() {
+    this.mode = "minigame";
+    openSealedLetterOverlay((completed) => {
+      this.mode = "closed";
+      if (!completed) return;
+      const { forgeryCaughtSeconds, passwordChoice, wrongSealAttempts, encryptChoice } = sealedLetterState;
+      logDecision("sealed_letter", { forgeryCaughtSeconds, passwordChoice, wrongSealAttempts, encryptChoice });
+      if (forgeryCaughtSeconds < 30 && passwordChoice === "no" && wrongSealAttempts === 0) {
+        questEngine.toast("COMMENDATION — The forgery never fooled you for a moment.");
+      }
+      questEngine.notifyReachZone("sealed_letter_complete");
     });
   }
 

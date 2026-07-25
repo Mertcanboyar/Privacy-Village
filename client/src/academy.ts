@@ -29,6 +29,7 @@ export const ACADEMY_MODULE_IDS = [
   "the_three_locks",
   "seventy_two_hour_clock",
   "data_flow_mapping",
+  "secure_channels",
 ] as const;
 
 export interface AcademyModuleSummary {

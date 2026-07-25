@@ -1,0 +1,11 @@
+{
+  "id": "secure_channels",
+  "track": "cyber_security_law",
+  "title": "Secure Channels",
+  "clearanceRequired": 4,
+  "type": "lesson",
+  "theoryInDevelopment": true,
+  "fieldWork": { "questId": "sealed_letter", "label": "The Sealed Letter", "room": "village", "ping": "bram" },
+  "lesson": [],
+  "quiz": []
+}

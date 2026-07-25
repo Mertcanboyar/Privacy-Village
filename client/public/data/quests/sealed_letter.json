@@ -1,0 +1,17 @@
+{
+  "id": "sealed_letter",
+  "title": "The Sealed Letter",
+  "giver": "bram",
+  "xp": 250,
+  "offer": "Agent — a letter came addressed to the whole village. Bears the Council's crest. Commands every villager to open the East Gate at dusk \"for a grain delivery.\" The Council swears they wrote no such thing. Someone is putting words in their mouth — and if the villagers obey, the Saboteur walks straight in. We must prove this letter false, and make sure no false letter ever passes again.",
+  "nextHint": "Talk to Bram in the Village Square",
+  "debrief": "Secure a message four ways: prove the sender, prove it's unchanged, hide it from strangers, and bind the sender to it.",
+  "milestone": "sealed_letter",
+  "unlockAtClearance": 4,
+  "steps": [
+    {
+      "objective": "Investigate the forged letter with Bram",
+      "trigger": { "type": "reach_zone", "zone": "sealed_letter_complete" }
+    }
+  ]
+}
