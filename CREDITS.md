@@ -58,14 +58,16 @@ NPC was never built. Forest Ranger 1, also unused at the time, was
 later repurposed for the Courier (see below).
 Location: `client/public/assets/sprites/npc-pack/{bram,odile,quill,sabine}.png`
 
-## Field NPCs (Courier, Villager)
+## Field NPCs (Courier, Villager, Mayor)
 
 "Forest Ranger 1" (CraftPix.net) — the Courier's 18-frame idle strip,
 same union-bbox-crop treatment as the Lore NPCs above. "Astrologer"
-(CraftPix.net) — the Villager's 30-frame greeting strip. License per
+(CraftPix.net) — the Villager's 30-frame greeting strip. "Blacksmith"
+(CraftPix.net, from the Blacksmith/Herbalist/Hunter/Jeweler free NPC
+pack) — the Mayor's 30-frame idle strip. License per
 https://craftpix.net/file-licenses/, not CC0 — **verify licensing
 before any public release.**
-Location: `client/public/assets/npc/{courier,villager}/{courier,villager}.png`
+Location: `client/public/assets/npc/{courier,villager,mayor}/{courier,villager,mayor}.png`
 
 ## Quest evidence — "The Breach in the Wall"
 

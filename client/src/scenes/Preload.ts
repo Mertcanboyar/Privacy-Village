@@ -75,6 +75,10 @@ export class Preload extends Phaser.Scene {
     // from a different user-provided character pack.
     this.load.spritesheet("npc-villager", "assets/npc/villager/villager.png", { frameWidth: 472, frameHeight: 633 });
 
+    // Mayor ("The Treasury's Two Keys" — see npc.ts) — a 30-frame idle
+    // strip (a "Blacksmith" character pack), same treatment.
+    this.load.spritesheet("npc-mayor", "assets/npc/mayor/mayor.png", { frameWidth: 414, frameHeight: 567 });
+
     // Kenney character sheet — not used by the player anymore, kept
     // loaded for the NPC system (Week 2, see PLAN.md).
     this.load.spritesheet("characters", "assets/sprites/rpg-urban-pack/Tilemap/tilemap.png", {
@@ -166,6 +170,12 @@ export class Preload extends Phaser.Scene {
     this.anims.create({
       key: "npc-villager-idle",
       frames: this.anims.generateFrameNumbers("npc-villager", { start: 0, end: 29 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "npc-mayor-idle",
+      frames: this.anims.generateFrameNumbers("npc-mayor", { start: 0, end: 29 }),
       frameRate: 6,
       repeat: -1,
     });

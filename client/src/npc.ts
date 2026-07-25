@@ -571,10 +571,6 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       ],
     },
     {
-      // No dedicated sprite sourced for the Mayor — reuses the generic
-      // "npc-knight" placeholder texture with a distinct tint, same
-      // mechanism NPCDef.tint documents (Villager/Courier used this
-      // before their real sprites arrived).
       id: "mayor",
       name: "Mayor",
       // Just south of the Courthouse door (village.json: x 1126-1195,
@@ -582,10 +578,11 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       // spec, clear of the Villager (1000,560).
       x: 1120,
       y: 470,
-      texture: "npc-knight",
-      baseScale: 75 / 475,
-      tint: 0x6b4c9a,
-      breathingBob: true,
+      texture: "npc-mayor",
+      // Real sprite: a 30-frame idle strip (414x567/frame, see
+      // Preload.ts), cropped from a "Blacksmith" character pack.
+      baseScale: 75 / 567,
+      idleAnim: "npc-mayor-idle",
       questGiver: "treasury_two_keys",
       dialogue: [
         {
