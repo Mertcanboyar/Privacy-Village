@@ -900,21 +900,6 @@ export class NPCController {
       };
       questEngine.on("levelUp", onLevelUp);
       scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
-
-      // Ledger book prop beside Maren — no dedicated art asset for this
-      // yet, so a small painted rectangle (same "simple sprite is fine"
-      // latitude as her own placeholder texture) rather than blocking on
-      // one. Sits just in front of her, low depth so it never occludes.
-      const bookX = 810;
-      const bookY = 630;
-      const book = scene.add.graphics().setDepth(bookY);
-      book.fillStyle(0x3d2b1f, 1);
-      book.fillRoundedRect(bookX - 22, bookY - 14, 44, 20, 3);
-      book.fillStyle(0xe8dcc0, 1);
-      book.fillRect(bookX - 19, bookY - 11, 17, 14);
-      book.fillRect(bookX + 2, bookY - 11, 17, 14);
-      book.lineStyle(1, 0x3d2b1f, 1);
-      book.lineBetween(bookX, bookY - 11, bookX, bookY + 3);
     }
 
     this.promptText = scene.add
