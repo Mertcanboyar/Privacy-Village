@@ -124,7 +124,7 @@ export function openMarenWinterReportOverlay(onClose: (completed: boolean) => vo
   // --- Council Vault risk meter + DPIA badge -------------------------------
   const meterEl = el(
     "div",
-    { className: "meter", style: { position: "absolute", left: "660px", top: "195px", width: "260px", pointerEvents: "none" } },
+    { className: "meter", style: { width: "100%", pointerEvents: "none" } },
     [
       el("div", { className: "meter__label", text: "STORAGE RISK" }),
       el("div", { className: "meter__track" }, [el("div", { className: "meter__fill meter__fill--risk", style: { width: "0%" } })]),
@@ -134,7 +134,7 @@ export function openMarenWinterReportOverlay(onClose: (completed: boolean) => vo
   const dpiaBadgeEl = el("div", {
     className: "chip",
     text: "⚠ DPIA ALERT",
-    style: { position: "absolute", left: "660px", top: "165px", pointerEvents: "none", display: "none", background: "rgba(239, 71, 111, 0.18)", borderColor: "var(--accent-red)" },
+    style: { alignSelf: "flex-start", pointerEvents: "none", display: "none", background: "rgba(239, 71, 111, 0.18)", borderColor: "var(--accent-red)" },
   });
 
   function setRiskMeter(value: number) {
@@ -181,9 +181,36 @@ export function openMarenWinterReportOverlay(onClose: (completed: boolean) => vo
 
   // --- Vault contents label -------------------------------------------------
   const vaultContentsEl = el("div", {
-    style: { position: "absolute", left: "660px", top: "230px", width: "260px", fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)", pointerEvents: "none" },
+    style: { fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)", pointerEvents: "none" },
     text: "Stores: 74 raw patient records",
   });
+
+  // A single boxed status card — DPIA badge, risk meter, and vault
+  // contents stacked with real gaps inside one `.panel` — instead of three
+  // separate absolutely-positioned elements floating directly on the
+  // canvas. Those used to sit right on top of each other (near-zero gap
+  // between the badge and meter) and directly over the Vault node's top
+  // edge, reading as a jumbled mess blocking the diagram. Anchored below
+  // the Vault node (which the canvas has clear empty space for) instead of
+  // above it, where it would compete with the inspector panel.
+  const vaultBox = nodeBox(NODES.vault);
+  const vaultStatusEl = el(
+    "div",
+    {
+      className: "panel",
+      style: {
+        position: "absolute",
+        left: "660px",
+        top: `${vaultBox.top + vaultBox.height + 25}px`,
+        width: "260px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        pointerEvents: "none",
+      },
+    },
+    [dpiaBadgeEl, meterEl, vaultContentsEl],
+  );
 
   // --- Node rendering ----------------------------------------------------
   function nodeBox(pos: { x: number; y: number }) {
@@ -676,8 +703,7 @@ export function openMarenWinterReportOverlay(onClose: (completed: boolean) => vo
   });
   paletteEl.append(el("div", { text: "PALETTE", style: { fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.08em", color: "var(--accent-gold)" } }), paletteItemEl);
 
-  hudLayerEl.append(dpiaBadgeEl);
-  canvasEl.append(meterEl, vaultContentsEl, inspectorEl, slotEl, configPanelEl);
+  canvasEl.append(vaultStatusEl, inspectorEl, slotEl, configPanelEl);
   showNode("apothecary");
   showNode("vault");
   setInstructions("Inspecting the flow from the Apothecary to the Council Vault...");
