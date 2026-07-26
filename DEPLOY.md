@@ -300,6 +300,62 @@ no-op" pattern as sections E and F, so skipping this is harmless.
 
 ---
 
+## H. Optional: Auth email via Resend (Supabase custom SMTP)
+
+By default Supabase sends magic-link/signup emails through its own
+built-in mailer, which is rate-limited (a handful of emails per hour)
+and doesn't come from your own domain. Routing them through Resend
+instead lifts that limit and sends from `noreply@privacyvillage.org`.
+This is a **Supabase dashboard setting, not app code** — nothing in
+this repo needs to change for it to take effect, and section F's
+`signInWithOtp` call keeps working exactly as before.
+
+1. In Resend, make sure `privacyvillage.org` (or whatever domain you
+   send from) is a verified sending domain — same domain-verification
+   step as section E, reusable here.
+2. In Supabase, open your project → **Project Settings** → **Auth** →
+   **SMTP Settings**, and enable **Enable Custom SMTP**. Fill in:
+   - **Sender email**:
+     ```
+     noreply@privacyvillage.org
+     ```
+   - **Sender name**:
+     ```
+     Privacy Village
+     ```
+   - **Host**:
+     ```
+     smtp.resend.com
+     ```
+   - **Port**:
+     ```
+     465
+     ```
+   - **Username**:
+     ```
+     resend
+     ```
+   - **Password**: your Resend API key (the same key can be reused
+     from section E's `RESEND_API_KEY`, or use a separate key scoped
+     just to sending — either works).
+3. Click **Save**. Supabase's auth emails (magic link, signup
+   confirmation) now go out through Resend instead of Supabase's
+   built-in mailer — as a side effect, this also lifts Supabase's
+   default auth email rate limit, which matters once you're demoing to
+   more than one or two people at a time.
+4. Optional but recommended: while you're in the dashboard, go to
+   **Authentication** → **Email Templates** and paste in the Division-
+   voice templates from
+   [`supabase/email-templates/`](supabase/email-templates) — see that
+   folder's `README.md` for exactly which file goes in which template
+   slot.
+5. Send yourself a real magic link (submit an email on the title
+   screen, or re-trigger one from **Authentication** → **Users** →
+   your test user → **Send magic link**) and confirm it arrives from
+   `noreply@privacyvillage.org` rather than Supabase's default sender.
+
+---
+
 ## Verification checklist
 
 Run through these on the live URL (Vercel URL, or your custom domain if
@@ -341,6 +397,12 @@ you set one up) once everything above is deployed:
 - [ ] **Analytics is recording (if you set up section G).** Visit the
       live site, then check the Vercel project's **Analytics** tab a
       few minutes later — the visit should show up as a page view.
+- [ ] **Auth email arrives via Resend (if you set up section H).**
+      Trigger a real magic-link/signup email (title screen signup with
+      a new address, or **Authentication** → **Users** → an existing
+      test user → **Send magic link**) and confirm it arrives from
+      `noreply@privacyvillage.org` with the Division-voice template
+      styling — not Supabase's plain default look.
 - [ ] **"Just exploring" is untouched.** Reload the title screen and
       click **just exploring →** instead. You should land directly in
       avatar creation with an empty name field — no email prompt, no
