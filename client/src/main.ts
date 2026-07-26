@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { inject } from "@vercel/analytics";
 import "./style.css";
 import { GAME_WIDTH, GAME_HEIGHT } from "./config";
 import { initResponsiveScale } from "./scale";
@@ -9,6 +10,11 @@ import { CharacterCreate } from "./scenes/CharacterCreate";
 import { Room } from "./scenes/Room";
 import { UIOverlay } from "./scenes/UIOverlay";
 import { initAutoSave } from "./cloud/save";
+
+// No-ops outside a Vercel deployment (local dev, preview without the
+// Analytics add-on) — safe to call unconditionally, same convention as
+// initAutoSave() below.
+inject();
 
 initResponsiveScale();
 // Safe to call unconditionally — every listener it wires up no-ops for

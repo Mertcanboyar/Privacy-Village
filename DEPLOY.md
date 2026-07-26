@@ -280,6 +280,26 @@ to take effect, unlike the runtime Resend vars in step E.
 
 ---
 
+## G. Optional: Vercel Analytics
+
+Basic page-view analytics (`client/src/main.ts` calls `inject()` from
+`@vercel/analytics` unconditionally on every load) — no environment
+variables and no redeploy needed, but the dashboard shows nothing until
+you turn the feature on for the project.
+
+1. In Vercel, open your **privacy-village** project → **Analytics** tab.
+2. Click **Enable** (this project is small enough that Vercel's free
+   Hobby-plan analytics allowance is normally enough).
+3. That's it — the next real visit to the live site starts showing up
+   in the Analytics tab within a few minutes. No code changes, no env
+   vars, no redeploy.
+
+Without this step, `inject()` still runs on every page load but its
+requests to `/_vercel/insights/*` just get ignored — same "silent
+no-op" pattern as sections E and F, so skipping this is harmless.
+
+---
+
 ## Verification checklist
 
 Run through these on the live URL (Vercel URL, or your custom domain if
@@ -318,6 +338,9 @@ you set one up) once everything above is deployed:
       but you should still land in avatar creation with the name
       pre-filled, exactly as if it had worked. Restore the env var
       afterward.
+- [ ] **Analytics is recording (if you set up section G).** Visit the
+      live site, then check the Vercel project's **Analytics** tab a
+      few minutes later — the visit should show up as a page view.
 - [ ] **"Just exploring" is untouched.** Reload the title screen and
       click **just exploring →** instead. You should land directly in
       avatar creation with an empty name field — no email prompt, no
