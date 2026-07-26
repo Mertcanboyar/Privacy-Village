@@ -13,6 +13,7 @@ import { buildEmailCapturePanel } from "./cloud/emailCapturePanel";
 import { net } from "./net/NetClient";
 import { persistenceStatus, type PersistenceStatus } from "./cloud/persistenceStatus";
 import { lockUi, unlockUi } from "./cloud/uiLock";
+import { isMusicMuted, toggleMusic } from "./audio";
 
 // Persistent HUD (see PLAN.md Phase 2, Day 3) — .xp-bar, quest tracker,
 // and toast stack from design-system.css, wired to questEngine's events
@@ -137,6 +138,35 @@ export class HUDController {
       [this.levelBadgeEl, el("div", { className: "xp-bar__track" }, [this.xpFillEl]), this.xpValueEl],
     );
     root.appendChild(this.xpBarEl);
+
+    // --- Sound toggle (bottom-left, right of the XP bar) — mutes/unmutes
+    // the background music started from Title.ts (see audio.ts). ---
+    const soundBtnEl = el("button", {
+      className: "btn btn--ghost",
+      text: isMusicMuted() ? "\u{1F507}" : "\u{1F50A}",
+      style: {
+        width: "36px",
+        height: "36px",
+        padding: "0",
+        fontSize: "16px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      },
+      on: {
+        click: () => {
+          const muted = toggleMusic();
+          soundBtnEl.textContent = muted ? "\u{1F507}" : "\u{1F50A}";
+        },
+      },
+    });
+    root.appendChild(
+      el(
+        "div",
+        { className: "ds-root", style: { position: "absolute", left: "336px", bottom: "24px", pointerEvents: "auto" } },
+        [soundBtnEl],
+      ),
+    );
 
     // --- "Save your record" (bottom-left, above the XP bar) — guests
     // only, and only when persistence is actually configured at all

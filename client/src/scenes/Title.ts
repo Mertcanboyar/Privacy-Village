@@ -11,6 +11,7 @@ import { questEngine } from "../questEngine";
 import { academy } from "../academy";
 import { logPersistence } from "../cloud/log";
 import { withTimeout, HYDRATE_TIMEOUT_MS } from "../cloud/withTimeout";
+import { initMusic } from "../audio";
 
 // Title screen (see PLAN.md Phase 2, Day 1). DOM owns the interactive
 // chrome, same Phaser-world/DOM-UI split as everywhere else in this game.
@@ -42,6 +43,10 @@ export class Title extends Phaser.Scene {
   }
 
   create() {
+    // First real screen after Preload's loading bar — see audio.ts's
+    // initMusic() doc comment for why this only needs to run once.
+    initMusic(this);
+
     addDriftingBackground(this);
 
     this.overlayEl = el("div", {

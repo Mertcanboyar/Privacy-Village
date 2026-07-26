@@ -97,6 +97,15 @@ not the label") they're used as-is; only the filenames and in-game
 strings follow the Ironhorn/River Veil renames.
 Location: `client/public/assets/quest/{village_map_mission1,dossier_sorcerer,dossier_goblin,dossier_berserker}.jpeg`
 
+## Background music
+
+"Watermelon Beats — Medieval Folk Music" — a single looping ambient
+track, started once from `Title.ts` (see `audio.ts`'s `initMusic()`)
+and toggleable via the HUD's speaker-icon button. Source/license not
+confirmed — came from the user's Downloads folder, no marketplace/
+attribution metadata attached. **Verify licensing before any public
+release.** Location: `client/public/assets/audio/bgm.mp3`
+
 ## Character sprites — unused (Kenney, kept for possible future NPCs)
 
 **RPG Urban Pack** by Kenney (kenney.nl). 16×16 grid, 6 characters with
@@ -109,5 +118,6 @@ Location: `client/public/assets/sprites/rpg-urban-pack/`
 - Foreground occlusion PNGs per room (`{room}_fg.png`)
 - NPC spawns in room JSON (author via `/debug`, see [CLAUDE.md](CLAUDE.md))
 - UI pack (dialogue box, buttons, badge/medal icons)
-- Audio (ambient loop, footsteps, quest chime, badge fanfare)
+- Sound effects (footsteps, quest chime, badge fanfare) — background
+  music now exists, see "Background music" above
 - Ambient animation sprites (fountain, torch, birds, chimney smoke)

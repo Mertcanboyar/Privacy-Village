@@ -129,7 +129,11 @@ export class Preload extends Phaser.Scene {
       this.load.json(`room-data-${room}`, `assets/rooms/${room}.json`);
     }
 
-    // UI/audio/ambient sprites still pending (see PLAN.md section 2).
+    // Background music (see audio.ts's initMusic()) — started once from
+    // Title.ts, the first real screen after this loading bar.
+    this.load.audio("bgm", "assets/audio/bgm.mp3");
+
+    // UI/ambient sprites still pending (see PLAN.md section 2).
   }
 
   async create() {
