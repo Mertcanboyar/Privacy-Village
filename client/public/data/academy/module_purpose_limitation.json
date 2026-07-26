@@ -4,8 +4,91 @@
   "title": "The Purpose Test",
   "clearanceRequired": 4,
   "type": "lesson",
-  "theoryInDevelopment": true,
   "fieldWork": { "questId": "archivists_desk", "label": "The Archivist's Desk", "room": "courthouse", "ping": "quill" },
-  "lesson": [],
-  "quiz": []
+  "lesson": [
+    { "type": "heading", "text": "Data remembers why it was given." },
+    {
+      "type": "paragraph",
+      "text": "Purpose limitation is the principle that personal data collected for one reason may not simply be reused for another. Data must be gathered for purposes that are SPECIFIED, EXPLICIT, and LEGITIMATE — and not further used in ways INCOMPATIBLE with those. You spent an afternoon at Quill's desk applying exactly this: matching each request against the ledger's original purpose."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "THE PURPOSE MUST BE FIXED FIRST — You cannot judge a reuse without a clearly recorded ORIGINAL purpose. 'We collected it, so we may use it' is the error the principle exists to kill. The ledger — the record of why data was given — is the reference point for every later decision."
+    },
+    {
+      "type": "paragraph",
+      "text": "But purpose limitation is not a wall that forbids all reuse. The real question is COMPATIBILITY: is the new purpose closely enough related to the original that a reasonable person who gave the data would not be surprised? The law names factors to weigh this: the LINK between old and new purpose, the CONTEXT in which data was collected, the NATURE of the data (sensitive data raises the bar), the CONSEQUENCES for the person, and whether SAFEGUARDS (like anonymization) are applied."
+    },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "THREE OUTCOMES (the desk you worked):\nCOMPATIBLE → the reuse may proceed. (Announcing music is scheduling.)\nINCOMPATIBLE → it may NOT proceed on the old basis; it needs a fresh lawful basis or new consent. (Billing records repurposed for marketing.)\nCOMPATIBLE WITH SAFEGUARDS → permissible only once conditioned: anonymize/aggregate so no individual is exposed, or seek fresh consent. (Health visit counts for planning a well — but by district, never by name.)"
+    },
+    {
+      "type": "paragraph",
+      "text": "Two errors sit on either side, and a good archivist avoids both. SCOPE CREEP is reusing data for a convenient, incompatible new purpose (the Merchants' trick). But OVER-RESTRICTION is refusing a genuinely compatible use out of mere suspicion — that blocks legitimate work and, ironically, tempts people to collect fresh data they didn't need. Read the purpose, not your reflex."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "GOOD INTENTIONS ARE NOT THE TEST — The Tinkers meant well — better roads, a new well. Worthy aims do not make an incompatible purpose compatible. Compatibility is judged on the factors above, not on the virtue of the requester. A noble reuse of the wrong data still needs to ask afresh."
+    },
+    {
+      "type": "paragraph",
+      "text": "Purpose limitation is also why you MINIMISE and why you set RETENTION limits: if data may serve only its purpose, then once the purpose is served, the data has no reason to remain. Specify the purpose, honour it, and let everything else — extra fields, extra time, extra uses — fall away."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "Before you can decide whether a NEW use of data is allowed, what must you first establish?",
+      "choices": ["Whether the requester is trustworthy", "The ORIGINAL specified purpose", "Whether the data is encrypted"],
+      "answer": 1,
+      "explain": [
+        "Trustworthiness isn't the test — even a trusted requester can't licence an incompatible reuse, and an untrusted one can still ask for something genuinely compatible.",
+        "Correct — compatibility is measured against why the data was collected. No recorded purpose, no way to judge reuse — the ledger comes first.",
+        "Encryption protects data in transit or storage; it says nothing about whether a NEW use of it is compatible with why it was collected."
+      ]
+    },
+    {
+      "q": "Tavern tab records, collected to settle billing disputes, are requested to market hangover potions to heavy drinkers. Verdict?",
+      "choices": ["GRANT", "CONDITIONAL", "SEAL"],
+      "answer": 2,
+      "explain": [
+        "Granting this lets billing data become a marketing profile — exactly the harm purpose limitation exists to stop.",
+        "No safeguard fixes this — the problem isn't exposure risk, it's that marketing was never the purpose at all.",
+        "Correct — billing to marketing is a classic incompatible repurposing (scope creep). It needs a fresh lawful basis / consent, not the billing purpose stretched to cover it."
+      ]
+    },
+    {
+      "q": "A guild wants health-visit data to decide where to dig a new well — a genuinely useful, compatible aim. The data names patients. Best verdict?",
+      "choices": ["GRANT the raw data — the purpose is compatible", "CONDITIONAL: aggregate to district counts first", "SEAL — health data can never be reused"],
+      "answer": 1,
+      "explain": [
+        "The purpose being compatible doesn't clear raw, named health data — sensitive data raises the bar, and a safeguard is owed before it travels.",
+        "Correct — the purpose is compatible, but sensitive data raises the bar: condition it by anonymizing to counts so the good deed exposes no one. Neither blanket grant nor blanket refusal.",
+        "Health data isn't sealed forever — a compatible purpose plus the right safeguard lets it serve a new, worthy aim without exposing anyone."
+      ]
+    },
+    {
+      "q": "A request SOUNDS invasive — 'list who attended each performance' — but the ledger shows attendance was gathered to program the festival, and the use is to choose which acts to rebook. Verdict?",
+      "choices": ["SEAL — it sounds like surveillance", "GRANT — it matches the original programming purpose", "CONDITIONAL — always condition attendance data"],
+      "answer": 1,
+      "explain": [
+        "Sealing a compatible use out of reflex is OVER-RESTRICTION — the mirror error of scope creep. It blocks legitimate work for no real gain in protection.",
+        "Correct — compatibility is judged on the purpose, not on how sinister it feels. Attendance recorded to shape the programme, used to shape the programme — that's the same purpose.",
+        "Conditioning every request 'just in case' isn't free — it delays or degrades legitimate work that never needed a safeguard in the first place."
+      ]
+    },
+    {
+      "q": "The Tinkers' road-building request is refused despite being well-intentioned. Why doesn't the good cause make it compatible?",
+      "choices": ["The Tinkers are untrustworthy", "Compatibility is judged on the factors — link, context, consequences — not the requester's virtue", "Roads are always low priority"],
+      "answer": 1,
+      "explain": [
+        "Trust isn't the issue here — the Tinkers aren't accused of bad faith. The problem is the purpose itself, regardless of who's asking.",
+        "Correct — emergency crowd-control and civic planning are different purposes regardless of how worthy the second is. Good intentions don't convert an incompatible purpose; the villagers must be asked afresh.",
+        "Priority has nothing to do with it — even an urgent, important new purpose still needs its own lawful basis if it isn't compatible with the original one."
+      ]
+    }
+  ]
 }
