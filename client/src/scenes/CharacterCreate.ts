@@ -99,6 +99,11 @@ export class CharacterCreate extends Phaser.Scene {
         width: "220px",
       },
       on: {
+        // Without this, keydown here bubbles up to Phaser's window-level
+        // listener and this.eKey's global capture (see constructor)
+        // preventDefault()s it before the browser can type the letter —
+        // same fix as chat.ts's identical keydown handler.
+        keydown: (e) => e.stopPropagation(),
         input: (e) => {
           this.nameValue = (e.target as HTMLInputElement).value;
           this.updateConfirmState();

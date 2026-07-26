@@ -185,7 +185,14 @@ function renderForm(container: HTMLElement, opts: EmailCapturePanelOptions) {
       width: "260px",
     },
     on: {
+      // A focused DOM input doesn't stop keydown events from bubbling up
+      // to Phaser's window-level listeners on its own — without
+      // stopPropagation, typing here (e.g. "w"/"a"/"s"/"d") would both
+      // fail to type the letter and move the player underneath this
+      // panel, since Room.ts's WASD keys capture globally regardless of
+      // DOM focus (see chat.ts's identical keydown handler).
       keydown: (e) => {
+        e.stopPropagation();
         if ((e as KeyboardEvent).key === "Enter") submit();
       },
     },
