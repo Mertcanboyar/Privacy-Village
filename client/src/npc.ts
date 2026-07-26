@@ -807,11 +807,14 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
     {
       id: "mayor",
       name: "Mayor",
-      // Beside the throne, on the dais (great_hall_bg.png) — "The
-      // Treasury's Two Keys"'s giver, holding court where a Mayor
-      // actually would rather than loitering in the town square.
-      x: 935,
-      y: 350,
+      // Seated ON the throne itself (great_hall_bg.png), not standing
+      // beside it — "The Treasury's Two Keys"'s giver, holding court
+      // where a Mayor actually would rather than loitering in the town
+      // square. x/y is the throne seat's centered position; the idle
+      // sprite has no dedicated sitting pose, so this just overlaps the
+      // painted throne closely enough to read as occupying it.
+      x: 828,
+      y: 348,
       texture: "npc-mayor",
       // Real sprite: a 30-frame idle strip (414x567/frame, see
       // Preload.ts), cropped from a "Blacksmith" character pack.
