@@ -158,6 +158,9 @@ export function openArchivistsDeskOverlay(onClose: (completed: boolean) => void)
   let currentTicketCardEl: HTMLElement | null = null;
 
   const bodyEl = el("div", {});
+  const instructionsEl = el("div", {
+    style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)", textAlign: "center", marginTop: "var(--space-3)", minHeight: "16px" },
+  });
   const ticketCounterEl = el("div", { className: "briefing__case" });
   const factionXpEl = el("div", { style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" } });
   const integrityMeterEl = el(
@@ -186,6 +189,7 @@ export function openArchivistsDeskOverlay(onClose: (completed: boolean) => void)
       el("hr", { className: "briefing__divider" }),
       statusRowEl,
       bodyEl,
+      instructionsEl,
     ],
   );
 
@@ -214,6 +218,10 @@ export function openArchivistsDeskOverlay(onClose: (completed: boolean) => void)
 
   function updateFactionXp() {
     factionXpEl.textContent = `FACTION XP: ${factionXp}`;
+  }
+
+  function setInstructions(text: string) {
+    instructionsEl.textContent = text;
   }
 
   function continueButton(label: string, onClick: () => void): HTMLElement {
@@ -287,10 +295,18 @@ export function openArchivistsDeskOverlay(onClose: (completed: boolean) => void)
         continueButton(ticketIndex + 1 >= TICKETS.length ? "FILE THE LAST RECORD" : "NEXT TICKET", onContinue),
       );
       flashCorrect(cardEl);
+      setInstructions("");
       return;
     }
-    if (stage === "safeguard") bodyEl.append(safeguardButtonsRow(ticket));
-    else bodyEl.append(verdictButtonsRow());
+    if (stage === "safeguard") {
+      bodyEl.append(safeguardButtonsRow(ticket));
+      setInstructions("This purpose is compatible only WITH A SAFEGUARD — pick the one that actually removes the risk, not just any condition.");
+    } else {
+      bodyEl.append(verdictButtonsRow());
+      setInstructions(
+        "Compare the FACTION'S INTENT (left) to the ledger's ORIGINAL PURPOSE (right). Same or closely related → GRANT. Related, but only safe with a safeguard → CONDITIONAL. Unrelated → SEAL.",
+      );
+    }
   }
 
   function registerWrong(message: string) {
