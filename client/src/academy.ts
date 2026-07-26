@@ -32,6 +32,7 @@ export const ACADEMY_MODULE_IDS = [
   "secure_channels",
   "toms",
   "aggregation",
+  "purpose_limitation",
 ] as const;
 
 export interface AcademyModuleSummary {
@@ -97,8 +98,9 @@ export interface AcademyFieldWork {
    * hotspot ("courthouseDoor", used by "The 72-Hour Clock" — its field
    * work, "The Night the Wall Fell," auto-triggers on village entry
    * rather than being offered by any NPC, so there's no sprite to ping;
-   * "maren", used by "Shaping the Data"'s "Maren's Winter Report"). */
-  ping?: "herald" | "bram" | "mayor" | "courthouseDoor" | "maren";
+   * "maren", used by "Shaping the Data"'s "Maren's Winter Report"; "quill",
+   * used by "The Purpose Test"'s "The Archivist's Desk"). */
+  ping?: "herald" | "bram" | "mayor" | "courthouseDoor" | "maren" | "quill";
 }
 
 interface AcademyModuleBase {

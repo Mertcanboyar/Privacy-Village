@@ -10,6 +10,7 @@ import { openBlueprintOverlay } from "./ui/blueprintOverlay";
 import { openSealedLetterOverlay } from "./ui/sealedLetterOverlay";
 import { openTreasuryOverlay } from "./ui/treasuryOverlay";
 import { openMarenWinterReportOverlay } from "./ui/marenWinterReportOverlay";
+import { openArchivistsDeskOverlay } from "./ui/archivistsDeskOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine, type MilestoneId } from "./questEngine";
 import { playSound, playBlip } from "./audio";
@@ -20,6 +21,7 @@ import { postRoadBuilderState } from "./postRoadBuilderState";
 import { sealedLetterState } from "./sealedLetterState";
 import { treasuryKeysState } from "./treasuryKeysState";
 import { marenWinterReportState } from "./marenWinterReportState";
+import { archivistsDeskState } from "./archivistsDeskState";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
 // dialogue box (see PLAN.md Days 11-12, Phase 2 Days 2-3). Not
@@ -759,6 +761,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       texture: "npc-quill",
       baseScale: loreNpcBaseScale("quill"),
       idleAnim: "npc-quill-idle",
+      // "The Archivist's Desk" — judging the factions' data requests is
+      // literally Quill's job, so he's the natural giver (see open()'s
+      // special-case block below for the full-screen ticket queue).
+      questGiver: "archivists_desk",
       dialogue: [
         {
           if: { questComplete: "night_the_wall_fell" },
@@ -799,6 +805,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
               response: "And if the count takes a week? Silence past the seventy-second hour is the violation — incompleteness is not. We file NOW.",
             },
           ],
+        },
+        {
+          if: { questComplete: "archivists_desk" },
+          lines: ["Six requests, six rulings, and the ledger still balances. The factions grumble, Agent — but they grumble at ME, not at each other. That's the job."],
         },
         { lines: ["Forty-six Trials, Agent. The tome on the desk once held one — the Academy holds all of them now."] },
       ],
@@ -1229,6 +1239,18 @@ export class NPCController {
     scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
   }
 
+  // One-shot flash on Quill, same technique as pingHerald()/pingBram()/
+  // pingMayor()/pingMaren() — used by the Academy's "IN THE COURTHOUSE →"
+  // pip for "The Purpose Test"'s "The Archivist's Desk" (see academy.ts's
+  // AcademyFieldWork.ping). No ambient pulse exists for Quill yet — this
+  // is the only visual cue pointing back to him.
+  pingQuill(scene: Phaser.Scene) {
+    const quill = this.npcs.find((n) => n.def.id === "quill");
+    if (!quill) return;
+    const g = scene.add.circle(quill.image.x, quill.image.y - 20, 10, 0xf0b429, 0.9).setDepth(quill.image.y + 1);
+    scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
+  }
+
   // "The Night the Wall Fell"'s opening beat — Bram slides straight to
   // the player (no pathfinding, just a tween) rather than the player
   // needing to hunt him down mid-alarm. Only tweens the sprite — never
@@ -1402,6 +1424,14 @@ export class NPCController {
     // minigames in this file.
     if (def.id === "maren" && questEngine.isActive("maren_winter_report")) {
       this.openMarenWinterReport();
+      return;
+    }
+
+    // "The Archivist's Desk" — one continuous full-screen overlay, same
+    // "no partial resume" simplification as every other full-screen
+    // minigame in this file.
+    if (def.id === "quill" && questEngine.isActive("archivists_desk")) {
+      this.openArchivistsDesk();
       return;
     }
 
@@ -1701,6 +1731,21 @@ export class NPCController {
         questEngine.toast("COMMENDATION — The pipeline built clean on the first run.");
       }
       questEngine.notifyReachZone("maren_winter_report_complete");
+    });
+  }
+
+  // "The Archivist's Desk" — same "no partial resume" simplification.
+  private openArchivistsDesk() {
+    this.mode = "minigame";
+    openArchivistsDeskOverlay((completed) => {
+      this.mode = "closed";
+      if (!completed) return;
+      const { perTicketVerdicts, integrityLost, safeguardChoices } = archivistsDeskState;
+      logDecision("archivists_desk", { perTicketVerdicts, integrityLost, safeguardChoices });
+      if (integrityLost === 0) {
+        questEngine.toast("COMMENDATION — Every verdict true to the ledger.");
+      }
+      questEngine.notifyReachZone("archivists_desk_complete");
     });
   }
 

@@ -1,0 +1,11 @@
+{
+  "id": "purpose_limitation",
+  "track": "privacy_ops",
+  "title": "The Purpose Test",
+  "clearanceRequired": 4,
+  "type": "lesson",
+  "theoryInDevelopment": true,
+  "fieldWork": { "questId": "archivists_desk", "label": "The Archivist's Desk", "room": "courthouse", "ping": "quill" },
+  "lesson": [],
+  "quiz": []
+}

@@ -37,11 +37,12 @@ const CLOCK_RED_AT = 72;
 // every payout in the village demo path: Welcome 50 + Breach M1 150 +
 // Breach M2 150 + Shards M1 150 + Shards M2 150 + Night the Wall Fell
 // 200 + Healer's Ledger 200 + Post Road Blueprint 250 + The Sealed
-// Letter 250 + The Treasury's Two Keys 300 + Maren's Winter Report 250.
+// Letter 250 + The Treasury's Two Keys 300 + Maren's Winter Report 250
+// + The Archivist's Desk 250.
 // (The Courthouse Trial's 400 used to be part of this — its content
 // moved to the Academy, a parallel points source with its own
 // per-track credential bars, not counted here.)
-const TOTAL_POINTS = 2100;
+const TOTAL_POINTS = 2350;
 
 function factionAccent(): string {
   return getSession().faction === "apocalypse" ? "var(--accent-red)" : "var(--accent-gold)";
