@@ -94,6 +94,28 @@ export function openHealersLedgerSort(onClose: (completed: boolean) => void) {
   );
   const zonesRowEl = el("div", { style: { display: "flex", gap: "16px", marginTop: "var(--space-3)" } }, [standardZoneEl, sensitiveZoneEl]);
 
+  // A separate inner wrapper for the shake animation — flashRed() below
+  // sets `transform: translateX(...)` via ds-shake, which would otherwise
+  // clobber this panel's own centering `transform: translate(-50%, -50%)`
+  // (CSS animations replace the whole transform property, not just the
+  // part they animate) and fling the panel toward the bottom-right corner
+  // of the screen. Shaking this inner div instead leaves the outer panel's
+  // centering transform untouched.
+  const contentEl = el("div", {}, [
+    el("div", { className: "briefing__header" }, [
+      el("span", { className: "briefing__case", text: "MISSION 1" }),
+      el("h2", { className: "briefing__title", text: "Sort the Ledger" }),
+    ]),
+    el("hr", { className: "briefing__divider" }),
+    el("p", {
+      className: "briefing__body",
+      text: "Drag every entry from the ledger into the chest it belongs in. Ordinary details go in the open trunk — anything that could end a marriage, a guild membership, or a life goes behind the lock.",
+    }),
+    trayEl,
+    zonesRowEl,
+    progressEl,
+  ]);
+
   const panelEl = el(
     "div",
     {
@@ -107,20 +129,7 @@ export function openHealersLedgerSort(onClose: (completed: boolean) => void) {
         pointerEvents: "auto",
       },
     },
-    [
-      el("div", { className: "briefing__header" }, [
-        el("span", { className: "briefing__case", text: "MISSION 1" }),
-        el("h2", { className: "briefing__title", text: "Sort the Ledger" }),
-      ]),
-      el("hr", { className: "briefing__divider" }),
-      el("p", {
-        className: "briefing__body",
-        text: "Drag every entry from the ledger into the chest it belongs in. Ordinary details go in the open trunk — anything that could end a marriage, a guild membership, or a life goes behind the lock.",
-      }),
-      trayEl,
-      zonesRowEl,
-      progressEl,
-    ],
+    [contentEl],
   );
 
   const wrapper = el("div", {
@@ -174,14 +183,36 @@ export function openHealersLedgerSort(onClose: (completed: boolean) => void) {
     });
 
     let dragging = false;
+    // Dragging a separate ghost (appended to panelEl, same technique as
+    // treasuryOverlay.ts/blueprintOverlay.ts) rather than the tray card
+    // itself: switching the real card to position:absolute removes it from
+    // the flex-wrap flow, which can collapse a wrapped row and shrink the
+    // tray — and since this panel is centered via
+    // transform:translate(-50%,-50%), a shrinking panel's top edge visibly
+    // slides down mid-drag. Hiding the original in place (footprint intact)
+    // and dragging a ghost instead means the tray's layout never changes
+    // until the card is actually dropped.
+    let ghostEl: HTMLElement | null = null;
+    let grabOffsetX = 0;
+    let grabOffsetY = 0;
+
+    function moveGhost(clientX: number, clientY: number) {
+      if (!ghostEl) return;
+      const panelRect = panelEl.getBoundingClientRect();
+      const scale = currentScale();
+      ghostEl.style.left = `${(clientX - panelRect.left) / scale - grabOffsetX}px`;
+      ghostEl.style.top = `${(clientY - panelRect.top) / scale - grabOffsetY}px`;
+    }
 
     const endDrag = (clientX: number, clientY: number, pointerId: number) => {
       dragging = false;
       if (cardEl.hasPointerCapture(pointerId)) cardEl.releasePointerCapture(pointerId);
+      ghostEl?.remove();
+      ghostEl = null;
       highlightZone(null);
       const zone = zoneAt(clientX, clientY);
       if (!zone) {
-        resetCardPosition();
+        cardEl.style.visibility = "visible";
         return;
       }
       if (zone === shard.category) {
@@ -197,27 +228,31 @@ export function openHealersLedgerSort(onClose: (completed: boolean) => void) {
         healersLedgerState.breachCount++;
         playSound("alarm-bell");
         flashScreenRed();
-        flashRed(panelEl);
+        flashRed(contentEl);
         questEngine.toast(`DATA BREACH — "${shard.label}" left in the open ledger. The eastern merchant reads it and smiles.`);
       } else {
         healersLedgerState.overClassifyCount++;
         questEngine.toast(`Over-classification, Agent. Lock everything and you protect nothing well. "${shard.label}" is ordinary.`);
       }
-      resetCardPosition();
+      cardEl.style.visibility = "visible";
     };
-
-    function resetCardPosition() {
-      cardEl.style.position = "static";
-      cardEl.style.left = "";
-      cardEl.style.top = "";
-      cardEl.style.zIndex = "";
-    }
 
     cardEl.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       dragging = true;
       cardEl.setPointerCapture(e.pointerId);
-      cardEl.style.zIndex = "10";
+      const cardRect = cardEl.getBoundingClientRect();
+      const scale = currentScale();
+      grabOffsetX = (e.clientX - cardRect.left) / scale;
+      grabOffsetY = (e.clientY - cardRect.top) / scale;
+      cardEl.style.visibility = "hidden";
+      ghostEl = el("div", {
+        className: "drag-card",
+        text: shard.label,
+        style: { position: "absolute", width: "190px", fontSize: "13px", padding: "10px", zIndex: "10", pointerEvents: "none" },
+      });
+      panelEl.appendChild(ghostEl);
+      moveGhost(e.clientX, e.clientY);
     });
     cardEl.addEventListener("pointermove", (e) => {
       if (!dragging) return;
@@ -227,11 +262,7 @@ export function openHealersLedgerSort(onClose: (completed: boolean) => void) {
         endDrag(e.clientX, e.clientY, e.pointerId);
         return;
       }
-      const panelRect = panelEl.getBoundingClientRect();
-      const scale = currentScale();
-      cardEl.style.position = "absolute";
-      cardEl.style.left = `${(e.clientX - panelRect.left) / scale}px`;
-      cardEl.style.top = `${(e.clientY - panelRect.top) / scale}px`;
+      moveGhost(e.clientX, e.clientY);
       highlightZone(zoneAt(e.clientX, e.clientY));
     });
     cardEl.addEventListener("pointerup", (e) => {
@@ -241,8 +272,10 @@ export function openHealersLedgerSort(onClose: (completed: boolean) => void) {
     cardEl.addEventListener("pointercancel", () => {
       if (!dragging) return;
       dragging = false;
+      ghostEl?.remove();
+      ghostEl = null;
       highlightZone(null);
-      resetCardPosition();
+      cardEl.style.visibility = "visible";
     });
 
     return cardEl;
