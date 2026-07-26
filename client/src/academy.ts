@@ -31,6 +31,7 @@ export const ACADEMY_MODULE_IDS = [
   "data_flow_mapping",
   "secure_channels",
   "toms",
+  "aggregation",
 ] as const;
 
 export interface AcademyModuleSummary {
@@ -95,8 +96,9 @@ export interface AcademyFieldWork {
    * that Interlock"'s "The Treasury's Two Keys") or the Courthouse door
    * hotspot ("courthouseDoor", used by "The 72-Hour Clock" — its field
    * work, "The Night the Wall Fell," auto-triggers on village entry
-   * rather than being offered by any NPC, so there's no sprite to ping). */
-  ping?: "herald" | "bram" | "mayor" | "courthouseDoor";
+   * rather than being offered by any NPC, so there's no sprite to ping;
+   * "maren", used by "Shaping the Data"'s "Maren's Winter Report"). */
+  ping?: "herald" | "bram" | "mayor" | "courthouseDoor" | "maren";
 }
 
 interface AcademyModuleBase {

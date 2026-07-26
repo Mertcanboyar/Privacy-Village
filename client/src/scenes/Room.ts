@@ -151,6 +151,12 @@ export class Room extends Phaser.Scene {
     this.npcController.pingMayor(this);
   }
 
+  // Same technique, anchored to Maren — "Maren's Winter Report"'s giver
+  // (see academy.ts's AcademyFieldWork.ping).
+  pingMaren() {
+    this.npcController.pingMaren(this);
+  }
+
   // One-shot flash on the Village Square's door hotspot leading to the
   // Courthouse — same technique as pingHerald(), just anchored to a door
   // hotspot's coordinates instead of an NPC sprite (see academy.ts's

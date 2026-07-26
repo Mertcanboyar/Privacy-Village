@@ -9,6 +9,7 @@ import { openHealersLedgerLock } from "./ui/ledgerLockOverlay";
 import { openBlueprintOverlay } from "./ui/blueprintOverlay";
 import { openSealedLetterOverlay } from "./ui/sealedLetterOverlay";
 import { openTreasuryOverlay } from "./ui/treasuryOverlay";
+import { openMarenWinterReportOverlay } from "./ui/marenWinterReportOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine, type MilestoneId } from "./questEngine";
 import { playSound, playBlip } from "./audio";
@@ -18,6 +19,7 @@ import { postRoadFieldNotes } from "./postRoadFieldNotes";
 import { postRoadBuilderState } from "./postRoadBuilderState";
 import { sealedLetterState } from "./sealedLetterState";
 import { treasuryKeysState } from "./treasuryKeysState";
+import { marenWinterReportState } from "./marenWinterReportState";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
 // dialogue box (see PLAN.md Days 11-12, Phase 2 Days 2-3). Not
@@ -724,17 +726,26 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       baseScale: 75 / 461,
       idleAnim: "npc-maren-idle",
       fallbackTexture: { key: "npc-knight", expectedPath: "client/public/assets/npc/healer/maren.png" },
-      questGiver: "healers_ledger",
+      // "Maren's Winter Report" is a direct sequel to "The Healer's
+      // Ledger" — same NPC, second quest. See open()'s giverQuestIds
+      // resolution (Bram's post_road_blueprint/sealed_letter pair set
+      // this precedent).
+      questGiver: ["healers_ledger", "maren_winter_report"],
       dialogue: [
+        {
+          if: { questComplete: "maren_winter_report" },
+          lines: ["The Council gets their numbers. And no villager's name ever leaves my desk. Why did I never think to count BEFORE I sent?"],
+        },
         {
           if: { questComplete: "healers_ledger" },
           lines: ["The chest holds tight, Agent. My apprentices grumble about the key, but grumbling I can live with."],
         },
-        // Everything else about her interaction while the quest is
+        // Everything else about her interaction while a quest is
         // active-but-unresolved is handled by NPCController.open()'s
-        // special case (the sorting board and lock puzzle are full-
-        // screen mini-games, not compact dialogue) — this fallback only
-        // ever shows before Clearance 3 unlocks the quest offer.
+        // special case (the sorting board/lock puzzle and the report
+        // pipeline are full-screen mini-games, not compact dialogue) —
+        // this fallback only ever shows before Clearance 3 unlocks the
+        // first quest offer.
         { lines: ["Odile lets me keep a corner. Says my patients drink more after bad news."] },
       ],
     },
@@ -1206,6 +1217,18 @@ export class NPCController {
     scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
   }
 
+  // One-shot flash on Maren, same technique as pingHerald()/pingBram()/
+  // pingMayor() — used by the Academy's "IN THE TAVERN →" pip for
+  // "Shaping the Data" (see academy.ts's AcademyFieldWork.ping). She
+  // already has an ambient refreshMarenPulse() from "The Healer's
+  // Ledger" above; this is just the one-shot on-demand flash.
+  pingMaren(scene: Phaser.Scene) {
+    const maren = this.npcs.find((n) => n.def.id === "maren");
+    if (!maren) return;
+    const g = scene.add.circle(maren.image.x, maren.image.y - 20, 10, 0xf0b429, 0.9).setDepth(maren.image.y + 1);
+    scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
+  }
+
   // "The Night the Wall Fell"'s opening beat — Bram slides straight to
   // the player (no pathfinding, just a tween) rather than the player
   // needing to hunt him down mid-alarm. Only tweens the sprite — never
@@ -1371,6 +1394,14 @@ export class NPCController {
         // player stuck in "minigame" mode with nothing open if it does.
         this.mode = "closed";
       }
+      return;
+    }
+
+    // "Maren's Winter Report" — one continuous full-screen overlay, same
+    // "no partial resume" simplification as the other full-screen
+    // minigames in this file.
+    if (def.id === "maren" && questEngine.isActive("maren_winter_report")) {
+      this.openMarenWinterReport();
       return;
     }
 
@@ -1655,6 +1686,21 @@ export class NPCController {
         questEngine.toast("COMMENDATION — You built it interlocked on the first true try.");
       }
       questEngine.notifyReachZone("treasury_two_keys_complete");
+    });
+  }
+
+  // "Maren's Winter Report" — same "no partial resume" simplification.
+  private openMarenWinterReport() {
+    this.mode = "minigame";
+    openMarenWinterReportOverlay((completed) => {
+      this.mode = "closed";
+      if (!completed) return;
+      const { chosenConfig, overStripAttempts, riskMeterPeak, resetCount } = marenWinterReportState;
+      logDecision("maren_winter_report", { chosenConfig, overStripAttempts, riskMeterPeak, resetCount });
+      if (overStripAttempts === 0 && resetCount <= 1) {
+        questEngine.toast("COMMENDATION — The pipeline built clean on the first run.");
+      }
+      questEngine.notifyReachZone("maren_winter_report_complete");
     });
   }
 

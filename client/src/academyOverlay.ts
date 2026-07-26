@@ -329,6 +329,7 @@ export class AcademyOverlay {
       else if (fieldWork.room === "village" && ping === "bram") roomScene.pingBram();
       else if (fieldWork.room === "great_hall" && ping === "mayor") roomScene.pingMayor();
       else if (fieldWork.room === "village" && ping === "courthouseDoor") roomScene.pingCourthouseDoor();
+      else if (fieldWork.room === "tavern" && ping === "maren") roomScene.pingMaren();
     } else {
       manager.start("Room", { room: fieldWork.room, pingCourthouseDoor: fieldWork.room === "village" && ping === "courthouseDoor" });
     }

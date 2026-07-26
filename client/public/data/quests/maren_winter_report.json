@@ -1,0 +1,18 @@
+{
+  "id": "maren_winter_report",
+  "title": "Maren's Winter Report",
+  "giver": "maren",
+  "xp": 250,
+  "offer": "Agent, the Council is planning the winter medicine budget. They asked me which ailments are most common. So I... sent them my logs. All of them. Names, streets, every illness by every hearth.",
+  "opener": "HERALD — You sent the Council a map of every sick villager by name and address — to answer 'how much cough syrup to buy.' Maren. They needed a COUNT. You gave them a CONFESSION. Agent — fix the pipeline before winter.",
+  "nextHint": "Find Maren in the Tavern",
+  "debrief": "Shape data at the source: aggregate what serves the purpose, drop what only creates risk. Minimize by transforming, not just by cutting.",
+  "milestone": "maren_winter_report",
+  "unlockAtClearance": 5,
+  "steps": [
+    {
+      "objective": "Rebuild the Council's health-report pipeline",
+      "trigger": { "type": "reach_zone", "zone": "maren_winter_report_complete" }
+    }
+  ]
+}
