@@ -42,7 +42,15 @@ export class Title extends Phaser.Scene {
     super("Title");
   }
 
-  create() {
+  // `skipAutoContinue` — set by the HUD's "Return to Title Screen" menu
+  // action (see hud.ts) so this genuinely shows the welcome panel
+  // instead of boot()'s normal behavior of silently re-entering Room
+  // for anyone with a still-valid Supabase session. Sign-out is a
+  // separate, more drastic HUD action (see hud.ts) that clears the
+  // session first and reloads the page instead of using this flag —
+  // this flag alone does NOT sign the player out, it just skips the
+  // auto-continue check for this one entry.
+  create(data?: { skipAutoContinue?: boolean }) {
     // First real screen after Preload's loading bar — see audio.ts's
     // initMusic() doc comment for why this only needs to run once.
     initMusic(this);
@@ -69,6 +77,10 @@ export class Title extends Phaser.Scene {
     // never lingers over later scenes.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.overlayEl.remove());
 
+    if (data?.skipAutoContinue) {
+      this.renderPanel(this.buildWelcomePanel());
+      return;
+    }
     this.boot();
   }
 

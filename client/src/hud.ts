@@ -7,7 +7,7 @@ import { getSession } from "./session";
 import { academy } from "./academy";
 import { events } from "./events";
 import { supabase } from "./cloud/supabaseClient";
-import { isAuthenticated, hasPendingOtpRequest } from "./cloud/authState";
+import { isAuthenticated, hasPendingOtpRequest, setCurrentUserId } from "./cloud/authState";
 import { savePendingUpgrade } from "./cloud/pendingUpgrade";
 import { buildEmailCapturePanel } from "./cloud/emailCapturePanel";
 import { net } from "./net/NetClient";
@@ -71,10 +71,27 @@ export class HUDController {
   private netDotEl: HTMLElement;
   private persistDotEl: HTMLElement;
 
+  private menuEl: HTMLElement;
+  private menuBtnEl: HTMLElement;
+  private menuMusicItemEl: HTMLElement;
+  private menuOpen = false;
+
   constructor(scene: Phaser.Scene) {
     const root = document.getElementById("ui-root")!;
 
-    // --- Top bar: Academy + Events buttons (top-left, always visible) ---
+    // Single wrapper for all of this HUD's persistent DOM (as opposed to
+    // the transient popups further below — reveal/step-choice panels,
+    // the save-record modal, the XP-delta/level-up flashes — which are
+    // already self-contained and self-removing on their own). Nothing
+    // ever stopped UIOverlay before "Return to Title Screen" needed to,
+    // so there was never a cleanup path for this DOM — this wrapper plus
+    // the SHUTDOWN listener below is that path, mirroring Title.ts's own
+    // overlayEl/SHUTDOWN pattern.
+    const hudRootEl = el("div", { className: "ds-root", style: { position: "absolute", inset: "0", pointerEvents: "none" } });
+    root.appendChild(hudRootEl);
+
+    // --- Top bar: Academy + Events + Menu buttons (top-left, always
+    // visible) ---
     // pointerEvents:"auto" on the row is load-bearing: #ui-root sets
     // pointer-events:none (see style.css) so any child is invisible to a
     // real mouse click unless something in its ancestry opts back in —
@@ -91,12 +108,93 @@ export class HUDController {
       text: "\u{1F3AC} EVENTS",
       on: { click: () => events.toggle() },
     });
+    this.menuBtnEl = el("button", {
+      className: "btn btn--ghost",
+      text: "☰ MENU",
+      on: { click: () => this.toggleMenu() },
+    });
     const topBarEl = el(
       "div",
       { className: "ds-root", style: { position: "absolute", top: "24px", left: "24px", display: "flex", gap: "12px", pointerEvents: "auto" } },
-      [academyBtnEl, eventsBtnEl],
+      [academyBtnEl, eventsBtnEl, this.menuBtnEl],
     );
-    root.appendChild(topBarEl);
+    hudRootEl.appendChild(topBarEl);
+
+    // --- User menu dropdown (below the top bar) — Return to Title,
+    // Music toggle, and (guests excluded) Sign Out. Same JS-driven
+    // style.display toggle as the quest tracker below, rather than a new
+    // manager-singleton class — this is HUD-local state, nothing else
+    // needs to know it's open. ---
+    this.menuMusicItemEl = el("button", {
+      className: "btn btn--ghost",
+      text: isMusicMuted() ? "\u{1F507} MUSIC: OFF" : "\u{1F50A} MUSIC: ON",
+      style: { width: "100%", textAlign: "left" },
+      on: {
+        click: () => {
+          const muted = toggleMusic();
+          this.menuMusicItemEl.textContent = muted ? "\u{1F507} MUSIC: OFF" : "\u{1F50A} MUSIC: ON";
+        },
+      },
+    });
+    const returnToTitleItemEl = el("button", {
+      className: "btn btn--ghost",
+      text: "\u{1F6AA} RETURN TO TITLE SCREEN",
+      style: { width: "100%", textAlign: "left" },
+      on: {
+        click: () => {
+          this.closeMenu();
+          net.disconnect();
+          scene.scene.stop("Room");
+          scene.scene.stop("UIOverlay");
+          scene.scene.manager.start("Title", { skipAutoContinue: true });
+        },
+      },
+    });
+    const menuItems = [returnToTitleItemEl, this.menuMusicItemEl];
+    if (supabase && isAuthenticated()) {
+      menuItems.push(
+        el("button", {
+          className: "btn btn--ghost",
+          text: "\u{1F512} SIGN OUT",
+          style: { width: "100%", textAlign: "left" },
+          on: {
+            click: async () => {
+              this.closeMenu();
+              net.disconnect();
+              if (supabase) await supabase.auth.signOut();
+              setCurrentUserId(null);
+              window.location.reload();
+            },
+          },
+        }),
+      );
+    }
+    this.menuEl = el(
+      "div",
+      {
+        className: "panel ds-root",
+        style: { position: "absolute", top: "112px", left: "24px", width: "240px", display: "none", pointerEvents: "auto", flexDirection: "column", gap: "8px" },
+      },
+      menuItems,
+    );
+    hudRootEl.appendChild(this.menuEl);
+
+    const onDocClick = (e: MouseEvent) => {
+      if (!this.menuOpen) return;
+      if (e.target instanceof Node && (this.menuEl.contains(e.target) || this.menuBtnEl.contains(e.target))) return;
+      this.closeMenu();
+    };
+    const onDocKeydown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && this.menuOpen) this.closeMenu();
+    };
+    document.addEventListener("click", onDocClick);
+    document.addEventListener("keydown", onDocKeydown);
+
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      hudRootEl.remove();
+      document.removeEventListener("click", onDocClick);
+      document.removeEventListener("keydown", onDocKeydown);
+    });
 
     // --- Status dots (top-left, below Academy/Events) — diagnostic only,
     // never gate anything. MP = multiplayer connection (net/NetClient.ts,
@@ -121,7 +219,7 @@ export class HUDController {
         el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [this.persistDotEl, statusLabel("ACCT")]),
       ],
     );
-    root.appendChild(statusRowEl);
+    hudRootEl.appendChild(statusRowEl);
 
     net.onStatusChange(() => this.refreshNetDot());
     this.refreshNetDot();
@@ -137,36 +235,7 @@ export class HUDController {
       { className: "xp-bar ds-root", style: { position: "absolute", left: "24px", bottom: "24px", width: "300px" } },
       [this.levelBadgeEl, el("div", { className: "xp-bar__track" }, [this.xpFillEl]), this.xpValueEl],
     );
-    root.appendChild(this.xpBarEl);
-
-    // --- Sound toggle (bottom-left, right of the XP bar) — mutes/unmutes
-    // the background music started from Title.ts (see audio.ts). ---
-    const soundBtnEl = el("button", {
-      className: "btn btn--ghost",
-      text: isMusicMuted() ? "\u{1F507}" : "\u{1F50A}",
-      style: {
-        width: "36px",
-        height: "36px",
-        padding: "0",
-        fontSize: "16px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      },
-      on: {
-        click: () => {
-          const muted = toggleMusic();
-          soundBtnEl.textContent = muted ? "\u{1F507}" : "\u{1F50A}";
-        },
-      },
-    });
-    root.appendChild(
-      el(
-        "div",
-        { className: "ds-root", style: { position: "absolute", left: "336px", bottom: "24px", pointerEvents: "auto" } },
-        [soundBtnEl],
-      ),
-    );
+    hudRootEl.appendChild(this.xpBarEl);
 
     // --- "Save your record" (bottom-left, above the XP bar) — guests
     // only, and only when persistence is actually configured at all
@@ -188,7 +257,7 @@ export class HUDController {
         style: { fontSize: "11px", padding: "8px 12px" },
         on: { click: () => this.openSaveRecordModal() },
       });
-      root.appendChild(
+      hudRootEl.appendChild(
         el(
           "div",
           { className: "ds-root", style: { position: "absolute", left: "24px", bottom: "56px", pointerEvents: "auto" } },
@@ -214,7 +283,7 @@ export class HUDController {
       { className: "panel ds-root", style: { position: "absolute", top: "24px", right: "24px", width: "280px", display: "none", pointerEvents: "auto" } },
       [this.trackerTitleEl, this.trackerObjectiveEl, this.trackerEvidenceRowEl, this.trackerCounterEl],
     );
-    root.appendChild(this.trackerEl);
+    hudRootEl.appendChild(this.trackerEl);
 
     // --- Decision Clock (top-center, only while "The Night the Wall
     // Fell" is active) ---
@@ -239,14 +308,14 @@ export class HUDController {
       },
       [this.clockValueEl],
     );
-    root.appendChild(this.clockEl);
+    hudRootEl.appendChild(this.clockEl);
 
     // --- Toast stack (bottom-right) ---
     this.toastStackEl = el("div", {
       className: "ds-root",
       style: { position: "absolute", right: "24px", bottom: "24px", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" },
     });
-    root.appendChild(this.toastStackEl);
+    hudRootEl.appendChild(this.toastStackEl);
 
     this.qKey = scene.input.keyboard!.addKey("Q");
 
@@ -276,6 +345,16 @@ export class HUDController {
       this.trackerVisible = !this.trackerVisible;
       this.refreshTracker();
     }
+  }
+
+  private toggleMenu() {
+    this.menuOpen = !this.menuOpen;
+    this.menuEl.style.display = this.menuOpen ? "flex" : "none";
+  }
+
+  private closeMenu() {
+    this.menuOpen = false;
+    this.menuEl.style.display = "none";
   }
 
   private refreshXpBar() {
