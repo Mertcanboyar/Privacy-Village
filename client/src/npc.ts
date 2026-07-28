@@ -157,13 +157,15 @@ interface DialogueSet {
    * exclusive with evidenceTables. */
   evidence?: EvidenceRef;
   evidenceTables?: EvidenceTableRef;
-  /** Shows an image inline above the body text on one specific page of
-   * a `briefing` set (`atLine` is a `lines` index) — Mission 1's evidence
-   * page shows the Stronghold Defense Grid map inline instead of the
-   * gate list starting with a plain text header. Separate from
-   * `evidence`, which is a button opening a full-screen zoomable
-   * overlay; both can be set on the same DialogueSet. */
-  lineImage?: { atLine: number; src: string; alt: string };
+  /** Shows one or more images inline, in a row, above the body text on
+   * one specific page of a `briefing` set (`atLine` is a `lines` index)
+   * — Mission 1's evidence page shows the Stronghold Defense Grid map
+   * (one image) inline instead of the gate list starting with a plain
+   * text header; Mission 2's shows the three attacker dossiers side by
+   * side instead of naming them in text. Separate from `evidence`,
+   * which is a button opening a full-screen zoomable overlay of the
+   * same images; both can be set on the same DialogueSet. */
+  lineImages?: { atLine: number; images: EvidenceImage[] };
   /** Render every choice as .btn--ghost (no "recommended" gold pick) —
    * for genuine multiple-choice quizzes where all options are live. */
   ghostChoices?: boolean;
@@ -267,8 +269,7 @@ The West Gate sits atop the treacherous "Cliff of Crows."
 — A Troll is too heavy; the cliff ledge would crumble.
 
 To build a valid Threat Model, we must map the Attacker's Capabilities to the System's Vulnerabilities.`,
-  `💾 THE EVIDENCE: THE SHADOWNET DOSSIER
-My scouts have intercepted a missive from the enemy camp. Three lieutenants have volunteered for the mission. Analyze their character sheets to see who has the right stats for the job.
+  `My scouts have intercepted a missive from the enemy camp. Three lieutenants have volunteered for the mission. Analyze their character sheets to see who has the right stats for the job.
 
 We are looking for a threat actor with high Stealth (to avoid the tower) and high Dexterity (to pick the rusted padlock we found).`,
   `🔍 In cybersecurity, you don't defend against "everyone." You defend against the specific actors capable of exploiting your specific gaps. Which Threat Actor can exploit the West Gate without raising the alarm?`,
@@ -413,6 +414,14 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
             caption: "EVIDENCE — THE SHADOWNET DOSSIER",
             buttonLabel: "VIEW THE DOSSIER",
           },
+          lineImages: {
+            atLine: 1,
+            images: [
+              { src: "/assets/quest/dossier_sorcerer.jpeg", label: "The Dark Sorcerer" },
+              { src: "/assets/quest/dossier_goblin.jpeg", label: "The Goblin Saboteur" },
+              { src: "/assets/quest/dossier_berserker.jpeg", label: "Ironhorn Berserker" },
+            ],
+          },
           ghostChoices: true,
           lines: MISSION_2_PAGES,
           choices: [
@@ -441,7 +450,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
             caption: "EVIDENCE — STRONGHOLD DEFENSE GRID",
             buttonLabel: "VIEW THE BLUEPRINT",
           },
-          lineImage: { atLine: 1, src: "/assets/quest/village_map_mission1.jpeg", alt: "Stronghold Defense Grid" },
+          lineImages: { atLine: 1, images: [{ src: "/assets/quest/village_map_mission1.jpeg", label: "Stronghold Defense Grid" }] },
           ghostChoices: true,
           lines: MISSION_1_PAGES,
           choices: [
@@ -936,7 +945,7 @@ export class NPCController {
   private briefingEl: HTMLElement;
   private briefingCaseEl: HTMLElement;
   private briefingTitleEl: HTMLElement;
-  private briefingImageEl: HTMLImageElement;
+  private briefingImagesRowEl: HTMLElement;
   private briefingBodyEl: HTMLElement;
   private briefingEvidenceRowEl: HTMLElement;
   private briefingHintEl: HTMLElement;
@@ -1075,14 +1084,14 @@ export class NPCController {
 
     this.briefingCaseEl = el("span", { className: "briefing__case" });
     this.briefingTitleEl = el("h2", { className: "briefing__title" });
-    // Inline evidence image (see DialogueSet.lineImage) — hidden by
-    // default, shown/pointed at a src only on the specific page that
-    // opts in via showLine(). Separate from the evidence-button overlay
-    // (renderEvidenceButton()), which stays available for a full-screen
-    // zoomable look at the same image.
-    this.briefingImageEl = el("img", {
-      style: { display: "none", width: "100%", borderRadius: "var(--radius)", marginBottom: "var(--space-3)" },
-    }) as HTMLImageElement;
+    // Inline evidence image(s) (see DialogueSet.lineImages) — hidden by
+    // default, filled in with one <img> per entry only on the specific
+    // page that opts in via showLine(). Separate from the
+    // evidence-button overlay (renderEvidenceButton()), which stays
+    // available for a full-screen zoomable look at the same images.
+    this.briefingImagesRowEl = el("div", {
+      style: { display: "none", gap: "12px", marginBottom: "var(--space-3)" },
+    });
     this.briefingBodyEl = el("p", { className: "briefing__body" });
     this.briefingEvidenceRowEl = el("div", { style: { marginTop: "16px" } });
     this.briefingHintEl = el("div", {
@@ -1133,7 +1142,7 @@ export class NPCController {
         el("div", { className: "briefing" }, [
           el("div", { className: "briefing__header" }, [this.briefingCaseEl, this.briefingTitleEl]),
           el("hr", { className: "briefing__divider" }),
-          this.briefingImageEl,
+          this.briefingImagesRowEl,
           this.briefingBodyEl,
           this.briefingEvidenceRowEl,
         ]),
@@ -1502,13 +1511,37 @@ export class NPCController {
       this.briefingCaseEl.textContent = this.activeSet.briefing.caseLabel;
       this.briefingTitleEl.textContent = this.activeSet.briefing.title;
       this.briefingEvidenceRowEl.innerHTML = "";
-      const lineImage = this.activeSet.lineImage;
-      if (lineImage && lineImage.atLine === this.lineIndex) {
-        this.briefingImageEl.src = lineImage.src;
-        this.briefingImageEl.alt = lineImage.alt;
-        this.briefingImageEl.style.display = "block";
+      const lineImages = this.activeSet.lineImages;
+      if (lineImages && lineImages.atLine === this.lineIndex) {
+        this.briefingImagesRowEl.innerHTML = "";
+        this.briefingImagesRowEl.style.display = "flex";
+        for (const img of lineImages.images) {
+          this.briefingImagesRowEl.appendChild(
+            el("figure", { style: { flex: "1", minWidth: "0", margin: "0" } }, [
+              el("img", {
+                attrs: { src: img.src, alt: img.label ?? "" },
+                style: { width: "100%", display: "block", borderRadius: "var(--radius-sm)", border: "2px solid var(--border-strong)", objectFit: "cover" },
+              }),
+              ...(img.label
+                ? [
+                    el("figcaption", {
+                      text: img.label,
+                      style: {
+                        marginTop: "6px",
+                        textAlign: "center",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "11px",
+                        letterSpacing: "0.04em",
+                        color: "var(--text-muted)",
+                      },
+                    }),
+                  ]
+                : []),
+            ]),
+          );
+        }
       } else {
-        this.briefingImageEl.style.display = "none";
+        this.briefingImagesRowEl.style.display = "none";
       }
     } else {
       this.dialogueNameEl.textContent = this.activeNpc.name;
