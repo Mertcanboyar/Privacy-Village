@@ -330,16 +330,20 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questComplete: "night_the_wall_fell" },
           lines: [
-            "Fifty-some hours or a hundred and twenty, Ranger — the wall held because YOU did. The Council still doesn't know how close it came.",
+            "Seventy-two hours, give or take a nervous breakdown — the wall held because you refused to let the arithmetic beat you to it. The Council will frame this as their own triumph within the week. Grief counseling was never in the budget. Neither was gratitude.",
           ],
         },
         {
           if: { questActive: "night_the_wall_fell" },
-          lines: ["Go, Ranger! Bram's holding that breach alone — this isn't a drill!"],
+          lines: [
+            "GO. Bram is standing at a hole in the wall having what I can only describe, clinically, as the worst night of his professional life. This is not a drill. I checked. Twice. My hands are still shaking, which is either adrenaline or the coffee — statistically, could be either.",
+          ],
         },
         {
           if: { questComplete: "innkeepers_shards" },
-          lines: ["The mask slipped once, Ranger. Quill's scribes will not make that mistake twice — not while you're watching."],
+          lines: [
+            "The mask slipped exactly once, and you were there to see the face underneath. Quill's scribes have been informed, in writing, that it must never happen again. They filed the memo. They will, of course, do it again. Bureaucracy has a memory like a leaking bucket.",
+          ],
         },
         {
           if: { questActive: "innkeepers_shards", flag: "guest_identified" },
@@ -399,9 +403,16 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
         {
           if: { questActive: "innkeepers_shards" },
-          lines: ["Room 7 won't identify itself on its own, Ranger. The Innkeeper's drawers hold the thread — if you're willing to pull it."],
+          lines: [
+            "I have nothing further to add to Room 7's ongoing existential crisis. Odile's drawers hold the thread. Go pull on it, gently — the whole tavern is stitched together tighter than anyone in it realizes, and I'd rather you found that out than the Shadownet.",
+          ],
         },
-        { if: { questComplete: "breach_in_the_wall" }, lines: ["Well met, Ranger. The Council will never know how close the breach came."] },
+        {
+          if: { questComplete: "breach_in_the_wall" },
+          lines: [
+            "Well met. The Council sleeps soundly tonight, blissfully unaware of how close their impregnable little kingdom came to becoming a very embarrassing footnote. I've decided not to tell them. It's kinder this way. For me, mostly.",
+          ],
+        },
         {
           if: { questActive: "breach_in_the_wall", flag: "gate_identified" },
           briefing: { caseLabel: "MISSION 2", title: "Know Thy Enemy" },
@@ -473,7 +484,11 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
             },
           ],
         },
-        { lines: ["Not yet, friend. Get your bearings first — there's plenty of time for puzzles once you've settled in."] },
+        {
+          lines: [
+            "Not yet. You have the look of someone who hasn't finished orienting themselves in space and time, which is, statistically, most people, most days. Get your bearings. The wall's vulnerabilities have waited this long — they can wait for you to stop wobbling.",
+          ],
+        },
       ],
     },
     {
@@ -488,15 +503,21 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           if: { questComplete: "sealed_letter" },
-          lines: ["The gate stayed shut, Agent. Four measures, and a lie can't wear the Council's face past me now."],
+          lines: [
+            "The gate stayed shut. Four measures between a forged seal and my desk, and not one of them relied on me simply recognizing a face — which is good, because I wouldn't have. I'm terrible with faces. I'm excellent with paperwork. This is apparently what passes for a personality now.",
+          ],
         },
         {
           if: { questComplete: "post_road_blueprint" },
-          lines: ["The Blueprint's filed with the Herald now. Funny — twenty years sorting that desk, and I never once drew the map. Wish I hadn't had to."],
+          lines: [
+            "It's filed. Twenty years at this desk, and I never once needed to draw where the letters actually go — I just trusted the system, the way you trust a floor to hold you, right up until you watch someone fall through it. I know the map now. I preferred not knowing.",
+          ],
         },
         {
           if: { questActive: "post_road_blueprint", flag: "note_bram" },
-          lines: ["Go on, Agent — the villager who posts and the courier who carries. I've told you my half of the road."],
+          lines: [
+            "I've said my piece. Go bother the villager who posts and the courier who carries — I only manage the middle, the part nobody thinks about until it breaks. The unglamorous truth of most systems: someone is always quietly holding the middle.",
+          ],
         },
         {
           if: { questActive: "post_road_blueprint" },
@@ -506,11 +527,15 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
         {
           if: { questComplete: "night_the_wall_fell" },
-          lines: ["The gate's mended, the wax is set. I still check that padlock twice a night, though."],
+          lines: [
+            "The gate's mended. The wax seal is set, official, reassuring. I still check that padlock twice a night, because paper promises and iron locks have a long, disappointing history together, and I've stopped pretending otherwise.",
+          ],
         },
         {
           if: { questActive: "night_the_wall_fell", flag: "warden_heard" },
-          lines: ["Go on, Ranger — that gate won't wedge itself, and every minute you linger is a minute more they win."],
+          lines: [
+            "Go. That gate is not going to wedge itself shut through sheer force of my hoping, and every minute you spend admiring the scenery is a minute the clock doesn't care about. Move, Ranger — I'll stand here and have my crisis quietly.",
+          ],
         },
         {
           if: { questActive: "night_the_wall_fell" },
@@ -536,10 +561,14 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questActive: "arrival" },
           lines: [
-            "Welcome to Privacy Village, {name}! The festival's just getting started — workshops, games, and puzzles the whole square through. The walls keep us safe, mostly. The Council likes to say 'impregnable.' I've stopped saying it.",
+            "Welcome to Privacy Village, {name}. The festival is just getting started — workshops, games, puzzles, the whole square dressed up like nothing bad has ever happened here. The walls keep us safe. Mostly. The Council likes the word 'impregnable.' I've personally retired it from my vocabulary, along with 'definitely,' 'certainly,' and 'I'm sure it's fine.'",
           ],
         },
-        { lines: ["Keep exploring — the gates never truly close, and neither does the fun."] },
+        {
+          lines: [
+            "Keep exploring. The gates never truly close, which some people find charming and I find, on a purely professional level, deeply concerning.",
+          ],
+        },
       ],
     },
     {
@@ -558,13 +587,19 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           // Flag is "note_post_villager" (see POST_ROAD_NOTES/
           // recordPostRoadNote() below, keyed by this NPCDef's own id).
           if: { questActive: "post_road_blueprint", flag: "note_post_villager" },
-          lines: ["Go find the courier if you haven't — I only know my end of it."],
+          lines: [
+            "Find the courier if you haven't. I only know my end of the string — the part where I let go of it and stop thinking about where it lands. Healthy boundaries, or willful ignorance. The line gets blurry.",
+          ],
         },
         {
           if: { questActive: "post_road_blueprint" },
           lines: ["I post letters twice a week. Never see where they go after the box."],
         },
-        { lines: ["Best festival in memory, if you ask me. Mind the drop box — the seal's fresh paint."] },
+        {
+          lines: [
+            "Best festival in memory, if you're asking a man whose memory mostly consists of drop-box schedules. Mind the seal — the paint's still wet, and I will absolutely know if you touched it.",
+          ],
+        },
       ],
     },
     {
@@ -582,13 +617,19 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           if: { questActive: "post_road_blueprint", flag: "note_courier" },
-          lines: ["Told you what I know, Agent. The vault, not the desk."],
+          lines: [
+            "I've told you everything I know, which is one sentence long and mildly incriminating out of context: the vault, never the desk. Some of us have very narrow, very defensible jurisdictions.",
+          ],
         },
         {
           if: { questActive: "post_road_blueprint" },
           lines: ["We collect from the vault at dawn. We never touch the sorting desk — Bram would have our ears."],
         },
-        { lines: ["Can't stop long — dawn route waits for no one, festival or not."] },
+        {
+          lines: [
+            "Can't stop long. The dawn route waits for no one — not festivals, not existential dread, not whatever's happening with your face right now. Move along, I have a schedule and a deeply fragile sense of purpose tied to keeping it.",
+          ],
+        },
       ],
     },
   ],
@@ -605,11 +646,15 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           if: { questComplete: "innkeepers_shards" },
-          lines: ["Wren's secret is safe with the Division, at least. My drawers, though... I may need better locks, Agent."],
+          lines: [
+            "Wren's secret is safe with the Division, at least — a small comfort, filed next to all my other small comforts. My drawers, though, remain a philosophical embarrassment. I may need better locks. Or fewer secrets. The locks are cheaper.",
+          ],
         },
         {
           if: { questActive: "innkeepers_shards", flag: "guest_identified" },
-          lines: ["Room 7 has a name now — mine to remember, yours to report. I hear the Herald's already cackling about masks; whatever he's cooked up, it won't wait long."],
+          lines: [
+            "Room 7 has a name now. Mine to lie awake remembering, yours to report to men who file things. I hear the Herald is already cackling about masks somewhere — that particular laugh means someone, somewhere, is about to have a very bad week.",
+          ],
         },
         {
           if: { questActive: "innkeepers_shards" },
@@ -721,10 +766,14 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questActive: "arrival" },
           lines: [
-            "New face! Welcome to the festival — creativity's in the air, and every corner's got a workshop, a game, or a puzzle worth your time. Settle in... though don't be surprised if the Herald finds you first. He's been pacing the square all morning, itching to share something.",
+            "A new face. Welcome to the festival — creativity is in the air, along with several other things I'd rather not analyze too closely. Every corner's got a workshop, a game, a puzzle desperate for your attention. Settle in, if you can. Though don't be surprised if the Herald finds you first — he's been pacing the square since dawn, wearing a groove into the cobblestones, itching to tell someone, anyone, about the wall's many, many feelings.",
           ],
         },
-        { lines: ["The Griffin's Drink serves stories alongside the ale. Pull up a stool."] },
+        {
+          lines: [
+            "The Griffin's Drink serves stories alongside the ale, and frankly the stories have a longer shelf life. Pull up a stool. Nobody here is in a hurry to be anywhere else, which should tell you something.",
+          ],
+        },
       ],
     },
     {
@@ -750,11 +799,15 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           if: { questComplete: "maren_winter_report" },
-          lines: ["The Council gets their numbers. And no villager's name ever leaves my desk. Why did I never think to count BEFORE I sent?"],
+          lines: [
+            "The Council gets their numbers. Not a single villager's name leaves this desk. I keep turning the question over like a coin that won't land: why did it take a crisis for me to think to count BEFORE I sent, instead of after, in a panic, with a lantern and someone else's mistakes?",
+          ],
         },
         {
           if: { questComplete: "healers_ledger" },
-          lines: ["The chest holds tight, Agent. My apprentices grumble about the key, but grumbling I can live with."],
+          lines: [
+            "The chest holds. My apprentices grumble about the key — about the extra step, the extra minute, the extra whatever — but grumbling I can live with. Grumbling has never once leaked a single record.",
+          ],
         },
         // Everything else about her interaction while a quest is
         // active-but-unresolved is handled by NPCController.open()'s
@@ -762,7 +815,11 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         // pipeline are full-screen mini-games, not compact dialogue) —
         // this fallback only ever shows before Clearance 3 unlocks the
         // first quest offer.
-        { lines: ["Odile lets me keep a corner. Says my patients drink more after bad news."] },
+        {
+          lines: [
+            "Odile lets me keep a corner of the tavern, on the theory that my patients drink more after bad news, which is either sound business instinct or a quiet accusation. I've chosen not to examine it further.",
+          ],
+        },
       ],
     },
   ],
@@ -782,7 +839,9 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           if: { questComplete: "night_the_wall_fell" },
-          lines: ["The Incident Register holds it now, Agent — every hour, every choice. Even the ones that needed no notice."],
+          lines: [
+            "The Incident Register holds it now — every hour, every choice, every small cowardice and small courage, all filed under the same flat, indifferent ink. Even the ones that needed no notice get a page. Especially those, honestly. Nobody remembers the near-misses unless someone writes them down.",
+          ],
         },
         {
           if: { questActive: "night_the_wall_fell", flag: "notice_filed" },
@@ -822,9 +881,15 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
         {
           if: { questComplete: "archivists_desk" },
-          lines: ["Six requests, six rulings, and the ledger still balances. The factions grumble, Agent — but they grumble at ME, not at each other. That's the job."],
+          lines: [
+            "Six requests, six rulings, and the ledger still balances, which in my experience is closer to a miracle than a Tuesday. The factions grumble — at me, specifically, and not at each other, which I've decided to consider a professional accomplishment rather than a personal tragedy.",
+          ],
         },
-        { lines: ["Forty-six Trials, Agent. The tome on the desk once held one — the Academy holds all of them now."] },
+        {
+          lines: [
+            "Forty-six Trials. The tome on this desk once held exactly one, hand-copied, precious, alone — now the Academy holds all of them, organized, cross-referenced, and somehow still less comforting than the single lonely copy I remember.",
+          ],
+        },
       ],
     },
     {
@@ -835,7 +900,13 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       texture: "npc-sabine",
       baseScale: loreNpcBaseScale("sabine"),
       idleAnim: "npc-sabine-idle",
-      dialogue: [{ lines: ["Sit, if you wish. The bench asks nothing of you but patience."] }],
+      dialogue: [
+        {
+          lines: [
+            "Sit, if you wish. The bench asks nothing of you but patience, which is more than I can say for most of what happens in this building.",
+          ],
+        },
+      ],
     },
   ],
   great_hall: [
@@ -859,9 +930,15 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           if: { questComplete: "treasury_two_keys" },
-          lines: ["So the lock was the easy half. I bought iron when I needed... rules. And a logbook. Fine. FINE. Well done, Agent."],
+          lines: [
+            "So the lock was the easy half, wasn't it. I bought iron when what I actually needed was rules, and a logbook, and possibly a long hard look at my own decision-making. Fine. FINE. I'm capable of growth. Well done, Agent.",
+          ],
         },
-        { lines: ["The Treasury doesn't lock itself, Agent. Mind the steps — I had them polished for the festival."] },
+        {
+          lines: [
+            "The Treasury does not, regrettably, lock itself — I've raised the issue in three separate meetings. Mind the steps. I had them polished for the festival, mostly so I'd have something to point at when people ask what I actually do here.",
+          ],
+        },
       ],
     },
     {
@@ -881,10 +958,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           lines: [
-            "State your business... actually, never mind, I already know why everyone's here. It's the throne. Everyone wants a look at the throne.",
-            "Standing perfectly still for six hours builds real character. Or a permanent limp. Still deciding which.",
-            "The Mayor tips well. Percival over there says HE'S the reason the Mayor tips well. I say I'm the reason Percival still has a job.",
-            "Move along, Agent — nothing to see here except me, magnificently guarding a chair.",
+            "State your business — actually, don't bother, I already know why everyone comes here. It's the throne. It's always the throne. Nobody has ever once come to see me, specifically, and I've made my peace with that. Mostly.",
+            "Standing perfectly still for six hours either builds character or destroys a knee. The data, so far, is inconclusive. My knee has opinions.",
+            "The Mayor tips well. Percival, over there, insists HE'S the reason the Mayor tips well. I maintain that I'm the reason Percival still has a job, a pension, and someone to argue with at lunch.",
+            "Move along, Agent. There is nothing to see here except me, magnificently, tragically guarding a chair that has never once thanked me for it.",
           ],
         },
       ],
@@ -901,10 +978,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           lines: [
-            "HALT. ...Just kidding, come on through. We don't actually stop anyone. Mostly for show.",
-            "Fun fact: this armor has never once stopped a sword. It has, however, stopped three arguments about who has to stand in the draft.",
-            "Reginald thinks he's funnier than me. He is not. Please tell him I said that, Agent — quote me directly.",
-            "Guarding a throne is ten percent vigilance, ninety percent not falling asleep standing up. I am currently at ninety-one.",
+            "HALT. ...I'm kidding. Come through. We don't actually stop anyone — the halting is purely ceremonial, like most of what happens in this hall.",
+            "Fun fact: this armor has never once stopped a sword. It has, however, successfully stopped three separate arguments about who has to stand in the draft. I consider that a real, tangible victory.",
+            "Reginald believes he's funnier than me. He is incorrect, and deeply so. Please tell him I said that, Agent. Word for word. I'll wait.",
+            "Guarding a throne is ten percent vigilance and ninety percent the ongoing effort not to fall asleep standing up. Current reading: ninety-one percent. I may already be dreaming.",
           ],
         },
       ],

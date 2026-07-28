@@ -16,8 +16,9 @@ import { academy } from "../academy";
 const NAME_LIST = ["Portia", "Cicero", "Selden", "Themis", "Aurelia", "Marcus"];
 
 const RECRUITER_LINE =
-  "Welcome to Privacy Village, {name}! Here, ideas spark, creativity flows, and privacy pros gather for workshops, gamified adventures, and real problems worth solving. Before you pass the gates — tell us which spark lights your path.";
-const RECRUITER_CLOSING = "Lovely to have you. Follow the lantern-light in — the village, and all its puzzles, await.";
+  "Welcome to Privacy Village, {name}. Here, ideas spark, creativity flows, and a small, determined army of privacy professionals gathers to solve real problems using workshops, gamified adventures, and an alarming amount of caffeine. Before you pass the gates, a formality really — tell us which spark lights your particular path. We do keep records.";
+const RECRUITER_CLOSING =
+  "Lovely to have you. Truly. Follow the lantern-light in — the village awaits, and so, somewhere just out of sight, do all its puzzles, patiently, the way old debts wait.";
 
 interface CharacterCreateInitData {
   // Set when Title's waitlist gate collects an email — pre-fills the name
@@ -130,7 +131,7 @@ export class CharacterCreate extends Phaser.Scene {
       { className: "panel", style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 40px" } },
       [
         el("p", {
-          text: "The village keeper welcomes you and notes your name for the festival roll.",
+          text: "The village keeper welcomes you, notes your name for the festival roll, and quietly wonders — as she always does — what that name will cost you later.",
           style: { fontFamily: "var(--font-body)", color: "var(--text-muted)", margin: "0 0 20px" },
         }),
         avatarRow,
@@ -195,14 +196,14 @@ export class CharacterCreate extends Phaser.Scene {
         "fundamentalist",
         "btn--gold",
         "AI Fundamentalist",
-        "Machines can be taught — the future is bright, if we build it with care.",
+        "Machines can be taught. The future is bright, probably, provided we build it with actual care and don't ruin it out of impatience.",
         "https://www.privacyvillage.org/AI-Fundamentalist-Faction-HQ-541d2072ad1a45e3b8746636eef57bf8",
       ),
       this.buildFactionOption(
         "apocalypse",
         "btn--danger",
         "AI Apocalypse",
-        "Machines must be watched closely — every safeguard matters.",
+        "Machines must be watched. Closely. Every safeguard matters — right up until the one moment it doesn't, which is the only moment anyone will remember.",
         "https://www.privacyvillage.org/AI-Apocalypse-Faction-HQ-166f281b24208038a791e79bb6a0bf10",
       ),
     ]);
