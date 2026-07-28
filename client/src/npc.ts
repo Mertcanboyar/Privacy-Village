@@ -157,6 +157,13 @@ interface DialogueSet {
    * exclusive with evidenceTables. */
   evidence?: EvidenceRef;
   evidenceTables?: EvidenceTableRef;
+  /** Shows an image inline above the body text on one specific page of
+   * a `briefing` set (`atLine` is a `lines` index) — Mission 1's evidence
+   * page shows the Stronghold Defense Grid map inline instead of the
+   * gate list starting with a plain text header. Separate from
+   * `evidence`, which is a button opening a full-screen zoomable
+   * overlay; both can be set on the same DialogueSet. */
+  lineImage?: { atLine: number; src: string; alt: string };
   /** Render every choice as .btn--ghost (no "recommended" gold pick) —
    * for genuine multiple-choice quizzes where all options are live. */
   ghostChoices?: boolean;
@@ -232,10 +239,7 @@ const MISSION_1_PAGES = [
 I have spent my life hunting the Shadownet. I know that a raider doesn't strike where the armor is thickest; he strikes where the leather is worn. I stole the architect's blueprints from the archives last night. The ink is faded, but the truth is there if you know how to look.
 
 To defend a system, you must first map the Attack Surface. You cannot secure what you do not see. The Council has layered defenses upon the main roads — but my eyes are drawn to the shadows, to the forgotten paths used by servants and smugglers.`,
-  `💾 THE EVIDENCE: STRONGHOLD DEFENSE GRID
-Analyze the controls deployed at each gate:
-
-NORTH GATE (The King's Road)
+  `NORTH GATE (The King's Road)
 ✅ Preventative: Iron Portcullis (Physical Barrier)
 ✅ Deterrent: Archer Tower (Visible Threat)
 ✅ Detective: Magic Ward (Alerts on intrusion)
@@ -437,6 +441,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
             caption: "EVIDENCE — STRONGHOLD DEFENSE GRID",
             buttonLabel: "VIEW THE BLUEPRINT",
           },
+          lineImage: { atLine: 1, src: "/assets/quest/village_map_mission1.jpeg", alt: "Stronghold Defense Grid" },
           ghostChoices: true,
           lines: MISSION_1_PAGES,
           choices: [
@@ -931,6 +936,7 @@ export class NPCController {
   private briefingEl: HTMLElement;
   private briefingCaseEl: HTMLElement;
   private briefingTitleEl: HTMLElement;
+  private briefingImageEl: HTMLImageElement;
   private briefingBodyEl: HTMLElement;
   private briefingEvidenceRowEl: HTMLElement;
   private briefingHintEl: HTMLElement;
@@ -1069,6 +1075,14 @@ export class NPCController {
 
     this.briefingCaseEl = el("span", { className: "briefing__case" });
     this.briefingTitleEl = el("h2", { className: "briefing__title" });
+    // Inline evidence image (see DialogueSet.lineImage) — hidden by
+    // default, shown/pointed at a src only on the specific page that
+    // opts in via showLine(). Separate from the evidence-button overlay
+    // (renderEvidenceButton()), which stays available for a full-screen
+    // zoomable look at the same image.
+    this.briefingImageEl = el("img", {
+      style: { display: "none", width: "100%", borderRadius: "var(--radius)", marginBottom: "var(--space-3)" },
+    }) as HTMLImageElement;
     this.briefingBodyEl = el("p", { className: "briefing__body" });
     this.briefingEvidenceRowEl = el("div", { style: { marginTop: "16px" } });
     this.briefingHintEl = el("div", {
@@ -1119,6 +1133,7 @@ export class NPCController {
         el("div", { className: "briefing" }, [
           el("div", { className: "briefing__header" }, [this.briefingCaseEl, this.briefingTitleEl]),
           el("hr", { className: "briefing__divider" }),
+          this.briefingImageEl,
           this.briefingBodyEl,
           this.briefingEvidenceRowEl,
         ]),
@@ -1487,6 +1502,14 @@ export class NPCController {
       this.briefingCaseEl.textContent = this.activeSet.briefing.caseLabel;
       this.briefingTitleEl.textContent = this.activeSet.briefing.title;
       this.briefingEvidenceRowEl.innerHTML = "";
+      const lineImage = this.activeSet.lineImage;
+      if (lineImage && lineImage.atLine === this.lineIndex) {
+        this.briefingImageEl.src = lineImage.src;
+        this.briefingImageEl.alt = lineImage.alt;
+        this.briefingImageEl.style.display = "block";
+      } else {
+        this.briefingImageEl.style.display = "none";
+      }
     } else {
       this.dialogueNameEl.textContent = this.activeNpc.name;
     }
