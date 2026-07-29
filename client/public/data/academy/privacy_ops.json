@@ -13,6 +13,7 @@
     { "id": "data_flow_mapping", "title": "Mapping the Flow", "clearanceRequired": 4, "hasContent": true },
     { "id": "aggregation", "title": "Shaping the Data", "clearanceRequired": 5, "hasContent": true },
     { "id": "consent_in_practice", "title": "Consent in Practice", "clearanceRequired": 5, "hasContent": false },
-    { "id": "breach_the_first_72_hours", "title": "Breach! The First 72 Hours", "clearanceRequired": 5, "hasContent": false }
+    { "id": "breach_the_first_72_hours", "title": "Breach! The First 72 Hours", "clearanceRequired": 5, "hasContent": false },
+    { "id": "pets", "title": "The Alchemist's Cabinet", "clearanceRequired": 5, "hasContent": true }
   ]
 }

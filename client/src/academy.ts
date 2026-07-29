@@ -33,6 +33,15 @@ export const ACADEMY_MODULE_IDS = [
   "toms",
   "aggregation",
   "purpose_limitation",
+  // "The Alchemist's Cabinet" — Privacy Enhancing Technologies, theory-
+  // only capstone synthesizing PETs used across earlier quests/modules.
+  // Concept mapping: pseudonymisation (Art. 4(5)) · k-anonymity via
+  // generalisation/suppression · aggregation · encryption in transit &
+  // at rest · access control/minimisation · differential privacy ·
+  // secure multiparty computation / homomorphic encryption. Framing:
+  // PETs as data protection by design & by default (Art. 25); the
+  // utility-vs-protection trade-off; match tool to purpose + risk.
+  "pets",
 ] as const;
 
 export interface AcademyModuleSummary {
