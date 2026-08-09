@@ -41,6 +41,11 @@ function textureFor(spriteId: string): { texture: string; baseScale: number } {
 interface RemoteSprite {
   image: Phaser.GameObjects.Image;
   nameTag: Phaser.GameObjects.Text;
+  // Public Agent Dossier title (see dossier.ts) — always created, just
+  // left empty/invisible when the player has none active, so toggling a
+  // title on/off mid-session is a text/visibility update rather than a
+  // create/destroy (see applySnapshot() and update() below).
+  titleTag: Phaser.GameObjects.Text;
   baseScale: number;
   targetX: number;
   targetY: number;
@@ -85,9 +90,24 @@ export class RemotePlayerController {
       .setOrigin(0.5, 1)
       .setDepth(100000);
 
+    // Sits between the name tag and the character's head — see the
+    // update()'s repositioning below for how the two share that space.
+    const titleTag = this.scene.add
+      .text(snapshot.x, snapshot.y - image.displayHeight - 4, snapshot.activeTitle, {
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: "10px",
+        color: factionColorFor(snapshot.faction),
+        stroke: "#000000",
+        strokeThickness: 2,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(100000)
+      .setVisible(!!snapshot.activeTitle);
+
     this.sprites.set(snapshot.sessionId, {
       image,
       nameTag,
+      titleTag,
       baseScale,
       targetX: snapshot.x,
       targetY: snapshot.y,
@@ -106,6 +126,7 @@ export class RemotePlayerController {
     remote.targetX = snapshot.x;
     remote.targetY = snapshot.y;
     remote.facing = snapshot.facing;
+    remote.titleTag.setText(snapshot.activeTitle).setVisible(!!snapshot.activeTitle);
   }
 
   /** A "chat" broadcast arriving for a sessionId this room doesn't (or
@@ -128,6 +149,7 @@ export class RemotePlayerController {
     if (!remote) return;
     remote.image.destroy();
     remote.nameTag.destroy();
+    remote.titleTag.destroy();
     remote.chatBubble?.destroy();
     this.sprites.delete(sessionId);
   }
@@ -150,7 +172,17 @@ export class RemotePlayerController {
 
       remote.image.setScale(remote.baseScale * depthScaleFor(remote.image.y));
       remote.image.setDepth(remote.image.y);
-      remote.nameTag.setPosition(remote.image.x, remote.image.y - remote.image.displayHeight - 4);
+
+      // Title (if any) occupies the slot right above the head; the name
+      // shifts up to make room for it. No title = no gap, name tag stays
+      // in its original compact spot.
+      const headY = remote.image.y - remote.image.displayHeight - 4;
+      if (remote.titleTag.visible) {
+        remote.titleTag.setPosition(remote.image.x, headY);
+        remote.nameTag.setPosition(remote.image.x, headY - remote.titleTag.displayHeight - 2);
+      } else {
+        remote.nameTag.setPosition(remote.image.x, headY);
+      }
 
       if (remote.chatBubble) {
         if (this.scene.time.now > remote.chatBubbleExpiresAt) {

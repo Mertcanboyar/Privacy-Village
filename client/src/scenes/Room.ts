@@ -99,6 +99,7 @@ export class Room extends Phaser.Scene {
   private roomName: RoomName = "village";
   private player!: Phaser.GameObjects.Image;
   private playerNameText!: Phaser.GameObjects.Text;
+  private playerTitleText!: Phaser.GameObjects.Text;
   private playerBaseScale = 1;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
@@ -214,6 +215,32 @@ export class Room extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDepth(100000);
 
+    // Public Agent Dossier title (see dossier.ts) — same "always create,
+    // toggle text/visibility" approach as remotePlayers.ts's titleTag,
+    // for the same reason: swapping titles on the Journey tab mid-session
+    // is a text update, not a create/destroy.
+    this.playerTitleText = this.add
+      .text(spawn[0], spawn[1] - this.player.displayHeight - 4, dossier.getActiveTitleDef()?.name ?? "", {
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: "10px",
+        color: getFactionColor(),
+        stroke: "#000000",
+        strokeThickness: 2,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(100000)
+      .setVisible(!!dossier.getActiveTitleDef());
+    this.refreshPlayerNameTagPositions();
+
+    const onActiveTitleChanged = () => {
+      const def = dossier.getActiveTitleDef();
+      this.playerTitleText.setText(def?.name ?? "").setVisible(!!def);
+      this.refreshPlayerNameTagPositions();
+      net.setActiveTitle(def?.name ?? "");
+    };
+    dossier.on("activeTitleChanged", onActiveTitleChanged);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => dossier.off("activeTitleChanged", onActiveTitleChanged));
+
     if (this.textures.exists(fgKey)) {
       this.add.image(0, 0, fgKey).setOrigin(0, 0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT).setDepth(1000);
     }
@@ -239,6 +266,7 @@ export class Room extends Phaser.Scene {
       spriteId: avatar.id,
       faction: getSession().faction,
       clearance: questEngine.getClearance(),
+      activeTitle: dossier.getActiveTitleDef()?.name ?? "",
     });
 
     // The Academy building's doorway is partly obscured by foreground
@@ -484,6 +512,20 @@ export class Room extends Phaser.Scene {
     this.player.setDepth(y);
   }
 
+  // Mirrors remotePlayers.ts's per-remote-player positioning: the title
+  // (if active) sits right above the head, and the name shifts up to
+  // make room for it. Called on movement and whenever the active title
+  // changes (see the "activeTitleChanged" listener in create()).
+  private refreshPlayerNameTagPositions() {
+    const headY = this.player.y - this.player.displayHeight - 4;
+    if (this.playerTitleText.visible) {
+      this.playerTitleText.setPosition(this.player.x, headY);
+      this.playerNameText.setPosition(this.player.x, headY - this.playerTitleText.displayHeight - 2);
+    } else {
+      this.playerNameText.setPosition(this.player.x, headY);
+    }
+  }
+
   private resetMovementKeys() {
     this.cursors.up.reset();
     this.cursors.down.reset();
@@ -552,7 +594,7 @@ export class Room extends Phaser.Scene {
 
         this.player.setPosition(x, y);
         this.applyDepthScale(y);
-        this.playerNameText.setPosition(x, y - this.player.displayHeight - 4);
+        this.refreshPlayerNameTagPositions();
       }
 
       if (left) this.player.setFlipX(true);

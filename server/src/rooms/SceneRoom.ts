@@ -14,6 +14,12 @@ export class PlayerState extends Schema {
   @type("string") facing = "down"; // "up" | "down" | "left" | "right"
   @type("boolean") moving = false;
   @type("number") clearance = 1; // unused visually today — sent for the future badge display
+  // Public Agent Dossier title (see client/src/dossier.ts) — the display
+  // name (e.g. "Ranger of the Wall"), not an id, so remote clients can
+  // render it directly with no title-catalog lookup of their own. Empty
+  // string means "no active title", not "unset" (see PlayerState defaults
+  // — there's no separate null state here, same as name/spriteId above).
+  @type("string") activeTitle = "";
 }
 
 export class SceneState extends Schema {
@@ -26,6 +32,7 @@ interface JoinOptions {
   spriteId?: string;
   faction?: string;
   clearance?: number;
+  activeTitle?: string;
 }
 
 interface MoveMessage {
@@ -39,7 +46,12 @@ interface ChatMessage {
   text: string;
 }
 
+interface SetTitleMessage {
+  title?: string;
+}
+
 const CHAT_MAX_LEN = 120;
+const TITLE_MAX_LEN = 60;
 
 // The server has no notion of a room's walkable polygon (that's
 // client-side art/collision data, see Room.ts) — clamping to the scene's
@@ -76,6 +88,16 @@ export class SceneRoom extends Room<SceneState> {
       player.moving = !!message.moving;
     });
 
+    // Mid-session title change (Dossier's Journey tab can be opened and
+    // re-selected without leaving the room) — same "trust the sender for
+    // their own player only" shape as "move" above, just a schema field
+    // instead of a broadcast.
+    this.onMessage("setTitle", (client, message: SetTitleMessage) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player) return;
+      player.activeTitle = (message?.title ?? "").toString().trim().slice(0, TITLE_MAX_LEN);
+    });
+
     // Ephemeral, room-scoped chat — not part of SceneState, so it never
     // touches the schema/patch pipeline. Relayed to everyone else in
     // this same sceneId room (the partitioning filterBy already gives
@@ -96,6 +118,7 @@ export class SceneRoom extends Room<SceneState> {
     player.spriteId = options.spriteId ?? "wizard";
     player.faction = options.faction ?? "fundamentalist";
     player.clearance = options.clearance ?? 1;
+    player.activeTitle = (options.activeTitle ?? "").toString().trim().slice(0, TITLE_MAX_LEN);
     player.x = SPAWN_X;
     player.y = SPAWN_Y;
     this.state.players.set(client.sessionId, player);

@@ -31,6 +31,10 @@ export interface NetSession {
   spriteId: string;
   faction: Faction | null;
   clearance?: number;
+  /** Public Agent Dossier title (display name, e.g. "Ranger of the
+   * Wall") — see dossier.ts's getActiveTitleDef(). Omitted/empty means
+   * no title renders on this player's name tag. */
+  activeTitle?: string;
 }
 
 export interface RemotePlayerSnapshot {
@@ -43,6 +47,7 @@ export interface RemotePlayerSnapshot {
   facing: string;
   moving: boolean;
   clearance: number;
+  activeTitle: string;
 }
 
 type PlayerAddHandler = (player: RemotePlayerSnapshot) => void;
@@ -55,7 +60,7 @@ type StatusChangeHandler = (status: ConnectionStatus, lastError: string | null) 
 
 function snapshotOf(sessionId: string, player: {
   name: string; spriteId: string; faction: string; x: number; y: number;
-  facing: string; moving: boolean; clearance: number;
+  facing: string; moving: boolean; clearance: number; activeTitle: string;
 }): RemotePlayerSnapshot {
   return {
     sessionId,
@@ -67,6 +72,7 @@ function snapshotOf(sessionId: string, player: {
     facing: player.facing,
     moving: player.moving,
     clearance: player.clearance,
+    activeTitle: player.activeTitle,
   };
 }
 
@@ -157,6 +163,7 @@ export class NetClient {
         spriteId: session.spriteId,
         faction: session.faction ?? "fundamentalist",
         clearance: session.clearance ?? 1,
+        activeTitle: session.activeTitle ?? "",
       });
       // A newer connect() (or an explicit disconnect()) happened while this
       // one was in flight — drop it rather than wiring up a stale room.
@@ -229,7 +236,8 @@ export class NetClient {
         prev.name !== snapshot.name ||
         prev.faction !== snapshot.faction ||
         prev.spriteId !== snapshot.spriteId ||
-        prev.clearance !== snapshot.clearance
+        prev.clearance !== snapshot.clearance ||
+        prev.activeTitle !== snapshot.activeTitle
       ) {
         this.knownPlayers.set(sessionId, snapshot);
         this.changeHandler?.(snapshot);
@@ -279,6 +287,16 @@ export class NetClient {
     this.lastSentFacing = facing;
     this.lastSentMoving = moving;
     this.room.send("move", { x, y, facing, moving });
+  }
+
+  /** Fire-and-forget — pushes a mid-session title change (Dossier's
+   * Journey tab) to the server without a full reconnect. Silently no-op
+   * while disconnected, same tolerance as sendMove()/sendChat(); the
+   * next connect() call already sends the current title via join
+   * options, so there's nothing to "catch up" on reconnect. */
+  setActiveTitle(title: string) {
+    if (!this.room) return;
+    this.room.send("setTitle", { title: title.trim().slice(0, 60) });
   }
 
   /** Fire-and-forget, like sendMove() — a chat message that never
