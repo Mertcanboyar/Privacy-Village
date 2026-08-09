@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { el } from "./ui/dom";
-import { dossier } from "./dossier";
+import { dossier, type CodexConcept } from "./dossier";
 import { academy } from "./academy";
 import { events } from "./events";
 import { questEngine, QUEST_IDS } from "./questEngine";
@@ -35,6 +35,16 @@ function rankFor(clearance: number): string {
   const index = Phaser.Math.Clamp(clearance, 1, RANK_NAMES.length) - 1;
   return RANK_NAMES[index];
 }
+
+// Codex trophy grid grouping — one color per Academy track (distinct
+// from faction colors, which stay reserved for the player's own
+// allegiance). Order matches the hub's own track order.
+const TRACK_ORDER = ["privacy_ops", "ai_governance", "cyber_security_law"] as const;
+const TRACK_COLORS: Record<string, string> = {
+  privacy_ops: "var(--accent-gold)",
+  ai_governance: "var(--accent-blue)",
+  cyber_security_law: "var(--accent-green)",
+};
 
 function factionLabel(faction: string | null): string {
   if (faction === "fundamentalist") return "AI Fundamentalist";
@@ -293,7 +303,70 @@ export class DossierOverlay {
   }
 
   private renderCodexTab(): HTMLElement {
-    return el("div", { text: "The Codex — coming shortly." });
+    const codex = dossier.getCodex();
+    const unlockedCount = dossier.getUnlockedConcepts().size;
+
+    const header = el("div", {
+      text: `${unlockedCount} OF ${codex.length} PRINCIPLES MASTERED`,
+      style: { fontFamily: "var(--font-mono)", fontSize: "13px", letterSpacing: "0.06em", color: "var(--accent-gold)", marginBottom: "var(--space-3)", textAlign: "center" },
+    });
+
+    const groups = TRACK_ORDER.map((trackId) => {
+      const concepts = codex.filter((c) => c.track === trackId);
+      if (concepts.length === 0) return null;
+      const track = academy.getTrack(trackId);
+      return el("div", { style: { marginBottom: "var(--space-3)" } }, [
+        el("h3", {
+          text: track?.title.toUpperCase() ?? trackId.toUpperCase(),
+          style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "14px", color: TRACK_COLORS[trackId], margin: "0 0 var(--space-2)" },
+        }),
+        el(
+          "div",
+          { style: { display: "flex", flexWrap: "wrap", gap: "10px" } },
+          concepts.map((concept) => this.renderTrophyCard(concept)),
+        ),
+      ]);
+    }).filter((g): g is HTMLDivElement => g !== null);
+
+    return el("div", {}, [header, ...groups]);
+  }
+
+  private renderTrophyCard(concept: CodexConcept): HTMLElement {
+    const unlocked = dossier.isConceptUnlocked(concept.id);
+    const accent = TRACK_COLORS[concept.track] ?? "var(--accent-gold)";
+
+    if (!unlocked) {
+      return el("div", {
+        className: "panel",
+        attrs: { title: "Unlock in the field or the Academy." },
+        style: {
+          width: "160px",
+          height: "140px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6px",
+          borderColor: accent,
+          opacity: "0.5",
+          cursor: "help",
+        },
+      }, [
+        el("div", { text: "?", style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "32px", color: accent } }),
+        el("div", { text: "LOCKED", style: { fontFamily: "var(--font-mono)", fontSize: "10px", letterSpacing: "0.08em", color: "var(--text-muted)" } }),
+      ]);
+    }
+
+    return el(
+      "div",
+      { className: "panel", style: { width: "160px", minHeight: "140px", display: "flex", flexDirection: "column", gap: "4px", borderColor: accent, borderLeftWidth: "3px" } },
+      [
+        el("div", { text: concept.name, style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "13px", color: "var(--text-primary)" } }),
+        concept.citation ? el("div", { text: concept.citation, style: { fontFamily: "var(--font-mono)", fontSize: "10px", color: accent } }) : null,
+        el("div", { text: concept.definition, style: { fontFamily: "var(--font-body)", fontSize: "11px", color: "var(--text-muted)", flex: "1" } }),
+        el("div", { text: concept.unlockedAt, style: { fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-muted)", opacity: "0.8", marginTop: "4px" } }),
+      ].filter((n): n is HTMLDivElement => n !== null),
+    );
   }
 
   private renderJourneyTab(): HTMLElement {
