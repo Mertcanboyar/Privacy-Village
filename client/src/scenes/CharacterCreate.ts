@@ -7,6 +7,7 @@ import { getCurrentUserId } from "../cloud/authState";
 import { createProfileAndProgress } from "../cloud/profile";
 import { questEngine } from "../questEngine";
 import { academy } from "../academy";
+import { dossier } from "../dossier";
 
 // Combined avatar + name + faction screen (see PLAN.md Phase 2, Days 1
 // and 3). Avatar options render as plain <img> tags pointing at the
@@ -292,6 +293,7 @@ export class CharacterCreate extends Phaser.Scene {
           faction: getSession().faction,
           questState: questEngine.serializeState(),
           moduleState: academy.serializeState(),
+          dossierState: dossier.serializeState(),
           clearance: questEngine.getClearance(),
           xp: questEngine.getPoints(),
         });

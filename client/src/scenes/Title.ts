@@ -9,6 +9,7 @@ import { takePendingUpgrade, type PendingUpgradeSnapshot } from "../cloud/pendin
 import { buildEmailCapturePanel } from "../cloud/emailCapturePanel";
 import { questEngine } from "../questEngine";
 import { academy } from "../academy";
+import { dossier } from "../dossier";
 import { logPersistence } from "../cloud/log";
 import { withTimeout, HYDRATE_TIMEOUT_MS } from "../cloud/withTimeout";
 import { initMusic } from "../audio";
@@ -209,6 +210,12 @@ export class Title extends Phaser.Scene {
     if (progressRow) {
       questEngine.hydrateState(progressRow.quest_state);
       academy.hydrateState(progressRow.module_state);
+      dossier.hydrateState({
+        v: 1,
+        unlockedConcepts: progressRow.unlocked_concepts ?? [],
+        unlockedTitles: progressRow.unlocked_titles ?? [],
+        activeTitle: progressRow.active_title ?? null,
+      });
     }
     this.renderPanel(null);
     this.showToast(`Welcome back, Agent ${profile.agent_name} — Clearance ${questEngine.getClearance()}`);
@@ -219,6 +226,7 @@ export class Title extends Phaser.Scene {
     setSession({ name: pending.name, avatarId: pending.spriteId, faction: pending.faction });
     questEngine.hydrateState(pending.questState);
     academy.hydrateState(pending.moduleState);
+    dossier.hydrateState(pending.dossierState);
 
     await createProfileAndProgress(userId, {
       agentName: pending.name,
@@ -226,6 +234,7 @@ export class Title extends Phaser.Scene {
       faction: pending.faction,
       questState: pending.questState,
       moduleState: pending.moduleState,
+      dossierState: pending.dossierState,
       clearance: questEngine.getClearance(),
       xp: questEngine.getPoints(),
     });

@@ -1,0 +1,182 @@
+[
+  {
+    "id": "personal_data",
+    "name": "Personal Data",
+    "citation": "Art. 4(1)",
+    "definition": "Any info relating to an identifiable person.",
+    "sourceType": "module",
+    "sourceId": "personal_data_or_not",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked in the Academy — Personal Data or Not?"
+  },
+  {
+    "id": "special_category",
+    "name": "Special Category Data",
+    "citation": "Art. 9",
+    "definition": "Data needing extra protection: health, beliefs, biometrics.",
+    "sourceType": "quest",
+    "sourceId": "healers_ledger",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked at Maren's chest — The Healer's Ledger"
+  },
+  {
+    "id": "deidentification",
+    "name": "De-identification",
+    "citation": "",
+    "definition": "Removing the name isn't removing the person.",
+    "sourceType": "quest",
+    "sourceId": "innkeepers_shards",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked at the inn — The Innkeeper's Shards"
+  },
+  {
+    "id": "k_anonymity",
+    "name": "k-Anonymity",
+    "citation": "",
+    "definition": "Hide each record in a crowd of at least k.",
+    "sourceType": "quest",
+    "sourceId": "innkeepers_shards",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked at the inn — The Innkeeper's Shards"
+  },
+  {
+    "id": "lawful_basis",
+    "name": "Lawful Basis",
+    "citation": "Art. 6",
+    "definition": "You need a reason to process, and it isn't always consent.",
+    "sourceType": "module",
+    "sourceId": "lawful_bases_in_the_wild",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked in the Academy — Lawful Bases in the Wild"
+  },
+  {
+    "id": "purpose_limitation",
+    "name": "Purpose Limitation",
+    "citation": "Art. 5(1)(b)",
+    "definition": "Data may serve only compatible purposes.",
+    "sourceType": "quest",
+    "sourceId": "archivists_desk",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked at the Archive — The Archivist's Desk"
+  },
+  {
+    "id": "minimisation",
+    "name": "Minimisation",
+    "citation": "Art. 5(1)(c)",
+    "definition": "Collect and keep only what the purpose needs.",
+    "sourceType": "quest",
+    "sourceId": "maren_winter_report",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked at the Statistician's Desk — Maren's Winter Report"
+  },
+  {
+    "id": "aggregation",
+    "name": "Aggregation",
+    "citation": "",
+    "definition": "Report the statistic, drop the individual.",
+    "sourceType": "quest",
+    "sourceId": "maren_winter_report",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked at the Statistician's Desk — Maren's Winter Report"
+  },
+  {
+    "id": "threat_modeling",
+    "name": "Threat Modeling",
+    "citation": "",
+    "definition": "Map capabilities to vulnerabilities.",
+    "sourceType": "quest",
+    "sourceId": "breach_in_the_wall",
+    "track": "ai_governance",
+    "unlockedAt": "Unlocked at the West Gate — The Breach in the Wall"
+  },
+  {
+    "id": "defense_in_depth",
+    "name": "Defense in Depth",
+    "citation": "",
+    "definition": "Layered controls that cover each other's gaps.",
+    "sourceType": "quest",
+    "sourceId": "breach_in_the_wall",
+    "track": "ai_governance",
+    "unlockedAt": "Unlocked at the West Gate — The Breach in the Wall"
+  },
+  {
+    "id": "annex_iii",
+    "name": "Annex III Risk Tiers",
+    "citation": "EU AI Act",
+    "definition": "Risk tiers: prohibited, high, transparency, minimal.",
+    "sourceType": "module",
+    "sourceId": "annex_iii_risk_categorization",
+    "track": "ai_governance",
+    "unlockedAt": "Unlocked in the Academy — Annex III: The Four Tiers of the Machine"
+  },
+  {
+    "id": "human_oversight",
+    "name": "Human Oversight",
+    "citation": "AI Act Art. 14",
+    "definition": "A machine that judges people must answer to a person.",
+    "sourceType": "module",
+    "sourceId": "annex_iii_risk_categorization",
+    "track": "ai_governance",
+    "unlockedAt": "Unlocked in the Academy — Annex III: The Four Tiers of the Machine"
+  },
+  {
+    "id": "transparency_synthetic",
+    "name": "Synthetic Content Transparency",
+    "citation": "AI Act Art. 50",
+    "definition": "Conjured voices must declare themselves.",
+    "sourceType": "module",
+    "sourceId": "annex_iii_risk_categorization",
+    "track": "ai_governance",
+    "unlockedAt": "Unlocked in the Academy — Annex III: The Four Tiers of the Machine"
+  },
+  {
+    "id": "breach_72h",
+    "name": "The 72-Hour Clock",
+    "citation": "Art. 33",
+    "definition": "The clock starts at awareness, not certainty.",
+    "sourceType": "quest",
+    "sourceId": "night_the_wall_fell",
+    "track": "cyber_security_law",
+    "unlockedAt": "Unlocked at the fountain — The Night the Wall Fell"
+  },
+  {
+    "id": "four_guarantees",
+    "name": "The Four Guarantees",
+    "citation": "",
+    "definition": "Authenticate, protect integrity, keep confidential, prevent denial.",
+    "sourceType": "quest",
+    "sourceId": "sealed_letter",
+    "track": "cyber_security_law",
+    "unlockedAt": "Unlocked at the Post Road gate — The Sealed Letter"
+  },
+  {
+    "id": "auth_factors",
+    "name": "Authentication Factors",
+    "citation": "",
+    "definition": "Something you know, have, are.",
+    "sourceType": "module",
+    "sourceId": "secure_channels",
+    "track": "cyber_security_law",
+    "unlockedAt": "Unlocked in the Academy — Secure Channels"
+  },
+  {
+    "id": "toms",
+    "name": "Technical & Organizational Measures",
+    "citation": "Art. 32",
+    "definition": "Technical locks + organizational rules, interlocked.",
+    "sourceType": "quest",
+    "sourceId": "treasury_two_keys",
+    "track": "cyber_security_law",
+    "unlockedAt": "Unlocked in the Great Hall — The Treasury's Two Keys"
+  },
+  {
+    "id": "pets",
+    "name": "Privacy Enhancing Technologies",
+    "citation": "Art. 25",
+    "definition": "Tools that cut risk while keeping data useful.",
+    "sourceType": "module",
+    "sourceId": "pets",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked in the Academy — The Alchemist's Cabinet"
+  }
+]

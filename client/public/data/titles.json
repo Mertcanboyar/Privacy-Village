@@ -1,0 +1,44 @@
+[
+  {
+    "id": "ranger_of_the_wall",
+    "name": "Ranger of the Wall",
+    "flavor": "The gate that had no eyes now has yours.",
+    "earnCondition": "Complete The Breach in the Wall."
+  },
+  {
+    "id": "the_cartographer",
+    "name": "The Cartographer",
+    "flavor": "Every line true the first time it was drawn.",
+    "earnCondition": "Map the Post Road clean — no wrong strokes."
+  },
+  {
+    "id": "the_unbreached",
+    "name": "The Unbreached",
+    "flavor": "The clock ran. The wall did not fall.",
+    "earnCondition": "Resolve The Night the Wall Fell under 72 hours."
+  },
+  {
+    "id": "keeper_of_purpose",
+    "name": "Keeper of Purpose",
+    "flavor": "Six requests, six rulings, not one purpose bent.",
+    "earnCondition": "A perfect run at The Archivist's Desk."
+  },
+  {
+    "id": "the_unerring",
+    "name": "The Unerring",
+    "flavor": "The ledger remembers what went right, too.",
+    "earnCondition": "Earn any 3 commendations."
+  },
+  {
+    "id": "master_of_the_cabinet",
+    "name": "Master of the Cabinet",
+    "flavor": "Every tool in the cabinet, named and understood.",
+    "earnCondition": "Master all PET concepts in the Codex."
+  },
+  {
+    "id": "spymaster",
+    "name": "Spymaster",
+    "flavor": "The Council answers to you now, whether they know it or not.",
+    "earnCondition": "Reach Clearance 7."
+  }
+]

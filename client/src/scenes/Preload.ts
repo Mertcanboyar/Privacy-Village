@@ -5,6 +5,7 @@ import { LORE_NPC_IDS, LORE_NPC_FRAME_SIZE } from "../npc";
 import { QUEST_IDS, questEngine, type QuestDef } from "../questEngine";
 import { ACADEMY_TRACK_IDS, ACADEMY_MODULE_IDS, academy, type AcademyTrack, type AcademyModule } from "../academy";
 import { events, type EventVideo } from "../events";
+import { dossier, type CodexConcept, type TitleDef } from "../dossier";
 
 export class Preload extends Phaser.Scene {
   constructor() {
@@ -119,6 +120,13 @@ export class Preload extends Phaser.Scene {
     // Privacy Village YouTube channel, youtube.com/@PrivacyQuest.
     this.load.json("events", "data/events.json");
 
+    // The Agent Dossier (see dossier.ts) — concept trophy catalog and
+    // title definitions, each a single flat JSON array rather than
+    // per-id files (there's no per-concept content beyond the array
+    // entry itself, unlike Academy modules).
+    this.load.json("codex", "data/codex.json");
+    this.load.json("titles", "data/titles.json");
+
     // Painted-room assets (see CLAUDE.md). Foreground PNGs and room JSON
     // (walkable polygon/doors/lights, authored via /debug) may not exist
     // yet for every room — missing files 404 quietly and Room.ts falls
@@ -148,6 +156,8 @@ export class Preload extends Phaser.Scene {
     academy.loadData(academyTracks, academyModules);
 
     events.loadData(this.cache.json.get("events") as EventVideo[]);
+
+    dossier.loadData(this.cache.json.get("codex") as CodexConcept[], this.cache.json.get("titles") as TitleDef[]);
 
     // Idle loop for each lore NPC — row 0, cols 0-3 (see preload() comment).
     // 6fps per the source pack's suggested speed.

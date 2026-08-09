@@ -15,6 +15,7 @@ import { getSession, type Faction } from "./session";
 import { questEngine, type MilestoneId } from "./questEngine";
 import { playSound, playBlip } from "./audio";
 import { logDecision } from "./cloud/save";
+import { dossier } from "./dossier";
 import { healersLedgerState } from "./healersLedgerState";
 import { postRoadFieldNotes } from "./postRoadFieldNotes";
 import { postRoadBuilderState } from "./postRoadBuilderState";
@@ -1505,6 +1506,7 @@ export class NPCController {
           questEngine.setFlag("chest_locked");
           const { breachCount, overClassifyCount, accessChoiceAttempts } = healersLedgerState;
           logDecision("healers_ledger_complete", { breachCount, overClassifyCount, accessChoiceAttempts });
+          dossier.recordQuestStat("healers_ledger", { breachCount, overClassifyCount, accessChoiceAttempts });
           if (breachCount === 0 && overClassifyCount === 0) {
             questEngine.toast("COMMENDATION — The Healer's Ledger sorted without a single slip.");
           }
@@ -1812,6 +1814,7 @@ export class NPCController {
       if (!completed) return;
       const { slotErrors, arrowErrors, rogueArrowFoundSeconds, cipherToggleAttempts } = postRoadBuilderState;
       logDecision("post_road_blueprint", { slotErrors, arrowErrors, rogueArrowFoundSeconds, cipherToggleAttempts });
+      dossier.recordQuestStat("post_road_blueprint", { slotErrors, arrowErrors, rogueArrowFoundSeconds, cipherToggleAttempts });
       if (slotErrors === 0 && arrowErrors === 0 && cipherToggleAttempts === 1) {
         questEngine.toast("COMMENDATION — The Post Road mapped without a wrong stroke.");
       }
@@ -1829,6 +1832,7 @@ export class NPCController {
       if (!completed) return;
       const { forgeryCaughtSeconds, passwordChoice, wrongSealAttempts, encryptChoice } = sealedLetterState;
       logDecision("sealed_letter", { forgeryCaughtSeconds, passwordChoice, wrongSealAttempts, encryptChoice });
+      dossier.recordQuestStat("sealed_letter", { forgeryCaughtSeconds, passwordChoice, wrongSealAttempts, encryptChoice });
       if (forgeryCaughtSeconds < 30 && passwordChoice === "no" && wrongSealAttempts === 0) {
         questEngine.toast("COMMENDATION — The forgery never fooled you for a moment.");
       }
@@ -1845,6 +1849,7 @@ export class NPCController {
       if (!completed) return;
       const { banditStopped, nightClerkStopped, dayClerkAudited, separationUsed, resetCount, brokeDefenseInDepth } = treasuryKeysState;
       logDecision("treasury_two_keys", { banditStopped, nightClerkStopped, dayClerkAudited, separationUsed, resetCount, brokeDefenseInDepth });
+      dossier.recordQuestStat("treasury_two_keys", { banditStopped, nightClerkStopped, dayClerkAudited, separationUsed, resetCount, brokeDefenseInDepth });
       if (resetCount <= 1 && !brokeDefenseInDepth) {
         questEngine.toast("COMMENDATION — You built it interlocked on the first true try.");
       }
@@ -1860,6 +1865,7 @@ export class NPCController {
       if (!completed) return;
       const { chosenConfig, overStripAttempts, riskMeterPeak, resetCount } = marenWinterReportState;
       logDecision("maren_winter_report", { chosenConfig, overStripAttempts, riskMeterPeak, resetCount });
+      dossier.recordQuestStat("maren_winter_report", { chosenConfig, overStripAttempts, riskMeterPeak, resetCount });
       if (overStripAttempts === 0 && resetCount <= 1) {
         questEngine.toast("COMMENDATION — The pipeline built clean on the first run.");
       }
@@ -1875,6 +1881,7 @@ export class NPCController {
       if (!completed) return;
       const { perTicketVerdicts, integrityLost, safeguardChoices } = archivistsDeskState;
       logDecision("archivists_desk", { perTicketVerdicts, integrityLost, safeguardChoices });
+      dossier.recordQuestStat("archivists_desk", { perTicketVerdicts, integrityLost, safeguardChoices });
       if (integrityLost === 0) {
         questEngine.toast("COMMENDATION — Every verdict true to the ledger.");
       }

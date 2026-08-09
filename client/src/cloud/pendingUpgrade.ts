@@ -1,6 +1,7 @@
 import type { Faction } from "../session";
 import type { QuestEngineState } from "../questEngine";
 import type { AcademyEngineState } from "../academy";
+import type { DossierEngineState } from "../dossier";
 
 // A magic link is a real page navigation (new tab or a reload of the
 // current one), which wipes every in-memory module singleton
@@ -19,6 +20,7 @@ export interface PendingUpgradeSnapshot {
   faction: Faction | null;
   questState: QuestEngineState;
   moduleState: AcademyEngineState;
+  dossierState: DossierEngineState;
 }
 
 export function savePendingUpgrade(snapshot: PendingUpgradeSnapshot) {

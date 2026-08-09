@@ -2,6 +2,7 @@ import { supabase } from "./supabaseClient";
 import type { Faction } from "../session";
 import type { QuestEngineState } from "../questEngine";
 import type { AcademyEngineState } from "../academy";
+import type { DossierEngineState } from "../dossier";
 import { logPersistence } from "./log";
 import { persistenceStatus } from "./persistenceStatus";
 import { withTimeout, HYDRATE_TIMEOUT_MS } from "./withTimeout";
@@ -20,6 +21,9 @@ export interface ProgressRow {
   xp: number;
   quest_state: QuestEngineState;
   module_state: AcademyEngineState;
+  unlocked_concepts: string[];
+  unlocked_titles: string[];
+  active_title: string | null;
   updated_at: string;
 }
 
@@ -99,6 +103,7 @@ export interface InitialProfileData {
   faction: Faction | null;
   questState: QuestEngineState;
   moduleState: AcademyEngineState;
+  dossierState: DossierEngineState;
   clearance: number;
   xp: number;
 }
@@ -147,6 +152,9 @@ export async function createProfileAndProgress(userId: string, data: InitialProf
           xp: data.xp,
           quest_state: data.questState,
           module_state: data.moduleState,
+          unlocked_concepts: data.dossierState.unlockedConcepts,
+          unlocked_titles: data.dossierState.unlockedTitles,
+          active_title: data.dossierState.activeTitle,
           updated_at: new Date().toISOString(),
         }),
       ),

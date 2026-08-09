@@ -2,6 +2,7 @@ import { supabase } from "./supabaseClient";
 import { getCurrentUserId, hasPendingOtpRequest } from "./authState";
 import { questEngine, type QuestStepChoiceOption } from "../questEngine";
 import { academy } from "../academy";
+import { dossier } from "../dossier";
 import { logPersistence } from "./log";
 import { persistenceStatus } from "./persistenceStatus";
 import { getSession } from "../session";
@@ -64,17 +65,22 @@ function refreshGuestPendingUpgrade() {
     faction: session.faction,
     questState: questEngine.serializeState(),
     moduleState: academy.serializeState(),
+    dossierState: dossier.serializeState(),
   });
 }
 
 async function flushSaveProgress(userId: string) {
   if (!supabase) return;
+  const dossierState = dossier.serializeState();
   const row = {
     player_id: userId,
     clearance: questEngine.getClearance(),
     xp: questEngine.getPoints(),
     quest_state: questEngine.serializeState(),
     module_state: academy.serializeState(),
+    unlocked_concepts: dossierState.unlockedConcepts,
+    unlocked_titles: dossierState.unlockedTitles,
+    active_title: dossierState.activeTitle,
     updated_at: new Date().toISOString(),
   };
   try {
@@ -143,6 +149,9 @@ export function initAutoSave() {
   questEngine.on("pointsChanged", saveProgress); // XP award
   academy.on("progressChanged", saveProgress); // theory/field pip completion
   academy.on("moduleCompleted", saveProgress);
+  dossier.on("conceptUnlocked", saveProgress);
+  dossier.on("titleUnlocked", saveProgress);
+  dossier.on("activeTitleChanged", saveProgress);
 
   // "The Night the Wall Fell"'s fountain-crier beat — the only
   // QuestStepChoice in the game today, hence the fixed event name

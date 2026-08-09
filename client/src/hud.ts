@@ -5,6 +5,7 @@ import { showTableOverlay } from "./ui/tableOverlay";
 import { questEngine, type QuestStepReveal, type QuestStepChoice, type QuestStepChoiceOption } from "./questEngine";
 import { getSession } from "./session";
 import { academy } from "./academy";
+import { dossier } from "./dossier";
 import { events } from "./events";
 import { supabase } from "./cloud/supabaseClient";
 import { isAuthenticated, hasPendingOtpRequest, setCurrentUserId } from "./cloud/authState";
@@ -541,6 +542,7 @@ export class HUDController {
           faction: getSession().faction,
           questState: questEngine.serializeState(),
           moduleState: academy.serializeState(),
+          dossierState: dossier.serializeState(),
         });
       },
       // Freezes player movement (Room.ts's uiOpen reads isUiLocked())

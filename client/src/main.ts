@@ -10,6 +10,7 @@ import { CharacterCreate } from "./scenes/CharacterCreate";
 import { Room } from "./scenes/Room";
 import { UIOverlay } from "./scenes/UIOverlay";
 import { initAutoSave } from "./cloud/save";
+import { initDossierHooks } from "./dossier";
 
 // No-ops outside a Vercel deployment (local dev, preview without the
 // Analytics add-on) — safe to call unconditionally, same convention as
@@ -20,6 +21,11 @@ initResponsiveScale();
 // Safe to call unconditionally — every listener it wires up no-ops for
 // guests and when Supabase isn't configured (see cloud/save.ts).
 initAutoSave();
+// Concept/title unlock checks on quest/module completion (see
+// dossier.ts) — safe unconditionally, same as initAutoSave() above;
+// works for guests too, since unlocks are local state independent of
+// persistence.
+initDossierHooks();
 
 new Phaser.Game({
   type: Phaser.AUTO,
