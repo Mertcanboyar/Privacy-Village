@@ -34,6 +34,15 @@ export interface TitleDef {
   earnCondition: string;
 }
 
+// One line of the Dossier tab's Decision Record — see
+// formatDecisionLog() below. `commendation` drives the gold marker
+// (see PLAN.md's framing rule: commendations are highlighted,
+// stumbles are stated plainly and neutrally — never a red "wrong").
+export interface DecisionLogEntry {
+  text: string;
+  commendation: boolean;
+}
+
 // Serialized shape for progress.unlocked_concepts/unlocked_titles/
 // active_title (see cloud/save.ts's flushSaveProgress() and
 // cloud/profile.ts's ProgressRow) — same v1 versioning convention as
@@ -164,6 +173,14 @@ class DossierManager extends Phaser.Events.EventEmitter {
 
   getDecisionRows(): DecisionRow[] {
     return this.lastDecisionRows;
+  }
+
+  /** Reverse-chronological, Ranger-voiced log of this player's real
+   * completed runs — see formatDecisionLog() below. Empty for a guest
+   * (nothing persists for them — see dossierOverlay.ts's Dossier tab,
+   * which shows the "enlist to preserve your record" line instead). */
+  getDecisionLog(): DecisionLogEntry[] {
+    return formatDecisionLog(this.lastDecisionRows);
   }
 
   /** Player's own choice of which earned title (if any) to wear
@@ -312,6 +329,102 @@ class DossierManager extends Phaser.Events.EventEmitter {
 }
 
 export const dossier = new DossierManager();
+
+// --- Decision Record formatting ---------------------------------------
+// Turns the raw decisions log into the Ranger's-own-logbook lines the
+// Dossier tab renders (see PLAN.md's framing rule: history, not
+// judgment — every line states what happened, never a grade). Kept
+// here rather than in dossierOverlay.ts because it's genuinely data
+// interpretation, not DOM building; the overlay just renders whatever
+// this returns.
+
+function lastRowFor(rows: DecisionRow[], event: string): DecisionRow | undefined {
+  for (let i = rows.length - 1; i >= 0; i--) {
+    if (rows[i].event === event) return rows[i];
+  }
+  return undefined;
+}
+
+function lastRowWhere(rows: DecisionRow[], event: string, pred: (detail: Record<string, unknown>) => boolean): DecisionRow | undefined {
+  for (let i = rows.length - 1; i >= 0; i--) {
+    if (rows[i].event === event && pred(rows[i].detail)) return rows[i];
+  }
+  return undefined;
+}
+
+// "WEST GATE" -> "West Gate" — matches how a Ranger would write a
+// place name in their own log, not the button's all-caps UI casing.
+function toTitleCase(s: string): string {
+  return s
+    .toLowerCase()
+    .split(" ")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+function pluralAttempts(n: number): string {
+  return `${n} attempt${n === 1 ? "" : "s"}`;
+}
+
+const MINIGAME_FORMATTERS: Record<string, (d: Record<string, unknown>, commended: boolean) => string> = {
+  healers_ledger_complete: (d, commended) =>
+    commended
+      ? "The Healer's Ledger — sorted clean. Commendation earned."
+      : `The Healer's Ledger — sorted. (${d.breachCount} exposure(s), ${d.overClassifyCount} overclassification(s) noted along the way.)`,
+  post_road_blueprint: (d, commended) =>
+    commended
+      ? "The Blueprint of the Post Road — mapped clean, first try. Commendation earned."
+      : `The Blueprint of the Post Road — mapped. (${d.slotErrors} slot correction(s), ${d.arrowErrors} redrawn arrow(s).)`,
+  sealed_letter: (d, commended) =>
+    commended ? "The Sealed Letter — the forgery never fooled you. Commendation earned." : `The Sealed Letter — the forgery caught in ${d.forgeryCaughtSeconds}s.`,
+  treasury_two_keys: (d, commended) =>
+    commended
+      ? "The Treasury's Two Keys — secured, interlocked on the first true try. Commendation earned."
+      : `The Treasury's Two Keys — secured. (${d.resetCount} reset(s) along the way.)`,
+  maren_winter_report: (d, commended) =>
+    commended ? "Maren's Winter Report — filed clean, first run. Commendation earned." : `Maren's Winter Report — filed. (Config: ${d.chosenConfig}.)`,
+  archivists_desk: (d, commended) =>
+    commended
+      ? "The Archivist's Desk — six rulings filed, ledger balanced true. Commendation earned."
+      : `The Archivist's Desk — six rulings filed. (Integrity dipped ${d.integrityLost} time(s) along the way.)`,
+};
+
+function formatDecisionLog(rows: DecisionRow[]): DecisionLogEntry[] {
+  const entries: (DecisionLogEntry & { ts: string })[] = [];
+
+  const breachM1 = lastRowFor(rows, "breach_m1_answer");
+  if (breachM1) {
+    const attempt = Number(breachM1.detail.attempt ?? 1);
+    const label = toTitleCase(String(breachM1.detail.label ?? "the gate"));
+    entries.push({ text: `The Breach in the Wall — solved. (${pluralAttempts(attempt)} on the ${label}.)`, commendation: false, ts: breachM1.created_at });
+  }
+
+  const shardsStep1 = lastRowWhere(rows, "innkeepers_shards_answer", (d) => d.step === 1);
+  if (shardsStep1) {
+    const attempt = Number(shardsStep1.detail.attempt ?? 1);
+    const found = attempt === 1 ? "found first try" : `found on attempt ${attempt}`;
+    entries.push({ text: `The Innkeeper's Shards — S-08 ${found}.`, commendation: false, ts: shardsStep1.created_at });
+  }
+
+  const clockRows = rows.filter((r) => r.event === "wallfell_clock_choice");
+  if (clockRows.length && questEngine.isComplete("night_the_wall_fell")) {
+    const last = clockRows[clockRows.length - 1];
+    const hours = Number(last.detail.totalClockHours ?? 0);
+    const flavor = hours < 48 ? "Time to spare." : hours < 72 ? "Under the wire." : "Past the window — but the wall held anyway.";
+    entries.push({ text: `The Night the Wall Fell — village warned in ${hours} hours. ${flavor}`, commendation: false, ts: last.created_at });
+  }
+
+  for (const event of Object.keys(MINIGAME_FORMATTERS)) {
+    const row = lastRowFor(rows, event);
+    if (!row) continue;
+    const questId = COMPLETE_EVENT_TO_QUEST[event] ?? event;
+    const commended = dossier.isCommendation(questId);
+    entries.push({ text: MINIGAME_FORMATTERS[event](row.detail, commended), commendation: commended, ts: row.created_at });
+  }
+
+  entries.sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0));
+  return entries.map(({ text, commendation }) => ({ text, commendation }));
+}
 
 /** Subscribes concept/title checks to the same live triggers
  * questEngine.ts/academy.ts already expose — call once at boot

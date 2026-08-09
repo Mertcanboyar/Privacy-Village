@@ -3,6 +3,9 @@ import { el } from "./ui/dom";
 import { dossier } from "./dossier";
 import { academy } from "./academy";
 import { events } from "./events";
+import { questEngine, QUEST_IDS } from "./questEngine";
+import { getSession, getAvatarOption, factionColorFor } from "./session";
+import { isAuthenticated } from "./cloud/authState";
 import { isImageOverlayOpen } from "./ui/imageOverlay";
 
 // Full-screen DOM overlay for the Agent Dossier — a three-tab
@@ -18,6 +21,26 @@ import { isImageOverlayOpen } from "./ui/imageOverlay";
 const FADE_MS = 200;
 
 type DossierTab = "dossier" | "codex" | "journey";
+
+// Rank insignia — Clearance is a narrative ladder (see questEngine.ts's
+// MILESTONE_IDS doc comment), the Dossier just needs a name for each
+// rung. Clamped to this 7-name ladder for display even though the
+// engine itself has no hard ceiling at 7 (more milestones have been
+// added over time than the ladder was originally sized for) — a real,
+// pre-existing quirk this file works around rather than "fixes",
+// since uncapping Clearance itself is out of scope here.
+const RANK_NAMES = ["Recruit", "Field Agent", "Ranger", "Senior Ranger", "Operative", "Division Handler", "Spymaster"];
+
+function rankFor(clearance: number): string {
+  const index = Phaser.Math.Clamp(clearance, 1, RANK_NAMES.length) - 1;
+  return RANK_NAMES[index];
+}
+
+function factionLabel(faction: string | null): string {
+  if (faction === "fundamentalist") return "AI Fundamentalist";
+  if (faction === "apocalypse") return "AI Apocalypse";
+  return "Unaligned";
+}
 
 export class DossierOverlay {
   private rootEl: HTMLElement;
@@ -130,7 +153,143 @@ export class DossierOverlay {
   }
 
   private renderDossierTab(): HTMLElement {
-    return el("div", { text: "The Dossier — coming shortly." });
+    return el("div", {}, [this.renderDossierHeader(), this.renderCredentialBars(), this.renderDecisionRecord(), this.renderSummaryStats()]);
+  }
+
+  private renderDossierHeader(): HTMLElement {
+    const session = getSession();
+    const avatar = getAvatarOption();
+    const factionColor = factionColorFor(session.faction);
+    const activeTitleDef = dossier.getActiveTitleDef();
+
+    const avatarImg = el("img", {
+      attrs: { src: avatar.imageSrc, alt: avatar.label },
+      style: { width: "72px", height: "72px", objectFit: "contain", background: "var(--bg-raised)", borderRadius: "var(--radius-sm)", border: `2px solid ${factionColor}` },
+    });
+
+    const nameRow = el("div", { style: { display: "flex", alignItems: "center", gap: "var(--space-2)" } }, [
+      el("h2", { text: session.name, style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "22px", margin: "0" } }),
+      el("span", {
+        className: "chip",
+        text: rankFor(questEngine.getClearance()).toUpperCase(),
+        style: { borderColor: "var(--accent-gold)", color: "var(--accent-gold)" },
+      }),
+    ]);
+
+    const factionChip = el("span", {
+      text: factionLabel(session.faction).toUpperCase(),
+      style: {
+        fontFamily: "var(--font-mono)",
+        fontSize: "11px",
+        letterSpacing: "0.06em",
+        color: factionColor,
+        border: `1px solid ${factionColor}`,
+        borderRadius: "var(--radius-sm)",
+        padding: "2px 8px",
+        display: "inline-block",
+        marginTop: "6px",
+      },
+    });
+
+    const clearanceLine = el("div", {
+      text: `CLEARANCE ${Math.min(questEngine.getClearance(), 7)} — ${rankFor(questEngine.getClearance())}`,
+      style: { fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)", marginTop: "6px" },
+    });
+
+    const titleLine = el("div", {
+      text: activeTitleDef ? activeTitleDef.name.toUpperCase() : "NO ACTIVE TITLE — SELECT ONE ON THE JOURNEY TAB",
+      style: {
+        fontFamily: "var(--font-mono)",
+        fontSize: "12px",
+        letterSpacing: "0.06em",
+        color: activeTitleDef ? "var(--accent-gold)" : "var(--text-muted)",
+        marginTop: "8px",
+      },
+    });
+
+    const guestNote = !isAuthenticated()
+      ? el("div", {
+          text: "Enlist to preserve your record — nothing here is saved for a guest.",
+          style: { fontFamily: "var(--font-body)", fontSize: "12px", color: "var(--text-muted)", marginTop: "8px", fontStyle: "italic" },
+        })
+      : null;
+
+    return el(
+      "div",
+      { style: { display: "flex", gap: "var(--space-3)", alignItems: "flex-start", marginBottom: "var(--space-3)" } },
+      [avatarImg, el("div", {}, [nameRow, factionChip, clearanceLine, titleLine, ...(guestNote ? [guestNote] : [])])],
+    );
+  }
+
+  private renderCredentialBars(): HTMLElement {
+    const bars = academy.getAllTracks().map((track) => {
+      const completed = academy.completedCount(track.id);
+      const pct = track.moduleCount > 0 ? (completed / track.moduleCount) * 100 : 0;
+      return el("div", { style: { marginBottom: "10px" } }, [
+        el("div", { style: { display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" } }, [
+          el("span", { text: track.credential.toUpperCase() }),
+          el("span", { text: `${completed}/${track.moduleCount} — ${Math.round(pct)}%` }),
+        ]),
+        el("div", { className: "xp-bar__track" }, [el("div", { className: "xp-bar__fill", style: { width: `${pct}%` } })]),
+      ]);
+    });
+    return el("div", { className: "panel", style: { marginBottom: "var(--space-3)" } }, [
+      el("h3", { text: "Credential Progress", style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "15px", margin: "0 0 var(--space-2)" } }),
+      ...bars,
+    ]);
+  }
+
+  private renderDecisionRecord(): HTMLElement {
+    const log = dossier.getDecisionLog();
+    const body: HTMLElement[] =
+      log.length > 0
+        ? log.map((entry) =>
+            el("div", { style: { display: "flex", alignItems: "flex-start", gap: "8px", padding: "8px 0", borderBottom: "1px solid var(--border-strong)" } }, [
+              entry.commendation
+                ? el("span", { text: "★", style: { color: "var(--accent-gold)", flexShrink: "0" } })
+                : el("span", { text: "·", style: { color: "var(--text-muted)", flexShrink: "0" } }),
+              el("span", { text: entry.text, style: { fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-primary)" } }),
+            ]),
+          )
+        : [
+            el("div", {
+              text: isAuthenticated() ? "No entries filed yet — the record fills in as you complete field work." : "Enlist to start a record — nothing is kept for a guest.",
+              style: { fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)", fontStyle: "italic" },
+            }),
+          ];
+
+    return el("div", { className: "panel", style: { marginBottom: "var(--space-3)" } }, [
+      el("h3", { text: "Decision Record", style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "15px", margin: "0 0 var(--space-2)" } }),
+      el("div", {}, body),
+    ]);
+  }
+
+  private renderSummaryStats(): HTMLElement {
+    const questsCompleted = QUEST_IDS.filter((id) => questEngine.isComplete(id)).length;
+    const modulesSealed = academy.getAllTracks().reduce((sum, track) => sum + academy.completedCount(track.id), 0);
+    const conceptsMastered = dossier.getUnlockedConcepts().size;
+    const conceptsTotal = dossier.getCodex().length;
+    const commendations = dossier.countCommendations();
+    const breachResponse = questEngine.isComplete("night_the_wall_fell") ? `${questEngine.getClockHours()}h` : "—";
+
+    const stats: [string, string][] = [
+      ["QUESTS COMPLETED", `${questsCompleted}/${QUEST_IDS.length}`],
+      ["MODULES SEALED", `${modulesSealed}`],
+      ["CONCEPTS MASTERED", `${conceptsMastered}/${conceptsTotal}`],
+      ["COMMENDATIONS", `${commendations}`],
+      ["AVG BREACH RESPONSE", breachResponse],
+    ];
+
+    return el(
+      "div",
+      { className: "panel", style: { display: "flex", flexWrap: "wrap", gap: "var(--space-3)" } },
+      stats.map(([label, value]) =>
+        el("div", {}, [
+          el("div", { text: value, style: { fontFamily: "var(--font-mono)", fontSize: "18px", fontWeight: "700", color: "var(--accent-gold)" } }),
+          el("div", { text: label, style: { fontFamily: "var(--font-mono)", fontSize: "10px", letterSpacing: "0.06em", color: "var(--text-muted)" } }),
+        ]),
+      ),
+    );
   }
 
   private renderCodexTab(): HTMLElement {
