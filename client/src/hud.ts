@@ -109,6 +109,11 @@ export class HUDController {
       text: "\u{1F3AC} EVENTS",
       on: { click: () => events.toggle() },
     });
+    const dossierBtnEl = el("button", {
+      className: "btn btn--ghost",
+      text: "\u{1F396} DOSSIER",
+      on: { click: () => dossier.toggle() },
+    });
     this.menuBtnEl = el("button", {
       className: "btn btn--ghost",
       text: "☰ MENU",
@@ -117,7 +122,7 @@ export class HUDController {
     const topBarEl = el(
       "div",
       { className: "ds-root", style: { position: "absolute", top: "24px", left: "24px", display: "flex", gap: "12px", pointerEvents: "auto" } },
-      [academyBtnEl, eventsBtnEl, this.menuBtnEl],
+      [academyBtnEl, eventsBtnEl, dossierBtnEl, this.menuBtnEl],
     );
     hudRootEl.appendChild(topBarEl);
 

@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { HUDController } from "../hud";
 import { AcademyOverlay } from "../academyOverlay";
 import { EventsOverlay } from "../eventsOverlay";
+import { DossierOverlay } from "../dossierOverlay";
 import { FieldNotesPanel } from "../ui/fieldNotesPanel";
 
 // HUD scene, runs in parallel with Room — launched once from
@@ -31,6 +32,7 @@ export class UIOverlay extends Phaser.Scene {
     // is no per-frame update() to call on it anymore.
     new AcademyOverlay(this);
     new EventsOverlay(this);
+    new DossierOverlay(this);
     new FieldNotesPanel();
   }
 

@@ -6,6 +6,7 @@ import { QuestController } from "../quest";
 import { getAvatarOption, getFactionColor, getSession } from "../session";
 import { questEngine } from "../questEngine";
 import { academy } from "../academy";
+import { dossier } from "../dossier";
 import { events } from "../events";
 import { playSound } from "../audio";
 import type { RoomName } from "../rooms";
@@ -517,7 +518,7 @@ export class Room extends Phaser.Scene {
     // the player or a wanderer warp straight through several waypoints.
     const dt = Math.min(this.game.loop.delta, 50) / 1000;
 
-    const otherUiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen || isUiLocked();
+    const otherUiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen || dossier.isOpen || isUiLocked();
     this.chatController.update(otherUiOpen);
     const uiOpen = otherUiOpen || this.chatController.isOpen;
     let localMoving = false;
