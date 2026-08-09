@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { el } from "./ui/dom";
-import { dossier, type CodexConcept } from "./dossier";
+import { dossier, type CodexConcept, type TitleDef } from "./dossier";
 import { academy } from "./academy";
 import { events } from "./events";
 import { questEngine, QUEST_IDS } from "./questEngine";
@@ -35,6 +35,29 @@ function rankFor(clearance: number): string {
   const index = Phaser.Math.Clamp(clearance, 1, RANK_NAMES.length) - 1;
   return RANK_NAMES[index];
 }
+
+// Flavor line per rank, shown on the Journey path. C1-C6 name the
+// specific milestone PLAN.md documents as the scripted demo path
+// (welcome -> breach_m1 -> breach_m2 -> innkeepers_shards ->
+// night_the_wall_fell) — the only stretch of the ladder that's
+// genuinely linear for a fresh player. C7 stays generic: beyond C6,
+// the remaining milestones (healers_ledger, post_road_blueprint,
+// sealed_letter, treasury_two_keys, maren_winter_report,
+// archivists_desk) unlock in parallel waves and can be completed in
+// any order (see unlockAtClearance in client/public/data/quests/
+// *.json) — which one actually earns a given player their 7th rank
+// isn't knowable from Clearance alone, so naming one here would be a
+// guess dressed up as a fact. Same "clamp for display, don't fake
+// precision" approach as rankFor()'s 7-rank ceiling above.
+const CLEARANCE_FLAVOR = [
+  "Sworn in. The Wall stands, for now.",
+  "The Welcome closed. First orders given.",
+  "The West Gate read correctly. The breach named.",
+  "The Breach in the Wall — closed.",
+  "The Innkeeper's Shards, decoded.",
+  "The Night the Wall Fell — the village warned in time.",
+  "Another case closed. The Council listens now.",
+];
 
 // Codex trophy grid grouping — one color per Academy track (distinct
 // from faction colors, which stay reserved for the player's own
@@ -370,7 +393,113 @@ export class DossierOverlay {
   }
 
   private renderJourneyTab(): HTMLElement {
-    return el("div", { text: "The Journey — coming shortly." });
+    return el("div", {}, [this.renderClearancePath(), this.renderTitlesSection()]);
+  }
+
+  private renderClearancePath(): HTMLElement {
+    const session = getSession();
+    const factionColor = factionColorFor(session.faction);
+    const clearance = questEngine.getClearance();
+
+    const nodes = RANK_NAMES.map((rank, idx) => {
+      const level = idx + 1;
+      const state: "completed" | "current" | "future" = clearance > level ? "completed" : clearance === level ? "current" : "future";
+      const dotColor = state === "future" ? "var(--text-muted)" : factionColor;
+
+      const dot = el("div", {
+        style: {
+          width: "14px",
+          height: "14px",
+          borderRadius: "50%",
+          background: state === "future" ? "transparent" : dotColor,
+          border: `2px solid ${dotColor}`,
+          flexShrink: "0",
+          marginTop: "2px",
+          animation: state === "current" ? "ds-pulse 1.6s ease-in-out infinite" : undefined,
+        },
+      });
+
+      const label = el("div", {
+        text: `C${level} — ${rank.toUpperCase()}`,
+        style: { fontFamily: "var(--font-mono)", fontSize: "12px", fontWeight: "700", letterSpacing: "0.05em", color: state === "future" ? "var(--text-muted)" : "var(--text-primary)" },
+      });
+
+      const flavor = el("div", {
+        text: CLEARANCE_FLAVOR[idx],
+        style: { fontFamily: "var(--font-body)", fontSize: "12px", color: "var(--text-muted)", opacity: state === "future" ? "0.5" : "1", marginTop: "2px" },
+      });
+
+      return el("div", { style: { display: "flex", gap: "10px", padding: "8px 0" } }, [dot, el("div", {}, [label, flavor])]);
+    });
+
+    return el("div", { className: "panel", style: { marginBottom: "var(--space-3)" } }, [
+      el("h3", { text: "The Clearance Path", style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "15px", margin: "0 0 var(--space-2)" } }),
+      el("div", {}, nodes),
+    ]);
+  }
+
+  private renderTitlesSection(): HTMLElement {
+    const activeTitle = dossier.getActiveTitle();
+    const cards = dossier.getTitleDefs().map((title) => this.renderTitleCard(title, activeTitle === title.id));
+
+    const clearNote =
+      activeTitle !== null
+        ? el("button", {
+            className: "btn btn--ghost",
+            text: "CLEAR ACTIVE TITLE",
+            style: { marginTop: "var(--space-2)" },
+            on: { click: () => dossier.setActiveTitle(null) },
+          })
+        : null;
+
+    return el(
+      "div",
+      { className: "panel" },
+      [
+        el("h3", { text: "Titles", style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "15px", margin: "0 0 var(--space-2)" } }),
+        el("div", {
+          text: "Your active title renders publicly on your name tag.",
+          style: { fontFamily: "var(--font-body)", fontSize: "12px", color: "var(--text-muted)", marginBottom: "var(--space-2)" },
+        }),
+        el("div", { style: { display: "flex", flexDirection: "column", gap: "8px" } }, cards),
+        clearNote,
+      ].filter((n): n is HTMLDivElement | HTMLHeadingElement => n !== null),
+    );
+  }
+
+  private renderTitleCard(title: TitleDef, isActive: boolean): HTMLElement {
+    const unlocked = dossier.isTitleUnlocked(title.id);
+
+    const stateChip = isActive
+      ? el("span", { className: "chip chip--gold", text: "ACTIVE" })
+      : unlocked
+        ? el("button", { className: "btn btn--ghost", text: "WEAR THIS TITLE", on: { click: () => dossier.setActiveTitle(title.id) } })
+        : el("span", { className: "chip", text: "LOCKED", style: { color: "var(--text-muted)", borderColor: "var(--text-muted)" } });
+
+    return el(
+      "div",
+      {
+        className: "panel",
+        style: {
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "var(--space-2)",
+          borderColor: isActive ? "var(--accent-gold)" : undefined,
+          opacity: unlocked ? "1" : "0.6",
+        },
+      },
+      [
+        el("div", {}, [
+          el("div", { text: title.name, style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "14px", color: "var(--text-primary)" } }),
+          el("div", {
+            text: unlocked ? title.flavor : title.earnCondition,
+            style: { fontFamily: "var(--font-body)", fontSize: "12px", color: "var(--text-muted)", fontStyle: unlocked ? "italic" : "normal", marginTop: "2px" },
+          }),
+        ]),
+        stateChip,
+      ],
+    );
   }
 
   private show() {
