@@ -305,6 +305,7 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     this.open_ = true;
     duckAudio(true);
     this.checkRetroactiveFieldWork();
+    this.checkRetroactiveQuestUnlocks();
     this.emit("opened");
   }
 
@@ -394,8 +395,16 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     p.theoryDone = true;
     this.emit("progressChanged", moduleId);
     const module = this.modules.get(moduleId);
+    // The inversion's core rule: theory GATES field work now, not the
+    // other way around — this is the only place a paired field quest
+    // ever leaves "locked". unlockQuest() is idempotent/no-op for a
+    // quest that's already available/active/complete (a returning
+    // player, or one who somehow did the field work first under old
+    // save data — see checkRetroactiveQuestUnlocks()), so this never
+    // needs its own "already unlocked?" guard.
+    if (module?.fieldWork) questEngine.unlockQuest(module.fieldWork.questId);
     if (module?.fieldWork && !p.fieldDone) {
-      this.emit("toast", `THEORY SEALED — field work awaits at ${roomLabel(module.fieldWork.room)}.`);
+      this.emit("toast", `THEORY SEALED — your field assignment is now open at ${roomLabel(module.fieldWork.room)}.`);
     }
     this.tryCompleteModule(moduleId);
   }
@@ -425,6 +434,22 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     for (const module of this.modules.values()) {
       const p = this.progress.get(module.id);
       if (p && !p.fieldDone && this.isFieldWorkDone(module)) this.setFieldDone(module.id);
+    }
+  }
+
+  // Same "re-check on every Academy open" belt-and-suspenders as
+  // checkRetroactiveFieldWork() above, for the new theory -> quest-unlock
+  // direction: a returning player whose saved progress already has
+  // theoryDone=true for a module (from before this hook existed, or from
+  // a session where markTheoryDone() ran before questEngine had loaded
+  // this quest's def) would otherwise sit with a permanently-locked
+  // field quest despite having done the theory. unlockQuest() is a no-op
+  // for anything not still "locked", so this never revokes progress —
+  // see PLAN's "Do not revoke anything" retroactive rule.
+  private checkRetroactiveQuestUnlocks() {
+    for (const module of this.modules.values()) {
+      const p = this.progress.get(module.id);
+      if (p?.theoryDone && module.fieldWork) questEngine.unlockQuest(module.fieldWork.questId);
     }
   }
 

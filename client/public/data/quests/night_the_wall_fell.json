@@ -6,7 +6,6 @@
   "opener": "AN ALARM RINGS ACROSS THE SQUARE — the West Gate has fallen.",
   "debrief": "The wall fell, and the village survived it — warned, notified, and recorded.",
   "milestone": "night_the_wall_fell",
-  "unlockAtClearance": 5,
   "clockDebrief": {
     "clean": "Fifty-some hours from a picked lock to a warned village and a filed notice — with half the facts missing. THAT is incident response, Ranger: speed with honesty, not perfection with delay.",
     "late": "The village was warned and the notice filed — late. Out there, late is a violation with your name on it. In here, it is a lesson with your name on it. Count the hours you spent deciding not to decide.",

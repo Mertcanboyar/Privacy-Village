@@ -8,7 +8,6 @@
   "nextHint": "Find Maren in the Tavern",
   "debrief": "Shape data at the source: aggregate what serves the purpose, drop what only creates risk. Minimize by transforming, not just by cutting.",
   "milestone": "maren_winter_report",
-  "unlockAtClearance": 5,
   "unlocks": ["archivists_desk"],
   "steps": [
     {

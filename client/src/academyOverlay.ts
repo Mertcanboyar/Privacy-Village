@@ -414,13 +414,19 @@ export class AcademyOverlay {
     this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "680px", maxHeight: "640px", overflowY: "auto" } }, [header, cardList]));
   }
 
+  // Study-first inversion (see PLAN): a module's THEORY is available the
+  // moment its track order allows it (see academy.ts's
+  // isTheoryUnlocked() — added in the sequencing follow-up), with NO
+  // clearance gate at all — `clearanceRequired`/questEngine.getClearance()
+  // are no longer read here. A module's FIELD WORK pip stays inert until
+  // theory seals, since the paired quest-giver is now genuinely LOCKED
+  // until then (academy.ts's markTheoryDone() is what unlocks it).
   private renderModuleCard(summary: AcademyModuleSummary): HTMLElement {
-    const eligible = summary.hasContent && questEngine.getClearance() >= summary.clearanceRequired;
-    if (!eligible) {
+    if (!summary.hasContent) {
       return el("div", { className: "quest-card", style: { opacity: "0.5" } }, [
         el("div", { className: "quest-card__icon" }),
         el("div", { className: "quest-card__info" }, [el("div", { className: "quest-card__title", text: summary.title })]),
-        el("div", { className: "quest-card__meta" }, [el("span", { className: "chip", text: `CLEARANCE ${summary.clearanceRequired} REQUIRED` })]),
+        el("div", { className: "quest-card__meta" }, [el("span", { className: "chip", text: "IN DEVELOPMENT" })]),
       ]);
     }
 
@@ -428,23 +434,8 @@ export class AcademyOverlay {
     const progress = academy.getProgress(summary.id);
     const pips: HTMLElement[] = [];
 
-    // Theory-only modules (no fieldWork at all) skip this pip entirely
-    // rather than showing a misleading "FIELD WORK ✓" for something
-    // that was never a real requirement.
-    if (module?.fieldWork) {
-      const fieldWork = module.fieldWork;
-      pips.push(
-        progress.fieldDone
-          ? el("span", { className: "chip chip--gold", text: "FIELD WORK ✓" })
-          : el("button", {
-              className: "btn btn--ghost",
-              text: `FIELD WORK: ${roomCallToAction(fieldWork.room)}`,
-              style: { fontSize: "11px", padding: "8px 12px" },
-              on: { click: () => this.goToFieldWork(fieldWork) },
-            }),
-      );
-    }
-
+    // THEORY first (left) — it's the gate, so it reads before the pip
+    // it unlocks.
     if (module?.theoryInDevelopment) {
       pips.push(el("span", { className: "chip", text: "THEORY: IN DEVELOPMENT" }));
     } else {
@@ -455,12 +446,31 @@ export class AcademyOverlay {
       );
     }
 
+    // Theory-only modules (no fieldWork at all) skip this pip entirely
+    // rather than showing a misleading "FIELD WORK ✓" for something
+    // that was never a real requirement. A fieldWork module's quest-
+    // giver won't offer it until theory seals, so there's nothing to
+    // route to yet — show LOCKED instead of a button that would just
+    // bounce off the NPC (see npc.ts's locked-quest dialogue).
+    if (module?.fieldWork) {
+      const fieldWork = module.fieldWork;
+      pips.push(
+        progress.fieldDone
+          ? el("span", { className: "chip chip--gold", text: "FIELD WORK ✓" })
+          : progress.theoryDone
+            ? el("button", {
+                className: "btn btn--ghost",
+                text: `FIELD WORK: ${roomCallToAction(fieldWork.room)}`,
+                style: { fontSize: "11px", padding: "8px 12px" },
+                on: { click: () => this.goToFieldWork(fieldWork) },
+              })
+            : el("span", { className: "chip", text: "FIELD WORK: LOCKED" }),
+      );
+    }
+
     return el("div", { className: "quest-card" }, [
       el("div", { className: "quest-card__icon" }),
-      el("div", { className: "quest-card__info" }, [
-        el("div", { className: "quest-card__title", text: summary.title }),
-        el("div", { className: "quest-card__desc", text: `Clearance ${summary.clearanceRequired} required` }),
-      ]),
+      el("div", { className: "quest-card__info" }, [el("div", { className: "quest-card__title", text: summary.title })]),
       el("div", { className: "quest-card__meta", style: { gap: "8px" } }, pips),
     ]);
   }

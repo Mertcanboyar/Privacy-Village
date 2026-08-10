@@ -509,7 +509,17 @@ class QuestManager extends Phaser.Events.EventEmitter {
     for (const unlockId of quest.unlocks ?? []) this.unlockQuest(unlockId);
   }
 
-  private unlockQuest(id: string) {
+  /** Flips a `locked` quest to `available` (or, for an `hq`-given quest,
+   * straight to `active` via bootstrapHqQuest) — idempotent no-op for
+   * anything already available/active/complete, which is what makes it
+   * safe to call from academy.ts's theory-gate hook (see
+   * markTheoryDone()) without any extra "is this already unlocked"
+   * bookkeeping on that side, and safe to re-run retroactively for a
+   * returning player without ever un-completing/un-offering a quest.
+   * Public (was private) specifically so academy.ts can call it when a
+   * module's paired field quest's theory seals — see PLAN's "Academy
+   * first, then field work" inversion. */
+  unlockQuest(id: string) {
     if (this.getState(id) !== "locked") return;
     const def = this.defs.get(id);
     if (def?.giver === "hq") {
@@ -519,9 +529,10 @@ class QuestManager extends Phaser.Events.EventEmitter {
     this.states.set(id, "available");
     // completeQuest()'s own questUpdated (see its caller) fires before
     // this — whether directly (quest.unlocks) or via completeMilestone()
-    // -> setClearance() (quest.unlockAtClearance) — so without this the
-    // HUD tracker never learns a new quest is there to accept and stays
-    // hung on "nothing active" until the player stumbles onto the giver.
+    // -> setClearance() (quest.unlockAtClearance), or now via academy.ts's
+    // theory-gate hook — so without this the HUD tracker never learns a
+    // new quest is there to accept and stays hung on "nothing active"
+    // until the player stumbles onto the giver.
     this.emit("questUpdated");
   }
 

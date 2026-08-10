@@ -7,7 +7,6 @@
   "nextHint": "Talk to Bram in the Village Square",
   "debrief": "Secure a message four ways: prove the sender, prove it's unchanged, hide it from strangers, and bind the sender to it.",
   "milestone": "sealed_letter",
-  "unlockAtClearance": 4,
   "steps": [
     {
       "objective": "Investigate the forged letter with Bram",

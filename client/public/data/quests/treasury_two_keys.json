@@ -8,7 +8,6 @@
   "nextHint": "Find the Mayor in the Great Hall",
   "debrief": "Interlock technical and organizational measures — locks stop strangers, rules govern the trusted, logs judge everyone.",
   "milestone": "treasury_two_keys",
-  "unlockAtClearance": 5,
   "steps": [
     {
       "objective": "Secure the Treasury against all three threats",

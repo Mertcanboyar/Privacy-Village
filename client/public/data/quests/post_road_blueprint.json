@@ -7,7 +7,6 @@
   "nextHint": "Find Bram in the Village Square",
   "debrief": "Map the flows, find the flow nobody drew, and encrypt what travels — no more, no less.",
   "milestone": "post_road_blueprint",
-  "unlockAtClearance": 4,
   "steps": [
     {
       "objective": "Interview Bram about the mail's route (press E)",
