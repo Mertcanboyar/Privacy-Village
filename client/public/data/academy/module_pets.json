@@ -8,16 +8,16 @@
   "lesson": [
     {
       "type": "heading",
-      "text": "You have used every one of these. Now learn their names."
+      "text": "You will use every one of these. Learn their names now."
     },
     {
       "type": "paragraph",
-      "text": "PRIVACY ENHANCING TECHNOLOGIES (PETs) are the tools that reduce privacy risk while keeping data useful. You have reached for most of them already, village-disguised. This module is the cabinet where they all hang, labelled at last. They sit on a spectrum — from simply hiding WHO, to letting others compute on data they can never actually read."
+      "text": "PRIVACY ENHANCING TECHNOLOGIES (PETs) are the tools that reduce privacy risk while keeping data useful. You've met several of these ideas already, one module at a time — this is the cabinet where they all hang together, labelled at last, and where you'll recognize them again in the field ahead. They sit on a spectrum — from simply hiding WHO, to letting others compute on data they can never actually read."
     },
     {
       "type": "callout",
       "variant": "gold",
-      "text": "PETS YOU HAVE ALREADY USED\n\nPSEUDONYMISATION — replace identifiers with codes (Agent NIGHTINGALE; Ticket T-822). Reversible wherever a key exists, and still personal data under the law. Lowers exposure, not risk entirely.\n\nGENERALISATION & SUPPRESSION — blur specifics into ranges, star out the rest, until each record hides in a crowd (the Archive's Safehouse Log audit). The k=2 promise you tested — and broke, at S-08.\n\nAGGREGATION — report the statistics, drop the individuals (Maren's Statistician's Desk: raw logs in, illness counts out). Strong when the purpose only needs the distribution.\n\nENCRYPTION — lock the contents so only a key-holder reads them, in transit (the Cipher Desk on the Post Road) and at rest (the Iron Vault). Protects confidentiality without changing the data itself.\n\nACCESS CONTROL & MINIMISATION — give each party only the field it needs (the sorting desk got the address, never the contents). Not a single gadget but the discipline the others serve."
+      "text": "THE PETS CABINET\n\nPSEUDONYMISATION — replace identifiers with codes (Agent NIGHTINGALE; Ticket T-822). Reversible wherever a key exists, and still personal data under the law. Lowers exposure, not risk entirely.\n\nGENERALISATION & SUPPRESSION — blur specifics into ranges, star out the rest, until each record hides in a crowd. The promise is only as strong as its weakest row — one unique combination breaks it, no matter how well the rest is blurred. You'll put this to the test at the inn.\n\nAGGREGATION — report the statistics, drop the individuals. Strong when the purpose only needs the distribution, not the people — this is what Maren's desk will do with the winter's raw logs: counts out, no names.\n\nENCRYPTION — lock the contents so only a key-holder reads them, in transit and at rest. Protects confidentiality without changing the data itself — the discipline behind the Post Road's Cipher Desk and the Iron Vault.\n\nACCESS CONTROL & MINIMISATION — give each party only the field it needs, never more. Not a single gadget but the discipline the others serve — the sorting desk that hands out an address and nothing else is built on exactly this."
     },
     {
       "type": "callout",
