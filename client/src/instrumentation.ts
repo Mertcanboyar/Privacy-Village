@@ -1,0 +1,56 @@
+import { logDecision } from "./cloud/save";
+
+// Sec7 instrumentation for PLAN's "Academy first, then field work"
+// inversion — five events answering "is the new signposting actually
+// working, or are players still guessing?" markSpawn() is called once,
+// the moment Room.ts spawns a genuinely first-time player into the
+// village; every "first_*" event below reports seconds since then and
+// only ever fires once per session (module-level guards — a timing
+// metric, not persisted UX state, so no localStorage like tutorial.ts's
+// flag). logDecision() itself already no-ops for guests, so these are
+// safe to call unconditionally from anywhere in the onboarding path.
+
+let spawnAt: number | null = null;
+
+export function markSpawn() {
+  if (spawnAt === null) spawnAt = performance.now();
+}
+
+function secondsSinceSpawn(): number {
+  return spawnAt === null ? 0 : Math.round((performance.now() - spawnAt) / 1000);
+}
+
+let orientationLogged = false;
+export function logOnboardingOrientationShown() {
+  if (orientationLogged) return;
+  orientationLogged = true;
+  logDecision("onboarding_orientation_shown", { timestamp: new Date().toISOString() });
+}
+
+let academyOpenLogged = false;
+export function logFirstAcademyOpen() {
+  if (academyOpenLogged) return;
+  academyOpenLogged = true;
+  logDecision("first_academy_open", { seconds: secondsSinceSpawn() });
+}
+
+let theoryCompleteLogged = false;
+export function logFirstTheoryComplete() {
+  if (theoryCompleteLogged) return;
+  theoryCompleteLogged = true;
+  logDecision("first_theory_complete", { seconds: secondsSinceSpawn() });
+}
+
+let questAcceptLogged = false;
+export function logFirstQuestAccept() {
+  if (questAcceptLogged) return;
+  questAcceptLogged = true;
+  logDecision("first_quest_accept", { seconds: secondsSinceSpawn() });
+}
+
+// Not one-shot, unlike the four above — repeated firing is the whole
+// point (see PLAN: "If this fires a lot, the signposting still isn't
+// working").
+export function logLockedQuestBounce(questId: string, moduleId: string) {
+  logDecision("locked_quest_bounce", { questId, moduleId });
+}

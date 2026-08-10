@@ -15,6 +15,7 @@ import { net } from "../net/NetClient";
 import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE } from "../net/remotePlayers";
 import { isUiLocked } from "../cloud/uiLock";
 import { ChatController } from "../chat";
+import { markSpawn, logOnboardingOrientationShown } from "../instrumentation";
 
 const PLAYER_SPEED = 160;
 const SCALE_FAR = 0.75;
@@ -323,11 +324,16 @@ export class Room extends Phaser.Scene {
       // past Title.ts) has it available/active/complete instead. Read
       // this BEFORE bootstrapHqQuest() flips it, so the tutorial only
       // fires on a genuine first spawn (see tutorial.ts).
-      const isFirstEverVisit = questEngine.getState("arrival") === "locked" && tutorial.shouldShow();
+      const isFirstSpawn = questEngine.getState("arrival") === "locked";
+      if (isFirstSpawn) markSpawn(); // see instrumentation.ts — the "seconds since spawn" clock's zero point
+      const isFirstEverVisit = isFirstSpawn && tutorial.shouldShow();
       // Idempotent — only actually unlocks/activates the first time this
       // ever runs across the whole session (see questEngine.ts).
       questEngine.bootstrapHqQuest("arrival");
-      if (isFirstEverVisit) tutorial.open();
+      if (isFirstEverVisit) {
+        tutorial.open();
+        logOnboardingOrientationShown();
+      }
     }
 
     this.npcController = new NPCController(this, this.roomName);

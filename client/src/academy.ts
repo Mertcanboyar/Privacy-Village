@@ -3,6 +3,7 @@ import { duckAudio } from "./audio";
 import { questEngine } from "./questEngine";
 import type { EvidenceImage } from "./ui/imageOverlay";
 import type { RoomName } from "./rooms";
+import { logFirstAcademyOpen, logFirstTheoryComplete } from "./instrumentation";
 
 // Framework-free module singleton for Academy state (see PLAN.md "The
 // Academy"). Same style as questEngine.ts/session.ts: a plain class
@@ -395,6 +396,7 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     this.open_ = true;
     duckAudio(true);
     markOpenedInStorage();
+    logFirstAcademyOpen();
     this.checkRetroactiveFieldWork();
     this.checkRetroactiveQuestUnlocks();
     this.emit("opened");
@@ -536,6 +538,7 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     const p = this.progress.get(moduleId);
     if (!p || p.theoryDone) return;
     p.theoryDone = true;
+    logFirstTheoryComplete();
     this.emit("progressChanged", moduleId);
     const module = this.modules.get(moduleId);
     // The inversion's core rule: theory GATES field work now, not the

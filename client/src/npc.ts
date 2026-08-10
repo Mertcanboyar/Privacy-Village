@@ -23,6 +23,7 @@ import { postRoadBuilderState } from "./postRoadBuilderState";
 import { sealedLetterState } from "./sealedLetterState";
 import { treasuryKeysState } from "./treasuryKeysState";
 import { marenWinterReportState } from "./marenWinterReportState";
+import { logFirstQuestAccept, logLockedQuestBounce } from "./instrumentation";
 import { archivistsDeskState } from "./archivistsDeskState";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
@@ -1484,6 +1485,7 @@ export class NPCController {
     const lockedGiverQuestId = giverQuestIds.find((id) => questEngine.getState(id) === "locked");
     const lockedModule = lockedGiverQuestId ? academy.getModuleForQuest(lockedGiverQuestId) : undefined;
     if (lockedGiverQuestId && lockedModule && !questEngine.getActiveQuest()) {
+      logLockedQuestBounce(lockedGiverQuestId, lockedModule.id);
       this.mode = "dialogue";
       this.dialogueEl.style.display = "block";
       this.dialogueNameEl.textContent = def.name;
@@ -1616,6 +1618,7 @@ export class NPCController {
     if (this.offerQuestId) {
       playSound("quill-scratch");
       questEngine.acceptQuest(this.offerQuestId);
+      logFirstQuestAccept();
     }
     this.closeDialogue();
   }
