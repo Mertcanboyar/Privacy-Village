@@ -3,6 +3,7 @@ import { el } from "./ui/dom";
 import { dossier, type CodexConcept, type TitleDef } from "./dossier";
 import { academy } from "./academy";
 import { events } from "./events";
+import { tutorial } from "./tutorial";
 import { questEngine, QUEST_IDS } from "./questEngine";
 import { getSession, getAvatarOption, factionColorFor } from "./session";
 import { isAuthenticated } from "./cloud/authState";
@@ -151,7 +152,7 @@ export class DossierOverlay {
     // keystroke (chat.ts already stops propagation for its own input,
     // so this never fires while typing there regardless) or the
     // evidence-image viewer owns it.
-    if (e.key.toLowerCase() === "p" && !academy.isOpen && !events.isOpen && !isImageOverlayOpen()) dossier.toggle();
+    if (e.key.toLowerCase() === "p" && !academy.isOpen && !events.isOpen && !tutorial.isOpen && !isImageOverlayOpen()) dossier.toggle();
   };
 
   private render() {

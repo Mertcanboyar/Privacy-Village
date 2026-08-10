@@ -7,6 +7,7 @@ import { getAvatarOption, getFactionColor, getSession } from "../session";
 import { questEngine } from "../questEngine";
 import { academy } from "../academy";
 import { dossier } from "../dossier";
+import { tutorial } from "../tutorial";
 import { events } from "../events";
 import { playSound } from "../audio";
 import type { RoomName } from "../rooms";
@@ -316,9 +317,17 @@ export class Room extends Phaser.Scene {
 
     if (this.roomName === "village") {
       this.spawnWanderers();
+      // "arrival" is only ever "locked" the very first time a player
+      // (guest or authenticated) spawns into the village — any later
+      // visit (door back in, or a returning player already hydrated
+      // past Title.ts) has it available/active/complete instead. Read
+      // this BEFORE bootstrapHqQuest() flips it, so the tutorial only
+      // fires on a genuine first spawn (see tutorial.ts).
+      const isFirstEverVisit = questEngine.getState("arrival") === "locked" && tutorial.shouldShow();
       // Idempotent — only actually unlocks/activates the first time this
       // ever runs across the whole session (see questEngine.ts).
       questEngine.bootstrapHqQuest("arrival");
+      if (isFirstEverVisit) tutorial.open();
     }
 
     this.npcController = new NPCController(this, this.roomName);
@@ -560,7 +569,7 @@ export class Room extends Phaser.Scene {
     // the player or a wanderer warp straight through several waypoints.
     const dt = Math.min(this.game.loop.delta, 50) / 1000;
 
-    const otherUiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen || dossier.isOpen || isUiLocked();
+    const otherUiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen || dossier.isOpen || tutorial.isOpen || isUiLocked();
     this.chatController.update(otherUiOpen);
     const uiOpen = otherUiOpen || this.chatController.isOpen;
     let localMoving = false;
