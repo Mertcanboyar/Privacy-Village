@@ -179,10 +179,21 @@ export class AcademyOverlay {
     this.render();
 
     academy.on("opened", () => {
-      this.currentView = "hub";
-      this.currentTrackId = null;
-      this.currentModuleId = null;
-      this.render();
+      // Set by npc.ts's locked-quest dialogue shortcut (see academy.ts's
+      // openToModule()) — jump straight to that module's theory instead
+      // of the hub. goToTheory() calls render() itself, so the plain
+      // hub branch below is the only one that needs its own.
+      const pendingModuleId = academy.consumePendingModuleId();
+      const pendingModule = pendingModuleId ? academy.getModule(pendingModuleId) : undefined;
+      if (pendingModule) {
+        this.currentTrackId = pendingModule.track;
+        this.goToTheory(pendingModule.id);
+      } else {
+        this.currentView = "hub";
+        this.currentTrackId = null;
+        this.currentModuleId = null;
+        this.render();
+      }
       this.show();
     });
     academy.on("closed", () => this.hide());

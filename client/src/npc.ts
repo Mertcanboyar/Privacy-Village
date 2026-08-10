@@ -13,6 +13,7 @@ import { openMarenWinterReportOverlay } from "./ui/marenWinterReportOverlay";
 import { openArchivistsDeskOverlay } from "./ui/archivistsDeskOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine, type MilestoneId } from "./questEngine";
+import { academy } from "./academy";
 import { playSound, playBlip } from "./audio";
 import { logDecision } from "./cloud/save";
 import { dossier } from "./dossier";
@@ -184,6 +185,26 @@ function conditionMatches(cond: DialogueCondition | undefined): boolean {
   if (cond.questComplete && !questEngine.isComplete(cond.questComplete)) return false;
   return true;
 }
+
+// Study-first inversion (see PLAN): what a quest-giver says when their
+// quest is still `locked` pending its paired Academy module's theory —
+// keyed by quest id (each id has exactly one giver, so no need for a
+// compound npc+quest key). Every entry here corresponds to a quest with
+// a real fieldWork module (see academy.ts's getModuleForQuest()) —
+// open()'s check only fires the dialogue when that lookup succeeds, so
+// there's no "missing line" case to guard against; a quest still locked
+// for some OTHER reason (mid-chain, no module) just falls through to
+// ordinary ambient dialogue as before.
+const LOCKED_QUEST_LINES: Record<string, string> = {
+  breach_in_the_wall: "Not yet, Ranger. Read the Division's briefing on threat modeling first — then I'll hand you the blueprints.",
+  post_road_blueprint: "Not yet. Walk the mail route with me once you know how to map where it actually goes — the Academy teaches that part first.",
+  sealed_letter: "A forged letter needs a trained eye, Agent. Learn to secure a channel before you go hunting for a broken one.",
+  healers_ledger: "Study what makes data sensitive before you touch my ledger, Agent. I'd rather you learned on parchment than on my patients.",
+  maren_winter_report: "Before you touch my winter report, learn what a number can hide. The Academy will show you.",
+  archivists_desk: "The purpose test, first. Come back when you can recite it.",
+  innkeepers_shards: 'Those shards won’t un-shatter themselves, Agent — not without knowing what "de-identified" really means. Study first.',
+  treasury_two_keys: "Coin buys a heavier lock, Agent, not a smarter one. Learn what interlocks before you touch my Treasury.",
+};
 
 // First matching `if` wins; a set with no `if` is the fallback and
 // should be listed last.
@@ -1450,6 +1471,32 @@ export class NPCController {
       this.offerQuestId = availableGiverQuestId;
       this.dialogueEl.style.display = "block";
       this.showOffer();
+      return;
+    }
+
+    // Study-first inversion (see PLAN) — a quest-giver whose quest is
+    // still `locked` because its paired Academy module's theory isn't
+    // sealed yet says so in character, with a direct shortcut into that
+    // module, instead of silently falling through to ambient dialogue.
+    // No gold pulse here (that's reserved for availableGiverQuestId
+    // above) — see LOCKED_QUEST_LINES' doc comment for why a quest
+    // without a paired module never reaches this branch.
+    const lockedGiverQuestId = giverQuestIds.find((id) => questEngine.getState(id) === "locked");
+    const lockedModule = lockedGiverQuestId ? academy.getModuleForQuest(lockedGiverQuestId) : undefined;
+    if (lockedGiverQuestId && lockedModule && !questEngine.getActiveQuest()) {
+      this.mode = "dialogue";
+      this.dialogueEl.style.display = "block";
+      this.dialogueNameEl.textContent = def.name;
+      this.dialogueHintEl.textContent = "";
+      this.dialogueBackBtn.style.visibility = "hidden";
+      this.activeSet = null;
+      const moduleId = lockedModule.id;
+      this.currentTypewriter = typewriter(this.dialogueBodyEl, LOCKED_QUEST_LINES[lockedGiverQuestId] ?? "Not yet, Agent. Study first.", 18, () => {
+        this.renderChoices([
+          { label: "Open the Academy", onClick: () => { academy.openToModule(moduleId); this.closeDialogue(); } },
+          { label: "Not yet", onClick: () => this.closeDialogue() },
+        ]);
+      });
       return;
     }
 

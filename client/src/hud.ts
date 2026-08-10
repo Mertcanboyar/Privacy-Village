@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { el } from "./ui/dom";
 import { showImageOverlay } from "./ui/imageOverlay";
 import { showTableOverlay } from "./ui/tableOverlay";
-import { questEngine, type QuestStepReveal, type QuestStepChoice, type QuestStepChoiceOption } from "./questEngine";
+import { questEngine, QUEST_IDS, type QuestStepReveal, type QuestStepChoice, type QuestStepChoiceOption } from "./questEngine";
 import { getSession } from "./session";
 import { academy } from "./academy";
 import { dossier } from "./dossier";
@@ -387,6 +387,19 @@ export class HUDController {
     this.academyDotEl.style.display = academy.hasAvailableUnstartedTheory() ? "block" : "none";
   }
 
+  /** The paired module's title for the first still-`locked` quest in
+   * QUEST_IDS order, or null if none is locked-behind-a-module right
+   * now (nothing to report, or every remaining locked quest is gated
+   * by something other than theory — e.g. still mid-`unlocks`-chain). */
+  private nextLockedQuestHint(): string | null {
+    for (const id of QUEST_IDS) {
+      if (questEngine.getState(id) !== "locked") continue;
+      const module = academy.getModuleForQuest(id);
+      if (module) return module.title;
+    }
+    return null;
+  }
+
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.qKey)) {
       this.trackerVisible = !this.trackerVisible;
@@ -443,15 +456,32 @@ export class HUDController {
       // nextHint (if it has one) rather than leaving the corner blank
       // with no clue what to do (see QuestDef.nextHint).
       const hint = questEngine.getNextHint();
-      if (!hint || !this.trackerVisible) {
-        this.trackerEl.style.display = "none";
+      if (hint && this.trackerVisible) {
+        this.trackerEl.style.display = "block";
+        this.trackerTitleEl.textContent = "NEXT OBJECTIVE";
+        this.trackerObjectiveEl.textContent = hint;
+        this.trackerEvidenceRowEl.innerHTML = "";
+        this.trackerCounterEl.textContent = "";
         return;
       }
-      this.trackerEl.style.display = "block";
-      this.trackerTitleEl.textContent = "NEXT OBJECTIVE";
-      this.trackerObjectiveEl.textContent = hint;
-      this.trackerEvidenceRowEl.innerHTML = "";
-      this.trackerCounterEl.textContent = "";
+      // Study-first inversion (see PLAN, section 4): nothing available
+      // to accept either — if the reason is a quest sitting `locked`
+      // behind its paired module's theory, say so explicitly rather
+      // than leaving the corner blank (same reasoning as the nextHint
+      // branch above). Picks the first such quest in QUEST_IDS order —
+      // this content only ever has one theory-gated quest meaningfully
+      // "next" at a time in the scripted demo path, so there's no need
+      // for anything smarter than first-match.
+      const lockedHint = this.nextLockedQuestHint();
+      if (lockedHint && this.trackerVisible) {
+        this.trackerEl.style.display = "block";
+        this.trackerTitleEl.textContent = "LOCKED";
+        this.trackerObjectiveEl.textContent = `Complete "${lockedHint}" at the Academy.`;
+        this.trackerEvidenceRowEl.innerHTML = "";
+        this.trackerCounterEl.textContent = "";
+        return;
+      }
+      this.trackerEl.style.display = "none";
       return;
     }
     if (!this.trackerVisible) {

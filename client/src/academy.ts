@@ -370,6 +370,26 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     return false;
   }
 
+  // Set by openToModule() (see npc.ts's locked-quest dialogue shortcut)
+  // — read once by academyOverlay.ts's "opened" handler to jump straight
+  // to a specific module's theory instead of the hub, then cleared via
+  // consumePendingModuleId() so a later plain toggle()/open() (the HUD
+  // button, the door) doesn't also inherit it.
+  private pendingModuleId: string | null = null;
+
+  /** Opens the Academy already navigated to `moduleId`'s theory —
+   * npc.ts calls this from a locked quest-giver's dialogue shortcut. */
+  openToModule(moduleId: string) {
+    this.pendingModuleId = moduleId;
+    this.open();
+  }
+
+  consumePendingModuleId(): string | null {
+    const id = this.pendingModuleId;
+    this.pendingModuleId = null;
+    return id;
+  }
+
   open() {
     if (this.open_) return;
     this.open_ = true;
@@ -397,6 +417,16 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     for (const module of modules) {
       this.modules.set(module.id, module);
       this.progress.set(module.id, { theoryDone: false, fieldDone: this.isFieldWorkDone(module) });
+      // Registers the theory gate BEFORE any quest's `unlocks` chain can
+      // fire (Preload finishes well before gameplay starts) — otherwise
+      // e.g. arrival's `unlocks: ["breach_in_the_wall"]` would flip that
+      // quest straight to available on arrival's completion regardless
+      // of threat_modeling's theory state. See questEngine.unlockQuest().
+      if (module.fieldWork) {
+        const questId = module.fieldWork.questId;
+        const moduleId = module.id;
+        questEngine.registerUnlockGate(questId, () => this.getProgress(moduleId).theoryDone);
+      }
     }
     questEngine.on("questCompleted", (questId: string) => this.onQuestCompleted(questId));
   }
@@ -440,6 +470,17 @@ class AcademyManager extends Phaser.Events.EventEmitter {
 
   getModule(id: string): AcademyModule | undefined {
     return this.modules.get(id);
+  }
+
+  /** Reverse lookup for npc.ts's locked-quest dialogue: which module (if
+   * any) gates this quest via its theory. A linear scan over ~15
+   * modules on an occasional dialogue-open is well within budget —
+   * no reason to maintain a second index for this. */
+  getModuleForQuest(questId: string): AcademyModule | undefined {
+    for (const module of this.modules.values()) {
+      if (module.fieldWork?.questId === questId) return module;
+    }
+    return undefined;
   }
 
   getProgress(moduleId: string): ModuleProgress {

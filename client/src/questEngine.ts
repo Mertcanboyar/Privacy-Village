@@ -234,6 +234,18 @@ class QuestManager extends Phaser.Events.EventEmitter {
   // stands in the zone before picking an option.
   private awaitingChoice = false;
 
+  // Study-first inversion (see PLAN): academy.ts registers one of these
+  // per module that has fieldWork, so a quest reached via a narrative
+  // `unlocks` chain (e.g. arrival -> breach_in_the_wall) stays locked
+  // until its paired module's theory is sealed too, same as a quest
+  // with no chain at all. Keeps academy.ts as the only place that knows
+  // about the theory<->quest pairing — this module just asks the gate.
+  private unlockGates = new Map<string, () => boolean>();
+
+  registerUnlockGate(id: string, canUnlock: () => boolean) {
+    this.unlockGates.set(id, canUnlock);
+  }
+
   loadDefs(defs: QuestDef[]) {
     for (const def of defs) {
       this.defs.set(def.id, def);
@@ -518,9 +530,16 @@ class QuestManager extends Phaser.Events.EventEmitter {
    * returning player without ever un-completing/un-offering a quest.
    * Public (was private) specifically so academy.ts can call it when a
    * module's paired field quest's theory seals — see PLAN's "Academy
-   * first, then field work" inversion. */
+   * first, then field work" inversion. A quest with a registered unlock
+   * gate (see registerUnlockGate()) that returns false stays locked no
+   * matter who called this — otherwise a narrative `unlocks` chain (e.g.
+   * arrival -> breach_in_the_wall) would flip a theory-gated quest to
+   * available the moment its predecessor finishes, bypassing the gate
+   * entirely; academy.ts calls this again once the gate opens. */
   unlockQuest(id: string) {
     if (this.getState(id) !== "locked") return;
+    const gate = this.unlockGates.get(id);
+    if (gate && !gate()) return;
     const def = this.defs.get(id);
     if (def?.giver === "hq") {
       this.bootstrapHqQuest(id); // acceptQuest() inside fires its own questUpdated
