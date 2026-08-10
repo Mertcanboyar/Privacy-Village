@@ -467,12 +467,19 @@ export class AcademyOverlay {
     }
 
     const module = academy.getModule(summary.id);
+    const progress = academy.getProgress(summary.id);
 
     // Sequenced (see PLAN's per-track ordering + academy.ts's
     // isTheoryUnlocked()) — module N+1 stays inert until module N's
     // theory seals, named explicitly rather than a bare "locked" so the
-    // player always knows exactly what to go do next.
-    if (module && !academy.isTheoryUnlocked(module.track, summary.order)) {
+    // player always knows exactly what to go do next. Skipped for a
+    // module the player already has real progress on (retroactive field
+    // work from before this ordering existed, or theory done some other
+    // way) — PLAN's "do not revoke anything" covers visibility too, not
+    // just the underlying progress data, so a real FIELD WORK ✓ never
+    // hides behind a sequence-lock card.
+    const hasRealProgress = progress.theoryDone || (progress.fieldDone && !!module?.fieldWork);
+    if (module && !hasRealProgress && !academy.isTheoryUnlocked(module.track, summary.order)) {
       const prior = academy.getPriorModule(module.track, summary.order);
       return el("div", { className: "quest-card", style: { opacity: "0.5" } }, [
         el("div", { className: "quest-card__icon" }),
@@ -482,7 +489,6 @@ export class AcademyOverlay {
         ]),
       ]);
     }
-    const progress = academy.getProgress(summary.id);
     const pips: HTMLElement[] = [];
 
     // THEORY first (left) — it's the gate, so it reads before the pip
