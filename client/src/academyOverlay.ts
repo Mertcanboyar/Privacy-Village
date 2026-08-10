@@ -312,6 +312,25 @@ export class AcademyOverlay {
     this.render();
   }
 
+  // Pings whichever NPC a module's field work belongs to — but only if
+  // the player happens to already be standing in that room right now
+  // (there's no NPC sprite to tween otherwise). Shared by goToFieldWork()
+  // (explicit "take me there" click) and sealTheory() (the passive
+  // "theory just sealed, here's where to go" handoff — see PLAN's
+  // onboarding fix).
+  private pingFieldWorkNpc(fieldWork: AcademyFieldWork) {
+    const manager = this.scene.scene.manager;
+    const roomScene = manager.getScene("Room") as Room | null;
+    if (!roomScene || roomScene.currentRoom !== fieldWork.room) return;
+    const ping = fieldWork.ping ?? "herald";
+    if (fieldWork.room === "village" && ping === "herald") roomScene.pingHerald();
+    else if (fieldWork.room === "village" && ping === "bram") roomScene.pingBram();
+    else if (fieldWork.room === "great_hall" && ping === "mayor") roomScene.pingMayor();
+    else if (fieldWork.room === "village" && ping === "courthouseDoor") roomScene.pingCourthouseDoor();
+    else if (fieldWork.room === "tavern" && ping === "maren") roomScene.pingMaren();
+    else if (fieldWork.room === "courthouse" && ping === "quill") roomScene.pingQuill();
+  }
+
   // Closes the overlay and sends the player to wherever a module's field
   // work happens — used by the module list's field-work pip. The Herald
   // ping is village-specific flourish (the only room with a ping
@@ -322,18 +341,25 @@ export class AcademyOverlay {
     const manager = this.scene.scene.manager;
     const roomScene = manager.getScene("Room") as Room | null;
     if (!roomScene) return;
-    const alreadyThere = roomScene.currentRoom === fieldWork.room;
-    const ping = fieldWork.ping ?? "herald";
-    if (alreadyThere) {
-      if (fieldWork.room === "village" && ping === "herald") roomScene.pingHerald();
-      else if (fieldWork.room === "village" && ping === "bram") roomScene.pingBram();
-      else if (fieldWork.room === "great_hall" && ping === "mayor") roomScene.pingMayor();
-      else if (fieldWork.room === "village" && ping === "courthouseDoor") roomScene.pingCourthouseDoor();
-      else if (fieldWork.room === "tavern" && ping === "maren") roomScene.pingMaren();
-      else if (fieldWork.room === "courthouse" && ping === "quill") roomScene.pingQuill();
+    if (roomScene.currentRoom === fieldWork.room) {
+      this.pingFieldWorkNpc(fieldWork);
     } else {
+      const ping = fieldWork.ping ?? "herald";
       manager.start("Room", { room: fieldWork.room, pingCourthouseDoor: fieldWork.room === "village" && ping === "courthouseDoor" });
     }
+  }
+
+  // Wraps academy.markTheoryDone() with the study-first inversion's
+  // "explicit handoff" — the toast ("THEORY SEALED — your field
+  // assignment is now open...") already fires from inside
+  // markTheoryDone() itself; this adds the visual half, pinging the
+  // quest-giver NPC if the player happens to already be standing where
+  // they'd need to go (see pingFieldWorkNpc()'s doc comment). Skipped
+  // once field work is already done (nothing to hand off to).
+  private sealTheory(moduleId: string) {
+    academy.markTheoryDone(moduleId);
+    const module = academy.getModule(moduleId);
+    if (module?.fieldWork && !academy.getProgress(moduleId).fieldDone) this.pingFieldWorkNpc(module.fieldWork);
   }
 
   private renderHub() {
@@ -641,7 +667,7 @@ export class AcademyOverlay {
   private nextQuizQuestion(module: AcademyLessonModule) {
     const isLast = this.quizIndex >= module.quiz.length - 1;
     if (isLast) {
-      academy.markTheoryDone(module.id);
+      this.sealTheory(module.id);
       this.goToModuleList(module.track);
       return;
     }
@@ -793,7 +819,7 @@ export class AcademyOverlay {
 
     if (this.drillDeck.length === 0) {
       if (module) {
-        academy.markTheoryDone(module.id);
+        this.sealTheory(module.id);
         this.goToModuleList(module.track);
       } else {
         this.goToHub();
@@ -988,7 +1014,7 @@ export class AcademyOverlay {
 
     if (this.drillMultiDeck.length === 0) {
       if (module) {
-        academy.markTheoryDone(module.id);
+        this.sealTheory(module.id);
         this.goToModuleList(module.track);
       } else {
         this.goToHub();
@@ -1110,7 +1136,7 @@ export class AcademyOverlay {
   }
 
   private completeDataSieve(module: AcademyDataSieveModule) {
-    academy.markTheoryDone(module.id);
+    this.sealTheory(module.id);
     this.goToModuleList(module.track);
   }
 
@@ -1255,7 +1281,7 @@ export class AcademyOverlay {
   private nextDiagramQuizQuestion(module: AcademyLessonDiagramQuizModule) {
     const isLast = this.diagramQuizIndex >= module.questions.length - 1;
     if (isLast) {
-      academy.markTheoryDone(module.id);
+      this.sealTheory(module.id);
       this.goToModuleList(module.track);
       return;
     }

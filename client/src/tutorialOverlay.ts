@@ -1,5 +1,6 @@
 import { el } from "./ui/dom";
 import { tutorial } from "./tutorial";
+import { GAME_WIDTH } from "./config";
 
 // Scene-bound DOM overlay for the first-visit tutorial — constructed
 // once from UIOverlay.ts, same as AcademyOverlay/EventsOverlay/
@@ -32,6 +33,7 @@ export class TutorialOverlay {
   private rootEl: HTMLElement;
   private backdropEl: HTMLElement;
   private highlightEl: HTMLElement;
+  private academyHighlightEl: HTMLElement;
   private stageEl: HTMLElement;
   private hideTimeout: number | undefined;
 
@@ -69,6 +71,36 @@ export class TutorialOverlay {
       },
     });
 
+    // Frames the real HUD "Study" button — positioned dynamically in
+    // show() (see that method's coordinate-space comment), since unlike
+    // the quest tracker this button's width depends on its text and
+    // isn't a fixed, safely-hardcodable box.
+    this.academyHighlightEl = el("div", {
+      style: {
+        position: "absolute",
+        border: "2px solid var(--accent-gold)",
+        borderRadius: "var(--radius)",
+        boxShadow: "0 0 24px rgba(240, 180, 41, 0.6)",
+        animation: "ds-pulse 1.6s ease-in-out infinite",
+        opacity: "0",
+        transition: `opacity ${FADE_MS}ms ease`,
+        pointerEvents: "none",
+      },
+    });
+
+    const divider = el("div", { style: { borderTop: "1px solid var(--border-strong)", margin: "var(--space-2) 0" } });
+
+    // The two-beat orientation PLAN's onboarding fix asks for — voiced as
+    // the Division's standing orders rather than a real spoken NPC line
+    // (this overlay fires before the player can move at all, so there's
+    // no in-world Herald to walk up to yet), styled to read the same way
+    // a HERALD interjection reads elsewhere in this game's dialogue.
+    const heraldLine = (text: string) =>
+      el("div", { style: { margin: "8px 0" } }, [
+        el("span", { text: "HERALD — ", style: { fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: "700", color: "var(--accent-gold)" } }),
+        el("span", { text, style: { fontFamily: "var(--font-body)", fontSize: "14px", color: "var(--text-primary)" } }),
+      ]);
+
     const panel = el(
       "div",
       { className: "panel panel--glow", style: { width: "440px", padding: "var(--space-3)" } },
@@ -90,9 +122,14 @@ export class TutorialOverlay {
             style: { fontFamily: "var(--font-body)", fontSize: "14px", color: "var(--text-primary)" },
           }),
         ]),
+        divider,
+        heraldLine(
+          "Two things happen in this village, Agent. You STUDY at the Academy — up there, top-left — and you APPLY it in the field, out here, where mistakes cost more.",
+        ),
+        heraldLine("Study first. Always. The Division does not send unprepared agents through gates. Your first briefing waits inside."),
         el("button", {
           className: "btn btn--gold",
-          text: "GOT IT — TO THE GATES",
+          text: "GOT IT — TO THE ACADEMY",
           style: { marginTop: "var(--space-2)", width: "100%" },
           on: { click: () => tutorial.close() },
         }),
@@ -108,6 +145,7 @@ export class TutorialOverlay {
     this.rootEl = el("div", { className: "ds-root", style: { position: "absolute", inset: "0", display: "none", pointerEvents: "auto" } }, [
       this.backdropEl,
       this.highlightEl,
+      this.academyHighlightEl,
       this.stageEl,
     ]);
     root.appendChild(this.rootEl);
@@ -132,17 +170,43 @@ export class TutorialOverlay {
 
   private show() {
     window.clearTimeout(this.hideTimeout);
+    this.positionAcademyHighlight();
     this.rootEl.style.display = "block";
     requestAnimationFrame(() => {
       this.backdropEl.style.opacity = "1";
       this.highlightEl.style.opacity = "1";
+      this.academyHighlightEl.style.opacity = "1";
       this.stageEl.style.opacity = "1";
     });
+  }
+
+  // The Study button's width depends on its text, so (unlike the quest
+  // tracker's fixed-size highlight) this can't be a static match —
+  // computed against the real element's live layout instead. #ui-root
+  // sits inside scale.ts's CSS transform: scale() (see style.css's
+  // comment on #game-stage), which getBoundingClientRect() reports
+  // POST-transform — dividing by the ratio between #ui-root's rendered
+  // and true (GAME_WIDTH) width converts back to the same unscaled
+  // local px space every other absolute-positioned element here already
+  // uses, so this stays correctly aligned at any window size.
+  private positionAcademyHighlight() {
+    const btn = document.getElementById("hud-academy-btn");
+    const uiRoot = document.getElementById("ui-root");
+    if (!btn || !uiRoot) return;
+    const btnRect = btn.getBoundingClientRect();
+    const rootRect = uiRoot.getBoundingClientRect();
+    const scale = rootRect.width / GAME_WIDTH;
+    const pad = 6;
+    this.academyHighlightEl.style.left = `${(btnRect.left - rootRect.left) / scale - pad}px`;
+    this.academyHighlightEl.style.top = `${(btnRect.top - rootRect.top) / scale - pad}px`;
+    this.academyHighlightEl.style.width = `${btnRect.width / scale + pad * 2}px`;
+    this.academyHighlightEl.style.height = `${btnRect.height / scale + pad * 2}px`;
   }
 
   private hide() {
     this.backdropEl.style.opacity = "0";
     this.highlightEl.style.opacity = "0";
+    this.academyHighlightEl.style.opacity = "0";
     this.stageEl.style.opacity = "0";
     this.hideTimeout = window.setTimeout(() => {
       this.rootEl.style.display = "none";

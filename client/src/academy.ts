@@ -297,6 +297,32 @@ function roomLabel(room: RoomName): string {
   return "the village";
 }
 
+// Same localStorage idiom as tutorial.ts's "seen it" flag — per-browser,
+// not per-account, but that's fine for what this drives (hud.ts's
+// persistent Study-button pulse, see PLAN's onboarding signposting):
+// the moment this browser has ever opened the Academy once, the pulse
+// has done its job and should stop nagging, even for a guest who never
+// enlists. An authenticated player's real academy progress (hydrated
+// from Supabase) is the stronger signal and wins if the two disagree —
+// see hasEverOpened() below.
+const OPENED_STORAGE_KEY = "pv_academy_opened";
+
+function markOpenedInStorage() {
+  try {
+    localStorage.setItem(OPENED_STORAGE_KEY, "1");
+  } catch {
+    // Nothing to do — worst case the pulse reappears next session.
+  }
+}
+
+function readOpenedFromStorage(): boolean {
+  try {
+    return localStorage.getItem(OPENED_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 class AcademyManager extends Phaser.Events.EventEmitter {
   private open_ = false;
   private tracks = new Map<string, AcademyTrack>();
@@ -311,10 +337,44 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     return this.open_;
   }
 
+  /** Drives hud.ts's persistent "Study" button pulse (see PLAN's
+   * onboarding signposting: "pulses until first opened") — true once
+   * this browser has ever opened the Academy, OR (the stronger signal,
+   * for a returning authenticated player on a fresh browser) once any
+   * module's hydrated progress shows real engagement already. Checking
+   * bare `fieldDone` here would be wrong — isFieldWorkDone() (see
+   * loadData()) trivially marks it true for every theory-only module
+   * from the moment it's first loaded, before the player has done
+   * anything at all, so only a fieldDone that's paired with a real
+   * fieldWork quest counts as actual engagement. */
+  hasEverOpened(): boolean {
+    if (readOpenedFromStorage()) return true;
+    for (const [id, p] of this.progress) {
+      if (p.theoryDone) return true;
+      const module = this.modules.get(id);
+      if (p.fieldDone && module?.fieldWork) return true;
+    }
+    return false;
+  }
+
+  /** True if at least one real module's theory is unlocked (by track
+   * order) but not yet done — drives hud.ts's Study-button notification
+   * dot. Modules still theory-in-development never count, same as
+   * everywhere else they're treated as permanently inert. */
+  hasAvailableUnstartedTheory(): boolean {
+    for (const module of this.modules.values()) {
+      if (module.theoryInDevelopment) continue;
+      if (this.getProgress(module.id).theoryDone) continue;
+      if (this.isTheoryUnlocked(module.track, module.order)) return true;
+    }
+    return false;
+  }
+
   open() {
     if (this.open_) return;
     this.open_ = true;
     duckAudio(true);
+    markOpenedInStorage();
     this.checkRetroactiveFieldWork();
     this.checkRetroactiveQuestUnlocks();
     this.emit("opened");

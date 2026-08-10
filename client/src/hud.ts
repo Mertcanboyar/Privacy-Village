@@ -77,6 +77,9 @@ export class HUDController {
   private menuMusicItemEl: HTMLElement;
   private menuOpen = false;
 
+  private academyBtnEl: HTMLElement;
+  private academyDotEl: HTMLElement;
+
   constructor(scene: Phaser.Scene) {
     const root = document.getElementById("ui-root")!;
 
@@ -99,11 +102,43 @@ export class HUDController {
     // this button previously had no such opt-in and silently swallowed
     // every real click while still responding to synthetic .click() calls
     // in tests, which is why it looked "broken" only for actual players.
-    const academyBtnEl = el("button", {
-      className: "btn btn--ghost",
-      text: "\u{1F4D6} ACADEMY",
-      on: { click: () => academy.toggle() },
+    // "STUDY" (renamed from "ACADEMY") + "FIELD WORK" (the village
+    // itself — no button of its own, but see npc.ts's dialogue copy and
+    // hud.ts's tracker) is the permanent vocabulary split PLAN's
+    // onboarding fix asks for — never call the Academy anything else in
+    // player-facing copy. The dot and pulse are both onboarding
+    // signposting: the dot marks "a theory is unlocked and unstarted"
+    // (see academy.hasAvailableUnstartedTheory()), the pulse marks
+    // "you've never opened this at all" (academy.hasEverOpened()) — see
+    // refreshAcademyButton(), called on every academy progress/open/
+    // close event plus once here at construction.
+    this.academyDotEl = el("span", {
+      style: {
+        position: "absolute",
+        top: "-4px",
+        right: "-4px",
+        width: "10px",
+        height: "10px",
+        borderRadius: "50%",
+        background: "var(--accent-gold)",
+        boxShadow: "0 0 6px rgba(240, 180, 41, 0.8)",
+        display: "none",
+      },
     });
+    this.academyBtnEl = el(
+      "button",
+      {
+        className: "btn btn--ghost",
+        attrs: { id: "hud-academy-btn" },
+        text: "\u{1F4D6} STUDY",
+        style: { position: "relative" },
+        on: { click: () => academy.toggle() },
+      },
+      [this.academyDotEl],
+    );
+    academy.on("opened", () => this.refreshAcademyButton());
+    academy.on("closed", () => this.refreshAcademyButton());
+    academy.on("progressChanged", () => this.refreshAcademyButton());
     const eventsBtnEl = el("button", {
       className: "btn btn--ghost",
       text: "\u{1F3AC} EVENTS",
@@ -122,7 +157,7 @@ export class HUDController {
     const topBarEl = el(
       "div",
       { className: "ds-root", style: { position: "absolute", top: "24px", left: "24px", display: "flex", gap: "12px", pointerEvents: "auto" } },
-      [academyBtnEl, eventsBtnEl, dossierBtnEl, this.menuBtnEl],
+      [this.academyBtnEl, eventsBtnEl, dossierBtnEl, this.menuBtnEl],
     );
     hudRootEl.appendChild(topBarEl);
 
@@ -344,6 +379,12 @@ export class HUDController {
     this.refreshXpBar();
     this.refreshTracker();
     this.refreshClock();
+    this.refreshAcademyButton();
+  }
+
+  private refreshAcademyButton() {
+    this.academyBtnEl.style.animation = academy.hasEverOpened() ? "" : "ds-pulse 1.6s ease-in-out infinite";
+    this.academyDotEl.style.display = academy.hasAvailableUnstartedTheory() ? "block" : "none";
   }
 
   update() {
