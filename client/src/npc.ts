@@ -285,6 +285,11 @@ WEST GATE (The Service Entry)
 🔍 A security system fails when it relies solely on prevention without detection. If a lock is picked in the dark, and no one is watching, is the gate truly shut? Which Gate lacks a Detective Control and relies on a single point of failure?`,
 ];
 
+// Also 2 pages (intro / character-sheets-and-question together). Each
+// threat actor's stats are spelled out in text here rather than relying
+// on the portrait images alone (see EVIDENCE — THE SHADOWNET DOSSIER
+// below) — the images aren't legible enough on their own for the
+// player to actually work out the answer.
 const MISSION_2_PAGES = [
   `Good work, Ranger. But knowing where they will strike is only half the battle. We must know who is coming. Not every beast in the Shadownet can exploit this breach.
 
@@ -294,10 +299,18 @@ The West Gate sits atop the treacherous "Cliff of Crows."
 — A Troll is too heavy; the cliff ledge would crumble.
 
 To build a valid Threat Model, we must map the Attacker's Capabilities to the System's Vulnerabilities.`,
-  `My scouts have intercepted a missive from the enemy camp. Three lieutenants have volunteered for the mission. Analyze their character sheets to see who has the right stats for the job.
+  `My scouts have intercepted a missive from the enemy camp. Three lieutenants have volunteered for the mission — read their sheets carefully.
 
-We are looking for a threat actor with high Stealth (to avoid the tower) and high Dexterity (to pick the rusted padlock we found).`,
-  `🔍 In cybersecurity, you don't defend against "everyone." You defend against the specific actors capable of exploiting your specific gaps. Which Threat Actor can exploit the West Gate without raising the alarm?`,
+THE DARK SORCERER — INT 18, Stealth 2
+Void Blast lights the sky like a signal fire. The Main Tower would spot the flare from a league away.
+
+THE GOBLIN SABOTEUR — DEX 18, Stealth 17
+Climbs sheer cliffs like a staircase. No flare, no noise — a shadow among stones.
+
+IRONHORN BERSERKER — STR 18, Stealth 3
+Smashes any door, loudly. The cliff ledge would crumble under his weight before he reached the lock.
+
+🔍 We need a threat actor with high Stealth (to avoid the tower) and high Dexterity (to pick the rusted padlock we found). Which Threat Actor can exploit the West Gate without raising the alarm?`,
 ];
 
 // --- "The Innkeeper's Shards" — Odile's + Herald's mission briefings --
@@ -449,14 +462,6 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
             ],
             caption: "EVIDENCE — THE SHADOWNET DOSSIER",
             buttonLabel: "VIEW THE DOSSIER",
-          },
-          lineImages: {
-            atLine: 1,
-            images: [
-              { src: "/assets/quest/dossier_sorcerer.jpeg", label: "The Dark Sorcerer" },
-              { src: "/assets/quest/dossier_goblin.jpeg", label: "The Goblin Saboteur" },
-              { src: "/assets/quest/dossier_berserker.jpeg", label: "Ironhorn Berserker" },
-            ],
           },
           ghostChoices: true,
           lines: MISSION_2_PAGES,
