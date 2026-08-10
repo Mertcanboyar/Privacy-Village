@@ -3,6 +3,7 @@
   "track": "ai_governance",
   "title": "Annex III: The Four Tiers of the Machine",
   "clearanceRequired": 4,
+  "order": 3,
   "_fieldWork_TODO": "questId: courthouse_trial — reserved for the planned Courthouse capstone quest (\"The Trial of the Speaking Engine\"), not yet built. The Courthouse desk is currently a pure signpost (see quest.ts). Wire as fieldWork: { questId, label: \"The Trial of the Speaking Engine (Courthouse)\" } once that quest exists, and add a courthouse-door pulse (see refreshHeraldPulse/refreshOdilePulse in npc.ts for the existing NPC-pulse pattern this would need to mirror for a door instead).",
   "lesson": [
     { "type": "heading", "text": "The law does not ask if a machine is intelligent. It asks what the machine is FOR." },

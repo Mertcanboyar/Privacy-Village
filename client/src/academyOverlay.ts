@@ -415,12 +415,11 @@ export class AcademyOverlay {
   }
 
   // Study-first inversion (see PLAN): a module's THEORY is available the
-  // moment its track order allows it (see academy.ts's
-  // isTheoryUnlocked() — added in the sequencing follow-up), with NO
-  // clearance gate at all — `clearanceRequired`/questEngine.getClearance()
-  // are no longer read here. A module's FIELD WORK pip stays inert until
-  // theory seals, since the paired quest-giver is now genuinely LOCKED
-  // until then (academy.ts's markTheoryDone() is what unlocks it).
+  // moment its track order allows it — NO clearance gate at all
+  // (`clearanceRequired`/questEngine.getClearance() are no longer read
+  // here). A module's FIELD WORK pip stays inert until theory seals,
+  // since the paired quest-giver is now genuinely LOCKED until then
+  // (academy.ts's markTheoryDone() is what unlocks it).
   private renderModuleCard(summary: AcademyModuleSummary): HTMLElement {
     if (!summary.hasContent) {
       return el("div", { className: "quest-card", style: { opacity: "0.5" } }, [
@@ -431,6 +430,21 @@ export class AcademyOverlay {
     }
 
     const module = academy.getModule(summary.id);
+
+    // Sequenced (see PLAN's per-track ordering + academy.ts's
+    // isTheoryUnlocked()) — module N+1 stays inert until module N's
+    // theory seals, named explicitly rather than a bare "locked" so the
+    // player always knows exactly what to go do next.
+    if (module && !academy.isTheoryUnlocked(module.track, summary.order)) {
+      const prior = academy.getPriorModule(module.track, summary.order);
+      return el("div", { className: "quest-card", style: { opacity: "0.5" } }, [
+        el("div", { className: "quest-card__icon" }),
+        el("div", { className: "quest-card__info" }, [el("div", { className: "quest-card__title", text: summary.title })]),
+        el("div", { className: "quest-card__meta" }, [
+          el("span", { className: "chip", text: prior ? `Complete "${prior.title}" first` : "LOCKED" }),
+        ]),
+      ]);
+    }
     const progress = academy.getProgress(summary.id);
     const pips: HTMLElement[] = [];
 

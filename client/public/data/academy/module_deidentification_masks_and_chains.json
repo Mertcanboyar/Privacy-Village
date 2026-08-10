@@ -3,6 +3,7 @@
   "track": "privacy_ops",
   "title": "De-identification: Masks & Chains",
   "clearanceRequired": 4,
+  "order": 3,
   "fieldWork": { "questId": "innkeepers_shards", "label": "The Innkeeper's Shards", "room": "tavern" },
   "lesson": [
     { "type": "heading", "text": "Removing the name is not removing the person." },

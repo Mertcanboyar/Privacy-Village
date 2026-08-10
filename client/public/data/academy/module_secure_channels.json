@@ -3,6 +3,7 @@
   "track": "cyber_security_law",
   "title": "Secure Channels",
   "clearanceRequired": 4,
+  "order": 2,
   "type": "lesson",
   "fieldWork": { "questId": "sealed_letter", "label": "The Sealed Letter", "room": "village", "ping": "bram" },
   "lesson": [

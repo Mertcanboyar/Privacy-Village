@@ -3,6 +3,7 @@
   "track": "cyber_security_law",
   "title": "The Three Locks",
   "clearanceRequired": 2,
+  "order": 1,
   "lesson": [
     { "type": "heading", "text": "Every ward on the vault protects one of three things." },
     {

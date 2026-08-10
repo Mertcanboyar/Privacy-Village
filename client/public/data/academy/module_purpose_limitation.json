@@ -3,6 +3,7 @@
   "track": "privacy_ops",
   "title": "The Purpose Test",
   "clearanceRequired": 4,
+  "order": 5,
   "type": "lesson",
   "fieldWork": { "questId": "archivists_desk", "label": "The Archivist's Desk", "room": "courthouse", "ping": "quill" },
   "lesson": [

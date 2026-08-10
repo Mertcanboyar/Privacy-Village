@@ -3,6 +3,7 @@
   "track": "privacy_ops",
   "title": "Mapping the Flow",
   "clearanceRequired": 4,
+  "order": 6,
   "type": "lesson_diagramquiz",
   "fieldWork": { "questId": "post_road_blueprint", "label": "The Blueprint of the Post Road", "room": "village", "ping": "bram" },
   "lesson": [

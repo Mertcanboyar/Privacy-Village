@@ -3,6 +3,7 @@
   "track": "cyber_security_law",
   "title": "Measures that Interlock",
   "clearanceRequired": 5,
+  "order": 4,
   "type": "lesson",
   "fieldWork": { "questId": "treasury_two_keys", "label": "The Treasury's Two Keys", "room": "great_hall", "ping": "mayor" },
   "lesson": [

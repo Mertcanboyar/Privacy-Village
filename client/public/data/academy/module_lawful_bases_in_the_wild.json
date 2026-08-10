@@ -3,6 +3,7 @@
   "track": "privacy_ops",
   "title": "Lawful Bases in the Wild",
   "clearanceRequired": 4,
+  "order": 4,
   "type": "card_drill_multi",
   "intro": "Recognizing personal data was lesson one, Agent. Failing to anonymize it was lesson two. Now the question that governs everything: by what RIGHT do you process it? The law grants six lawful bases. Most villagers believe the answer is always \"consent.\" Most villagers are wrong. Judge each case.",
   "referenceStrip": "THE SIX: CONSENT · CONTRACT · LEGAL OBLIGATION · VITAL INTERESTS · PUBLIC TASK · LEGITIMATE INTERESTS",

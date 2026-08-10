@@ -3,6 +3,7 @@
   "track": "ai_governance",
   "title": "AI Pipeline Risk Mapping",
   "clearanceRequired": 2,
+  "order": 2,
   "lesson": [
     { "type": "heading", "text": "Every AI system has three moments: before, during, and after." },
     {

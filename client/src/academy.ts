@@ -48,6 +48,12 @@ export interface AcademyModuleSummary {
   id: string;
   title: string;
   clearanceRequired: number;
+  /** Position within this module's track, 1-based — the study-first
+   * inversion's sequencing key (module N+1's theory stays locked until
+   * module N's theory seals; see AcademyManager.isTheoryUnlocked()).
+   * Only real (hasContent: true) modules carry this — a stub card has
+   * no order and is simply always inert, regardless of sequencing. */
+  order?: number;
   /** True only for ids in ACADEMY_MODULE_IDS — false renders as a
    * name-only locked stub card with no module-list click-through. */
   hasContent: boolean;
@@ -117,6 +123,11 @@ interface AcademyModuleBase {
   track: string;
   title: string;
   clearanceRequired: number;
+  /** Same field/meaning as AcademyModuleSummary.order — duplicated here
+   * for the same reason clearanceRequired already was: the track-index
+   * JSON's summary is what gating logic reads, but the module's own
+   * file carries its authoritative copy too. */
+  order?: number;
   fieldWork?: AcademyFieldWork;
   /** Renders the module list's theory pip as a disabled "IN DEVELOPMENT"
    * chip instead of a clickable "THEORY: BEGIN" button — for a module
@@ -373,6 +384,37 @@ class AcademyManager extends Phaser.Events.EventEmitter {
 
   getProgress(moduleId: string): ModuleProgress {
     return this.progress.get(moduleId) ?? EMPTY_PROGRESS;
+  }
+
+  /** The module immediately before `order` in `trackId`'s sequence (the
+   * highest order strictly less than it), or null if `order` is first
+   * (or has no order at all). Shared by isTheoryUnlocked() and
+   * academyOverlay.ts's locked-card reason text. */
+  getPriorModule(trackId: string, order: number | undefined): AcademyModuleSummary | null {
+    if (order == null) return null;
+    const track = this.tracks.get(trackId);
+    if (!track?.modules) return null;
+    let prior: AcademyModuleSummary | null = null;
+    for (const summary of track.modules) {
+      if (summary.order != null && summary.order < order && (!prior || summary.order > prior.order!)) prior = summary;
+    }
+    return prior;
+  }
+
+  /** Study-first sequencing gate: a module at track position `order` is
+   * unlocked if it's first in its track (no order/no earlier order in
+   * the track summary — either reads as "nothing to wait on") or the
+   * immediately-preceding order's module has sealed its theory. Only
+   * the immediate predecessor matters (module N+1 needs module N, not
+   * every module before it) — see PLAN.md's per-track ordering. A
+   * module with no `order` at all (a hasContent: false stub) always
+   * reads as locked; academyOverlay.ts never calls this for those since
+   * they render their own "IN DEVELOPMENT" card before reaching here. */
+  isTheoryUnlocked(trackId: string, order: number | undefined): boolean {
+    if (order == null) return false;
+    const prior = this.getPriorModule(trackId, order);
+    if (!prior) return true;
+    return this.getProgress(prior.id).theoryDone;
   }
 
   /** Numerator for the hub's credential progress bar — modules where

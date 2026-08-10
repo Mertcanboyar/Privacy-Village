@@ -3,6 +3,7 @@
   "track": "privacy_ops",
   "title": "The Alchemist's Cabinet",
   "clearanceRequired": 5,
+  "order": 8,
   "type": "lesson",
   "lesson": [
     {

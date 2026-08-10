@@ -3,6 +3,7 @@
   "track": "privacy_ops",
   "title": "Shaping the Data",
   "clearanceRequired": 5,
+  "order": 7,
   "type": "lesson",
   "theoryInDevelopment": true,
   "fieldWork": { "questId": "maren_winter_report", "label": "Maren's Winter Report", "room": "tavern", "ping": "maren" },
