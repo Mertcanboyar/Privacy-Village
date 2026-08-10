@@ -111,7 +111,7 @@ export class HUDController {
     });
     const dossierBtnEl = el("button", {
       className: "btn btn--ghost",
-      text: "\u{1F396} DOSSIER",
+      text: "\u{1F396} PROFILE",
       on: { click: () => dossier.toggle() },
     });
     this.menuBtnEl = el("button", {

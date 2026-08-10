@@ -5,16 +5,22 @@ import { academy } from "./academy";
 import { getCurrentUserId } from "./cloud/authState";
 import { fetchDecisions, type DecisionRow } from "./cloud/decisions";
 
-// The Agent Dossier — a three-tab progression page (DOSSIER/CODEX/
-// JOURNEY) layered over the village, same framework-free
-// Phaser.Events.EventEmitter singleton pattern as questEngine.ts/
-// academy.ts, so the Scene-bound DOM UI (dossierOverlay.ts) can react
-// without this module depending on any Scene. Mostly a DISPLAY feature
-// over quest/academy state that already exists — the only genuinely
-// new persisted state this file owns is which Codex concepts/Journey
-// titles a player has unlocked, and which title they've chosen to
-// wear publicly (see progress.unlocked_concepts/unlocked_titles/
-// active_title — supabase/migration_dossier.sql).
+// The Agent Profile (player-facing name — this module/file and its
+// "dossier" identifiers keep their original name throughout the code;
+// renaming them would collide with the unrelated Supabase profile
+// concept in cloud/profile.ts and the "Shadownet Dossier" evidence
+// briefing in npc.ts/breach_in_the_wall.json, so only the on-screen
+// copy changed — see dossierOverlay.ts's header comment) — a three-tab
+// progression page (PROFILE/CODEX/JOURNEY) layered over the village,
+// same framework-free Phaser.Events.EventEmitter singleton pattern as
+// questEngine.ts/academy.ts, so the Scene-bound DOM UI
+// (dossierOverlay.ts) can react without this module depending on any
+// Scene. Mostly a DISPLAY feature over quest/academy state that
+// already exists — the only genuinely new persisted state this file
+// owns is which Codex concepts/Journey titles a player has unlocked,
+// and which title they've chosen to wear publicly (see
+// progress.unlocked_concepts/unlocked_titles/active_title —
+// supabase/migration_dossier.sql).
 
 export interface CodexConcept {
   id: string;

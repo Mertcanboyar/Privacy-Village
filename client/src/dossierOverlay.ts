@@ -9,12 +9,17 @@ import { getSession, getAvatarOption, factionColorFor } from "./session";
 import { isAuthenticated } from "./cloud/authState";
 import { isImageOverlayOpen } from "./ui/imageOverlay";
 
-// Full-screen DOM overlay for the Agent Dossier — a three-tab
-// progression page (DOSSIER/CODEX/JOURNEY) layered over the village,
-// same shell pattern as academyOverlay.ts: dim+fade backdrop, movement
-// lock (Room.ts reads dossier.isOpen), audio duck (dossier.ts itself).
-// Opens via the HUD button or the P hotkey (no WASD/E collision, unlike
-// Academy's "A").
+// Full-screen DOM overlay for the Agent Profile (player-facing name —
+// internally still "dossier" throughout the code, since "profile"
+// already means something else here: the Supabase profiles table/
+// cloud/profile.ts's agent-identity row. Renaming the module would
+// collide with that concept and with the unrelated "Shadownet Dossier"
+// evidence briefing in npc.ts/breach_in_the_wall.json, so only the
+// displayed copy changed) — a three-tab progression page (PROFILE/
+// CODEX/JOURNEY) layered over the village, same shell pattern as
+// academyOverlay.ts: dim+fade backdrop, movement lock (Room.ts reads
+// dossier.isOpen), audio duck (dossier.ts itself). Opens via the HUD
+// button or the P hotkey (no WASD/E collision, unlike Academy's "A").
 //
 // Scene-bound (constructed with UIOverlay, the one persistent scene)
 // purely for consistency with every other overlay in this file's
@@ -141,14 +146,15 @@ export class DossierOverlay {
       dossier.close();
       return;
     }
-    // "P" toggles the Dossier from anywhere in the village, same
+    // "P" toggles the Profile from anywhere in the village, same
     // no-hotkey-collision reasoning as "Q" (quest tracker, hud.ts) — a
-    // letter that isn't WASD/E. Academy/Events have no hotkey of their
-    // own, so a real click can never reach the Dossier's HUD button
-    // while either is open (their full-screen backdrop covers it) —
-    // but a keyboard listener doesn't care about DOM stacking, so this
-    // guard is what stops "P" from popping the Dossier open ON TOP of
-    // one of them. Also suppressed while any text field expects the
+    // letter that isn't WASD/E (and a natural mnemonic for "Profile").
+    // Academy/Events have no hotkey of their own, so a real click can
+    // never reach the Profile's HUD button while either is open (their
+    // full-screen backdrop covers it) — but a keyboard listener doesn't
+    // care about DOM stacking, so this guard is what stops "P" from
+    // popping the Profile open ON TOP of one of them. Also suppressed
+    // while any text field expects the
     // keystroke (chat.ts already stops propagation for its own input,
     // so this never fires while typing there regardless) or the
     // evidence-image viewer owns it.
@@ -169,7 +175,7 @@ export class DossierOverlay {
 
   private renderTabNav(): HTMLElement {
     const tabs: { id: DossierTab; label: string }[] = [
-      { id: "dossier", label: "DOSSIER" },
+      { id: "dossier", label: "PROFILE" },
       { id: "codex", label: "CODEX" },
       { id: "journey", label: "JOURNEY" },
     ];
