@@ -29,7 +29,7 @@
     {
       "type": "callout",
       "variant": "blue",
-      "text": "In the field you saw this as the West Gate. In an audit you will see it as an unlogged service endpoint behind a default password."
+      "text": "In the field you'll find this as the West Gate. In an audit you'll find it as an unlogged service endpoint behind a default password."
     }
   ],
   "quiz": [
@@ -54,13 +54,13 @@
       ]
     },
     {
-      "q": "Why did the Saboteur — not the Sorcerer — threaten the West Gate?",
-      "choices": ["He is the strongest", "His capabilities match the vulnerability", "Goblins hate padlocks"],
+      "q": "The West Gate's lock sits on an unwatched cliff path with no lookout. Why is the Saboteur — high dexterity, high stealth — the real threat here, rather than whichever attacker happens to be strongest?",
+      "choices": ["He is the strongest", "His capabilities match the vulnerability", "Cliffs are hard to defend"],
       "answer": 1,
       "explain": [
-        "Raw strength isn't what mattered here.",
+        "Raw strength isn't what mattered here — the gap is a delicate lock, not a barred door.",
         "Threat modeling maps actor capability to system gap; strength without fit is noise.",
-        "A colorful guess, but not the actual reasoning."
+        "True, but that's a property of the location, not the threat actor — it's the fit between the two that matters."
       ]
     }
   ]
