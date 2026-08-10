@@ -32,15 +32,20 @@ const MUSIC_VOLUME = 0.35;
 const MUSIC_DUCK_VOLUME = MUSIC_VOLUME * 0.3;
 
 let music: Phaser.Sound.WebAudioSound | Phaser.Sound.HTML5AudioSound | null = null;
-let musicMuted = false;
+// Off by default — players who want the music opt in via the HUD's user
+// menu (see hud.ts's menuMusicItemEl/toggleMusic() below), rather than
+// having it start playing unannounced on a cold load.
+let musicMuted = true;
 let musicDucked = false;
 
-/** Starts the background music loop. Safe to call more than once (e.g.
- * if Title ever re-runs) — a second call is a no-op since `music` is
- * already set. */
+/** Starts the background music loop (muted, per the default above —
+ * still started so a later toggleMusic() just flips `mute` rather than
+ * having to create/play the Sound object for the first time then).
+ * Safe to call more than once (e.g. if Title ever re-runs) — a second
+ * call is a no-op since `music` is already set. */
 export function initMusic(scene: Phaser.Scene) {
   if (music) return;
-  music = scene.sound.add("bgm", { loop: true, volume: MUSIC_VOLUME }) as Phaser.Sound.WebAudioSound;
+  music = scene.sound.add("bgm", { loop: true, volume: MUSIC_VOLUME, mute: musicMuted }) as Phaser.Sound.WebAudioSound;
   music.play();
 }
 
