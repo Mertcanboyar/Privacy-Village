@@ -18,7 +18,7 @@
     },
     {
       "type": "paragraph",
-      "text": "You proved this at the inn. No log contained both a room and a name — yet Room 7 → Ticket T-822 → a green cloak at 20:15 → Wren. Each hop used a shared attribute. This is a linkage attack, and it is not theoretical: a famous study showed that ~87% of the US population is uniquely identifiable from just three quasi-identifiers — ZIP code, birth date, and sex. A researcher used exactly this chain, linking an \"anonymized\" hospital dataset to a public voter roll, to re-identify a state governor's medical records."
+      "text": "Picture an inn that sharded its guest records into three separate logs, trusting that separation meant safety: a room list, a coat-check log, a gate log. No single log ever paired a room with a name — yet Room 7 → Ticket T-822 → a green cloak at 20:15 → Wren. Each hop used a shared attribute; the chain gets there anyway. This is a linkage attack, and it is not theoretical: a famous study showed that ~87% of the US population is uniquely identifiable from just three quasi-identifiers — ZIP code, birth date, and sex. A researcher used exactly this chain, linking an \"anonymized\" hospital dataset to a public voter roll, to re-identify a state governor's medical records."
     },
     {
       "type": "callout",
@@ -32,11 +32,11 @@
     {
       "type": "callout",
       "variant": "gold",
-      "text": "AUDIT RULE — k-anonymity is a property you VERIFY, not declare. Count the twins. Every row, no exceptions. The Archive declared k=2; you found S-08. Declarations are not proofs."
+      "text": "AUDIT RULE — k-anonymity is a property you VERIFY, not declare. Count the twins, every row, no exceptions — a dataset can look safe on average and still expose the one row with no twin at all, like that courier. Declarations are not proofs."
     },
     {
       "type": "paragraph",
-      "text": "And k-anonymity has limits even when perfect: if everyone in a group shares the same sensitive value, hiding in the crowd reveals it anyway (all twelve guests in one wing testing positive tells you everything without naming anyone). Stronger tools exist — l-diversity, differential privacy — and they await at higher clearance. For now, carry the two lessons of the inn: chains link, and masks slip."
+      "text": "And k-anonymity has limits even when perfect: if everyone in a group shares the same sensitive value, hiding in the crowd reveals it anyway (all twelve guests in one wing testing positive tells you everything without naming anyone). Stronger tools exist — l-diversity, differential privacy — and they await at higher clearance. For now, carry these two lessons with you to the inn: chains link, and masks slip."
     }
   ],
   "quiz": [
@@ -45,13 +45,13 @@
       "choices": ["Anonymous data", "A pseudonym — still personal data", "A direct identifier"],
       "answer": 1,
       "explain": [
-        "Wrong — you personally de-anonymized it by chaining it to a name. Nothing about the ticket was ever truly anonymous.",
+        "Wrong — chaining it to a name de-anonymizes it. Nothing about the ticket was ever truly anonymous.",
         "Correct — a code standing in for a person, reversible via the chain. Pseudonymized data remains personal data.",
         "Wrong — the ticket names no one by itself; it only became identifying once chained to the other logs."
       ]
     },
     {
-      "q": "Which single change would have DEFEATED your linkage attack at the inn?",
+      "q": "Which single change would have DEFEATED the linkage attack chaining Room 7 to Wren?",
       "choices": ["Deleting names from the gate log too", "Renaming the logs", "Adding more rooms"],
       "answer": 0,
       "explain": [
