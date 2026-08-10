@@ -252,11 +252,14 @@ interface NPCDef {
 // --- "The Breach in the Wall" — Herald's mission briefings -----------
 // Verbatim mission text (see PLAN.md), pulled out of NPC_SPAWNS below
 // only because it's long enough to make the NPCDef literal unreadable
-// inline. Split into 3 short pages per mission (intro / evidence /
-// question) rather than one long scrolling wall of text — the briefing
-// panel is a fixed-height box sized to the game's 1280x720 canvas (see
-// its style comment below), so each page needs to fit without relying
-// on scroll to reach the answer buttons.
+// inline. MISSION_1_PAGES is 2 pages (intro / measures-and-question
+// together — the map itself lives only behind the separate "VIEW THE
+// BLUEPRINT" evidence button, not inline on this page, so the question
+// reads right under the data it's asking about) rather than one long
+// scrolling wall of text — the briefing panel is a fixed-height box
+// sized to the game's 1280x720 canvas (see its style comment below), so
+// each page needs to fit without relying on scroll to reach the answer
+// buttons.
 
 const MISSION_1_PAGES = [
   `The Council sits in their high tower, boasting that the Privacy Village is impregnable. "The walls are high," they say. "The wards are ancient." But they look only at what they built, not what they forgot.
@@ -277,10 +280,9 @@ EAST GATE (The Sea Wall)
 WEST GATE (The Service Entry)
 ✅ Preventative: Rusted Padlock (Physical Barrier)
 ❌ Deterrent: None.
-❌ Detective: None (No Watchtower, No Logs).`,
-  `A security system fails when it relies solely on prevention without detection. If a lock is picked in the dark, and no one is watching, is the gate truly shut?
+❌ Detective: None (No Watchtower, No Logs).
 
-🔍 Which Gate lacks a Detective Control and relies on a single point of failure?`,
+🔍 A security system fails when it relies solely on prevention without detection. If a lock is picked in the dark, and no one is watching, is the gate truly shut? Which Gate lacks a Detective Control and relies on a single point of failure?`,
 ];
 
 const MISSION_2_PAGES = [
@@ -484,7 +486,6 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
             caption: "EVIDENCE — STRONGHOLD DEFENSE GRID",
             buttonLabel: "VIEW THE BLUEPRINT",
           },
-          lineImages: { atLine: 1, images: [{ src: "/assets/quest/village_map_mission1.jpeg", label: "Stronghold Defense Grid" }] },
           ghostChoices: true,
           lines: MISSION_1_PAGES,
           choices: [
