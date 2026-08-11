@@ -1024,6 +1024,19 @@ interface NPCView {
   nameText: Phaser.GameObjects.Text;
 }
 
+// Which room an NPC id lives in — Room.ts uses this to know whether the
+// current objective NPC (see questEngine.getObjectiveNpcId()) is here
+// (gets the ambient pulse, see NPCController.refreshObjectivePulse())
+// or in a different room entirely (gets the off-screen door arrow
+// instead, since rooms are fixed-camera and never scroll — see
+// CLAUDE.md).
+export function findNpcRoom(npcId: string): RoomName | undefined {
+  for (const [room, defs] of Object.entries(NPC_SPAWNS) as [RoomName, NPCDef[]][]) {
+    if (defs.some((d) => d.id === npcId)) return room;
+  }
+  return undefined;
+}
+
 // "minigame" — Maren's two Healer's Ledger mini-games (see open()'s
 // special case): a real DOM overlay owns the interaction start to
 // finish, this mode only exists so dialogueOpen (and therefore Room.ts's
@@ -1066,11 +1079,14 @@ export class NPCController {
   private offerQuestId: string | null = null;
   private lineIndex = 0;
   private currentTypewriter: TypewriterHandle | null = null;
-  private heraldPulse: Phaser.GameObjects.Arc | null = null;
-  private odilePulse: Phaser.GameObjects.Arc | null = null;
-  private marenPulse: Phaser.GameObjects.Arc | null = null;
-  private bramPulse: Phaser.GameObjects.Arc | null = null;
-  private mayorPulse: Phaser.GameObjects.Arc | null = null;
+  // Single ambient marker for "whoever the player needs to reach right
+  // now" (see questEngine.getObjectiveNpcId()) — replaces what used to
+  // be five near-identical per-NPC methods gated on hardcoded clearance
+  // thresholds (a leftover of the pre-Academy-inversion unlock scheme,
+  // now stale since quests unlock via theory or narrative chains
+  // instead). One marker at a time, since only one objective is ever
+  // live.
+  private objectivePulse: Phaser.GameObjects.Arc | null = null;
 
   constructor(scene: Phaser.Scene, roomName: RoomName) {
     this.eKey = scene.input.keyboard!.addKey("E");
@@ -1113,36 +1129,13 @@ export class NPCController {
       this.npcs.push({ def, image, nameText });
     }
 
-    if (roomName === "village") {
-      this.refreshHeraldPulse(scene);
-      this.refreshBramPulse(scene);
-      const onLevelUp = () => {
-        this.refreshHeraldPulse(scene);
-        this.refreshBramPulse(scene);
-      };
-      questEngine.on("levelUp", onLevelUp);
-      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
-    }
-
-    // The Mayor moved to the Great Hall (see NPC_SPAWNS.great_hall) —
-    // same pulse technique, just scoped to that room now.
-    if (roomName === "great_hall") {
-      this.refreshMayorPulse(scene);
-      const onLevelUp = () => this.refreshMayorPulse(scene);
-      questEngine.on("levelUp", onLevelUp);
-      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
-    }
-
-    if (roomName === "tavern") {
-      this.refreshOdilePulse(scene);
-      this.refreshMarenPulse(scene);
-      const onLevelUp = () => {
-        this.refreshOdilePulse(scene);
-        this.refreshMarenPulse(scene);
-      };
-      questEngine.on("levelUp", onLevelUp);
-      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("levelUp", onLevelUp));
-    }
+    // Reactive on every questUpdated (accept/unlock/complete, whatever
+    // the source), not just levelUp — the old scheme only re-checked on
+    // clearance changes, which missed theory-driven unlocks entirely.
+    this.refreshObjectivePulse(scene);
+    const onObjectiveChange = () => this.refreshObjectivePulse(scene);
+    questEngine.on("questUpdated", onObjectiveChange);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("questUpdated", onObjectiveChange));
 
     this.promptText = scene.add
       .text(0, 0, "[E] Talk", {
@@ -1269,40 +1262,32 @@ export class NPCController {
     });
   }
 
-  // "Quest auto-highlights him (subtle gold pulse) once Clearance 2 is
-  // reached" (see PLAN.md "The Breach in the Wall") — a soft pulsing
-  // circle under the Herald, same Graphics-pulse technique as the oracle
-  // lens above. Checked once at construction and again on every future
-  // "levelUp" (covers reaching Clearance 2 while already standing here).
-  private refreshHeraldPulse(scene: Phaser.Scene) {
-    if (this.heraldPulse || questEngine.getClearance() < 2) return;
-    const herald = this.npcs.find((n) => n.def.id === "herald");
-    if (!herald) return;
-    const g = scene.add.circle(herald.image.x, herald.image.y - 20, 34, 0xf0b429, 0.22).setDepth(herald.image.y - 1);
-    scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    this.heraldPulse = g;
-  }
-
-  // Same technique, gold-pulsing Odile once Clearance 4 unlocks "The
-  // Innkeeper's Shards" — he's the giver, not Herald, for this quest.
-  private refreshOdilePulse(scene: Phaser.Scene) {
-    if (this.odilePulse || questEngine.getClearance() < 4) return;
-    const odile = this.npcs.find((n) => n.def.id === "odile");
-    if (!odile) return;
-    const g = scene.add.circle(odile.image.x, odile.image.y - 20, 34, 0xf0b429, 0.22).setDepth(odile.image.y - 1);
-    scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    this.odilePulse = g;
-  }
-
-  // Same technique, gold-pulsing Maren once Clearance 3 unlocks "The
-  // Healer's Ledger" (see healers_ledger.json's unlockAtClearance).
-  private refreshMarenPulse(scene: Phaser.Scene) {
-    if (this.marenPulse || questEngine.getClearance() < 3) return;
-    const maren = this.npcs.find((n) => n.def.id === "maren");
-    if (!maren) return;
-    const g = scene.add.circle(maren.image.x, maren.image.y - 20, 34, 0xf0b429, 0.22).setDepth(maren.image.y - 1);
-    scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    this.marenPulse = g;
+  // Ambient marker for "whoever the player needs to reach right now"
+  // (see questEngine.getObjectiveNpcId()) — scale+opacity tween, ~1.2s
+  // loop, conspicuous enough to catch a first-time player's eye at
+  // spawn (the old per-NPC clearance-gated pulses never covered the
+  // arrival quest's very first objective at all). Re-run on every
+  // questUpdated; no-ops (leaves the marker cleared) if the current
+  // objective NPC isn't in this room — Room.ts's off-screen door arrow
+  // covers that case instead.
+  private refreshObjectivePulse(scene: Phaser.Scene) {
+    this.objectivePulse?.destroy();
+    this.objectivePulse = null;
+    const npcId = questEngine.getObjectiveNpcId();
+    if (!npcId) return;
+    const target = this.npcs.find((n) => n.def.id === npcId);
+    if (!target) return;
+    const g = scene.add.circle(target.image.x, target.image.y - 20, 34, 0xf0b429, 0.25).setDepth(target.image.y - 1);
+    scene.tweens.add({
+      targets: g,
+      scale: { from: 1, to: 1.35 },
+      alpha: { from: 0.25, to: 0.6 },
+      duration: 1200,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+    this.objectivePulse = g;
   }
 
   // One-shot bright flash on the Herald, distinct from the steady
@@ -1315,17 +1300,6 @@ export class NPCController {
     scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
   }
 
-  // Same technique, gold-pulsing Bram once Clearance 4 unlocks "The
-  // Blueprint of the Post Road" — he's the giver for this one, not Herald.
-  private refreshBramPulse(scene: Phaser.Scene) {
-    if (this.bramPulse || questEngine.getClearance() < 4) return;
-    const bram = this.npcs.find((n) => n.def.id === "bram");
-    if (!bram) return;
-    const g = scene.add.circle(bram.image.x, bram.image.y - 20, 34, 0xf0b429, 0.22).setDepth(bram.image.y - 1);
-    scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    this.bramPulse = g;
-  }
-
   // One-shot flash on Bram, same technique as pingHerald() — used by the
   // Academy's "IN THE VILLAGE →" pip for field work he gives (see
   // academy.ts's AcademyFieldWork.ping).
@@ -1334,17 +1308,6 @@ export class NPCController {
     if (!bram) return;
     const g = scene.add.circle(bram.image.x, bram.image.y - 20, 10, 0xf0b429, 0.9).setDepth(bram.image.y + 1);
     scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
-  }
-
-  // Same technique, gold-pulsing the Mayor once Clearance 5 unlocks
-  // "The Treasury's Two Keys" — he's the giver for this one.
-  private refreshMayorPulse(scene: Phaser.Scene) {
-    if (this.mayorPulse || questEngine.getClearance() < 5) return;
-    const mayor = this.npcs.find((n) => n.def.id === "mayor");
-    if (!mayor) return;
-    const g = scene.add.circle(mayor.image.x, mayor.image.y - 20, 34, 0xf0b429, 0.22).setDepth(mayor.image.y - 1);
-    scene.tweens.add({ targets: g, alpha: { from: 0.22, to: 0.55 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    this.mayorPulse = g;
   }
 
   // One-shot flash on the Mayor, same technique as pingHerald()/pingBram()
@@ -1360,8 +1323,9 @@ export class NPCController {
   // One-shot flash on Maren, same technique as pingHerald()/pingBram()/
   // pingMayor() — used by the Academy's "IN THE TAVERN →" pip for
   // "Shaping the Data" (see academy.ts's AcademyFieldWork.ping). She
-  // already has an ambient refreshMarenPulse() from "The Healer's
-  // Ledger" above; this is just the one-shot on-demand flash.
+  // may already have the ambient objective pulse (refreshObjectivePulse()
+  // above) if her quest is the current one; this is just the one-shot
+  // on-demand flash.
   pingMaren(scene: Phaser.Scene) {
     const maren = this.npcs.find((n) => n.def.id === "maren");
     if (!maren) return;

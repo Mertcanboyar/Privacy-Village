@@ -329,6 +329,29 @@ class QuestManager extends Phaser.Events.EventEmitter {
     this.emit("toast", message);
   }
 
+  /** The NPC id the player currently needs to reach — either a real
+   * quest-giver's `available` offer, or the active quest's current
+   * talk_to step target. Drives npc.ts's objective pulse, Room.ts's
+   * off-screen door arrow, and the 20s handler nudge — one source of
+   * truth instead of each caller re-deriving "what should the player be
+   * doing right now." Null when the current objective isn't NPC-shaped
+   * (a reach_zone step, or nothing active/available at all) — never
+   * returns a locked quest's giver, so pulsing stays reserved for
+   * genuinely available objectives. */
+  getObjectiveNpcId(): string | null {
+    const active = this.getActiveQuest();
+    if (active) {
+      const step = active.steps[this.getActiveStepIndex()];
+      return step?.trigger.type === "talk_to" ? step.trigger.npc : null;
+    }
+    for (const id of QUEST_IDS) {
+      if (this.getState(id) !== "available") continue;
+      const def = this.defs.get(id);
+      if (def && def.giver !== "hq" && def.giver !== "auto") return def.giver;
+    }
+    return null;
+  }
+
   getPoints(): number {
     return this.points;
   }

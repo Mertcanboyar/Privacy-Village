@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { GAME_WIDTH, GAME_HEIGHT } from "../config";
 import { attachDebugOverlay } from "../debugOverlay";
-import { NPCController } from "../npc";
+import { NPCController, findNpcRoom } from "../npc";
 import { QuestController } from "../quest";
 import { getAvatarOption, getFactionColor, getSession } from "../session";
 import { questEngine } from "../questEngine";
@@ -20,6 +20,14 @@ import { markSpawn, logOnboardingOrientationShown } from "../instrumentation";
 const PLAYER_SPEED = 160;
 const SCALE_FAR = 0.75;
 const SCALE_NEAR = 1.0;
+
+// P0-1 playtest fix: a first-time player who hasn't reached their
+// marked objective within 20s of spawn gets one nudge toast — never
+// repeats within this page load (module-level, so it survives the
+// scene restart every door transition triggers). See
+// maybeFireHandlerNudge().
+const HANDLER_NUDGE_DELAY_MS = 20000;
+let handlerNudgeFired = false;
 
 // Ambient wanderers — village only (see PLAN.md Day 13). Separate from
 // and unrelated to live multiplayer presence (see net/NetClient.ts),
@@ -97,6 +105,16 @@ function depthScaleFor(y: number): number {
   return SCALE_FAR + (SCALE_NEAR - SCALE_FAR) * t;
 }
 
+// Short uppercase label for the off-screen objective arrow (see
+// refreshObjectiveArrow()) — deliberately separate from academy.ts's
+// roomLabel(), which reads as prose ("the tavern") rather than a UI tag.
+function roomDisplayName(room: RoomName): string {
+  if (room === "tavern") return "TAVERN";
+  if (room === "courthouse") return "COURTHOUSE";
+  if (room === "great_hall") return "GREAT HALL";
+  return "VILLAGE";
+}
+
 export class Room extends Phaser.Scene {
   private roomName: RoomName = "village";
   private player!: Phaser.GameObjects.Image;
@@ -109,6 +127,7 @@ export class Room extends Phaser.Scene {
   private doors: RoomDoor[] = [];
   private zones: RoomZone[] = [];
   private zoneMarker: Phaser.GameObjects.Graphics | null = null;
+  private objectiveArrow: Phaser.GameObjects.Text | null = null;
   private transitioning = false;
   // Edge-detected rather than level-triggered: unlike a room door (which
   // warps the player away from the hotspot on trigger), the Academy door
@@ -325,7 +344,10 @@ export class Room extends Phaser.Scene {
       // this BEFORE bootstrapHqQuest() flips it, so the tutorial only
       // fires on a genuine first spawn (see tutorial.ts).
       const isFirstSpawn = questEngine.getState("arrival") === "locked";
-      if (isFirstSpawn) markSpawn(); // see instrumentation.ts — the "seconds since spawn" clock's zero point
+      if (isFirstSpawn) {
+        markSpawn(); // see instrumentation.ts — the "seconds since spawn" clock's zero point
+        this.time.delayedCall(HANDLER_NUDGE_DELAY_MS, () => this.maybeFireHandlerNudge());
+      }
       const isFirstEverVisit = isFirstSpawn && tutorial.shouldShow();
       // Idempotent — only actually unlocks/activates the first time this
       // ever runs across the whole session (see questEngine.ts).
@@ -346,6 +368,8 @@ export class Room extends Phaser.Scene {
 
     this.refreshZoneMarker();
     questEngine.on("questUpdated", this.refreshZoneMarker, this);
+    this.refreshObjectiveArrow();
+    questEngine.on("questUpdated", this.refreshObjectiveArrow, this);
     // Re-checked on every questUpdated (not just at scene creation, see
     // below) so the incident starts the instant the k-anonymity puzzle
     // that unlocks it wraps up — that puzzle's giver (Herald) stands in
@@ -370,9 +394,11 @@ export class Room extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       questEngine.off("questUpdated", this.refreshZoneMarker, this);
       questEngine.off("questUpdated", this.checkIncidentTrigger, this);
+      questEngine.off("questUpdated", this.refreshObjectiveArrow, this);
       questEngine.off("questCompleted", onQuestCompleted);
       questEngine.off("sceneBeat", onSceneBeat);
       this.zoneMarker?.destroy();
+      this.objectiveArrow?.destroy();
     });
 
     // Covers the other path: the quest was already unlocked (e.g. the
@@ -480,6 +506,54 @@ export class Room extends Phaser.Scene {
     g.strokeCircle(zone.x, zone.y, zone.radius * 0.4);
     this.tweens.add({ targets: g, alpha: { from: 1, to: 0.35 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.zoneMarker = g;
+  }
+
+  // Rooms are fixed-camera and never scroll (see CLAUDE.md), so "off
+  // screen" only ever means "in a different room" — points at whichever
+  // door in THIS room leads toward the current objective NPC (see
+  // questEngine.getObjectiveNpcId()), pulsing the same way
+  // NPCController's own on-NPC marker does. Every non-village room has
+  // exactly one door (back to the village hub), so a target with no
+  // direct door here (e.g. tavern -> courthouse) still resolves
+  // correctly by falling back to that one door — going through the hub
+  // is always the right next step in this 4-room layout.
+  private refreshObjectiveArrow() {
+    this.objectiveArrow?.destroy();
+    this.objectiveArrow = null;
+
+    const npcId = questEngine.getObjectiveNpcId();
+    if (!npcId) return;
+    const targetRoom = findNpcRoom(npcId);
+    if (!targetRoom || targetRoom === this.roomName) return;
+    const door = this.doors.find((d) => d.target === targetRoom) ?? this.doors[0];
+    if (!door) return;
+
+    const g = this.add
+      .text(door.x + door.width / 2, door.y - 20, `▲ ${roomDisplayName(targetRoom)}`, {
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: "16px",
+        fontStyle: "bold",
+        color: "#f0b429",
+        stroke: "#000000",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(100002);
+    this.tweens.add({ targets: g, scale: { from: 1, to: 1.2 }, alpha: { from: 0.7, to: 1 }, duration: 1200, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.objectiveArrow = g;
+  }
+
+  // Scheduled once, HANDLER_NUDGE_DELAY_MS after a genuine first spawn
+  // (see create()) — a playtest found new players wandering, never
+  // noticing the pulsing marker at all. Only fires if the objective is
+  // still NPC-shaped and unresolved by then; silent otherwise. Delivered
+  // via questEngine.toast() (the only public route into hud.ts's toast
+  // stack — see questEngine.ts's toast()).
+  private maybeFireHandlerNudge() {
+    if (handlerNudgeFired) return;
+    if (!questEngine.getObjectiveNpcId()) return;
+    handlerNudgeFired = true;
+    questEngine.toast("HANDLER: The marked contact is waiting, Agent.");
   }
 
   private spawnWanderers() {
