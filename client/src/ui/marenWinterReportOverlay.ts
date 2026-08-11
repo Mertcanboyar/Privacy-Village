@@ -570,7 +570,7 @@ export function openMarenWinterReportOverlay(onClose: (completed: boolean) => vo
         "NAME",
         [
           { value: "keep", text: "KEEP" },
-          { value: "drop", text: "DROP" },
+          { value: "drop", text: "DELETE" },
         ],
         config.name,
         (v) => {
@@ -582,7 +582,7 @@ export function openMarenWinterReportOverlay(onClose: (completed: boolean) => vo
         "ADDRESS",
         [
           { value: "keep", text: "KEEP" },
-          { value: "drop", text: "DROP" },
+          { value: "drop", text: "DELETE" },
         ],
         config.address,
         (v) => {
@@ -594,7 +594,7 @@ export function openMarenWinterReportOverlay(onClose: (completed: boolean) => vo
         "ILLNESS",
         [
           { value: "keep", text: "KEEP" },
-          { value: "drop", text: "DROP" },
+          { value: "drop", text: "DELETE" },
           { value: "count", text: "COUNT" },
         ],
         config.illness,

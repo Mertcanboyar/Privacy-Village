@@ -1137,7 +1137,7 @@ export class AcademyOverlay {
           color: isRemoved && !this.sieveValidated ? "var(--text-muted)" : "var(--text-primary)",
         },
       }),
-      el("span", { className: isRemoved ? "chip" : "chip chip--gold", text: isRemoved ? "SIEVE OUT" : "KEEP" }),
+      el("span", { className: isRemoved ? "chip" : "chip chip--gold", text: isRemoved ? "SIEVE OUT" : "KEEP THIS FIELD" }),
     ]);
 
     const rowChildren: HTMLElement[] = [titleRow];
