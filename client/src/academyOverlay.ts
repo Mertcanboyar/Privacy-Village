@@ -45,7 +45,6 @@ function roomCallToAction(room: AcademyFieldWork["room"]): string {
 // same reasoning as HUDController) so the module list's "IN THE VILLAGE
 // →" pip can reach the Room scene via the shared SceneManager.
 const FADE_MS = 200;
-const CARD_DRILL_AUTO_ADVANCE_MS = 1500;
 
 type AcademyView = "hub" | "moduleList" | "lesson" | "quiz" | "cardDrillIntro" | "cardDrill" | "cardDrillMultiIntro" | "cardDrillMulti" | "dataSieve" | "diagramQuiz";
 
@@ -102,7 +101,6 @@ export class AcademyOverlay {
   private drillRevealed = false;
   private drillPicked: boolean | null = null;
   private drillCorrect = false;
-  private drillAutoAdvanceTimer: number | undefined;
 
   // Card drill (multi) state — same working-queue mastery pattern as the
   // binary drill above, generalized to N labeled choices instead of a
@@ -113,7 +111,6 @@ export class AcademyOverlay {
   private drillMultiRevealed = false;
   private drillMultiPickedIndex: number | null = null;
   private drillMultiCorrect = false;
-  private drillMultiAutoAdvanceTimer: number | undefined;
   // Collapsible reference strip (e.g. "THE SIX: ...") — starts collapsed
   // each time a fresh drill begins (see goToCardDrillMulti()).
   private referenceExpanded = false;
@@ -774,8 +771,17 @@ export class AcademyOverlay {
             style: { marginTop: "var(--space-3)", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" },
           }),
           el("div", {
-            text: this.drillCorrect ? "Advancing…" : "Tap anywhere to continue",
-            style: { marginTop: "var(--space-2)", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" },
+            text: "CONTINUE ▸",
+            style: {
+              marginTop: "var(--space-2)",
+              textAlign: "center",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              fontWeight: "700",
+              letterSpacing: "0.08em",
+              color: "var(--accent-gold)",
+              animation: "ds-pulse 1.6s ease-in-out infinite",
+            },
           }),
         ]),
       );
@@ -818,13 +824,9 @@ export class AcademyOverlay {
     });
 
     this.render();
-    if (this.drillCorrect) {
-      this.drillAutoAdvanceTimer = window.setTimeout(() => this.advanceCardDrill(), CARD_DRILL_AUTO_ADVANCE_MS);
-    }
   }
 
   private advanceCardDrill() {
-    window.clearTimeout(this.drillAutoAdvanceTimer);
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
     const card = this.drillDeck.shift();
     if (!card) return;
@@ -964,8 +966,17 @@ export class AcademyOverlay {
             style: { marginTop: "var(--space-3)", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" },
           }),
           el("div", {
-            text: this.drillMultiCorrect ? "Advancing…" : "Tap anywhere to continue",
-            style: { marginTop: "var(--space-2)", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" },
+            text: "CONTINUE ▸",
+            style: {
+              marginTop: "var(--space-2)",
+              textAlign: "center",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              fontWeight: "700",
+              letterSpacing: "0.08em",
+              color: "var(--accent-gold)",
+              animation: "ds-pulse 1.6s ease-in-out infinite",
+            },
           }),
         ]),
       );
@@ -1013,13 +1024,9 @@ export class AcademyOverlay {
       attempt: nextAnswerAttempt(`${this.currentModuleId}:${card.item}`),
     });
     this.render();
-    if (this.drillMultiCorrect) {
-      this.drillMultiAutoAdvanceTimer = window.setTimeout(() => this.advanceCardDrillMulti(), CARD_DRILL_AUTO_ADVANCE_MS);
-    }
   }
 
   private advanceCardDrillMulti() {
-    window.clearTimeout(this.drillMultiAutoAdvanceTimer);
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
     const card = this.drillMultiDeck.shift();
     if (!card) return;
