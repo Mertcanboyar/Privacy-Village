@@ -414,9 +414,23 @@ export class Room extends Phaser.Scene {
   // `!this.transitioning` guards against a second questUpdated firing
   // mid-sequence (acceptQuest() inside triggerIncidentStart() below
   // emits its own) re-entering this while the bell/shake/dash is still
-  // playing out.
+  // playing out. `!questEngine.getActiveQuest()` matters now that the
+  // paired Academy module's theory alone can unlock this quest (see
+  // PLAN's Academy-first inversion) — a player can reach Clearance-
+  // independent theory completion while "arrival" (or any other quest)
+  // is still active, and acceptQuest() silently no-ops if another quest
+  // is already active, which used to strand this quest at "available"
+  // forever with no NPC dialogue ever reaching its questActive branches.
+  // Waiting for no active quest matches the same "between quests" gate
+  // every normal quest-giver offer already uses (see npc.ts's open());
+  // the next questUpdated once that quest completes re-checks this.
   private checkIncidentTrigger() {
-    if (this.roomName === "village" && !this.transitioning && questEngine.getState("night_the_wall_fell") === "available") {
+    if (
+      this.roomName === "village" &&
+      !this.transitioning &&
+      !questEngine.getActiveQuest() &&
+      questEngine.getState("night_the_wall_fell") === "available"
+    ) {
       this.triggerIncidentStart();
     }
   }
