@@ -26,6 +26,90 @@ import type { Room } from "./scenes/Room";
 
 const MODULE_COMPLETE_XP = 100;
 
+// ~120 words/screen hard cap (see PLAN.md's lesson pagination rule) —
+// heading/paragraph blocks accumulate onto the current page until adding
+// one would cross the cap, while callout/evidence-image blocks always
+// get their own page (they carry one distinct idea each, not prose to
+// pack alongside neighbors).
+const LESSON_PAGE_WORD_CAP = 120;
+
+function blockWordCount(block: LessonBlock): number {
+  return block.type === "evidence-image" ? 0 : block.text.split(/\s+/).filter(Boolean).length;
+}
+
+// A handful of reference-style callouts (e.g. the PETs cabinet) run well
+// past the cap as one block. Splits on "\n\n" item boundaries first
+// (preserving the whiteSpace: pre-line list structure renderLessonBlock
+// already relies on) since that's the natural seam in this content;
+// falls back to sentence boundaries for a block with no such seams. Each
+// resulting chunk stays under the cap on its own, standalone chunks
+// heavier than the cap included — same "own page regardless" carve-out
+// paginateLessonBlocks uses elsewhere.
+function splitOversizedText(text: string): string[] {
+  const items = text.split(/\n\n+/).filter(Boolean);
+  const segments = items.length > 1 ? items : text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const joiner = items.length > 1 ? "\n\n" : " ";
+  const chunks: string[] = [];
+  let current: string[] = [];
+  let words = 0;
+  for (const seg of segments) {
+    const w = seg.split(/\s+/).filter(Boolean).length;
+    if (current.length && words + w > LESSON_PAGE_WORD_CAP) {
+      chunks.push(current.join(joiner));
+      current = [];
+      words = 0;
+    }
+    current.push(seg);
+    words += w;
+  }
+  if (current.length) chunks.push(current.join(joiner));
+  return chunks;
+}
+
+function splitOversizedBlocks(blocks: LessonBlock[]): LessonBlock[] {
+  const out: LessonBlock[] = [];
+  for (const block of blocks) {
+    if ((block.type === "paragraph" || block.type === "callout") && blockWordCount(block) > LESSON_PAGE_WORD_CAP) {
+      for (const chunk of splitOversizedText(block.text)) {
+        out.push({ ...block, text: chunk });
+      }
+    } else {
+      out.push(block);
+    }
+  }
+  return out;
+}
+
+function paginateLessonBlocks(rawBlocks: LessonBlock[]): LessonBlock[][] {
+  const blocks = splitOversizedBlocks(rawBlocks);
+  const pages: LessonBlock[][] = [];
+  let current: LessonBlock[] = [];
+  let currentWords = 0;
+  for (const block of blocks) {
+    const words = blockWordCount(block);
+    // A page already over the cap breaks before adding more, unless it's
+    // still empty (a single block heavier than the cap gets its own page
+    // rather than an infinite loop). Never break BEFORE a callout/
+    // evidence-image — it's meant to punctuate whatever led into it.
+    if (current.length && currentWords + words > LESSON_PAGE_WORD_CAP) {
+      pages.push(current);
+      current = [];
+      currentWords = 0;
+    }
+    current.push(block);
+    currentWords += words;
+    // A callout/evidence-image always ends its page — it carries one
+    // distinct idea, so nothing unrelated gets appended after it.
+    if (block.type === "callout" || block.type === "evidence-image") {
+      pages.push(current);
+      current = [];
+      currentWords = 0;
+    }
+  }
+  if (current.length) pages.push(current);
+  return pages.length ? pages : [[]];
+}
+
 function roomCallToAction(room: AcademyFieldWork["room"]): string {
   if (room === "courthouse") return "IN THE COURTHOUSE →";
   if (room === "tavern") return "IN THE TAVERN →";
@@ -72,6 +156,13 @@ export class AcademyOverlay {
   private currentView: AcademyView = "hub";
   private currentTrackId: string | null = null;
   private currentModuleId: string | null = null;
+
+  // Lesson pagination — which screen of the current module's lesson
+  // blocks is showing, reset to 0 every time a lesson is (re-)entered
+  // (see goToLesson()). Recomputing pages from module.lesson on every
+  // render() (rather than caching them) keeps this a single source of
+  // truth with paginateLessonBlocks() doing the real work.
+  private lessonPageIndex = 0;
 
   // Mastery-model quiz state — one question at a time, reset whenever a
   // fresh quiz starts or advances (see goToQuiz()/nextQuizQuestion()).
@@ -254,6 +345,7 @@ export class AcademyOverlay {
   private goToLesson(moduleId: string) {
     this.currentModuleId = moduleId;
     this.currentView = "lesson";
+    this.lessonPageIndex = 0;
     this.render();
   }
 
@@ -536,26 +628,66 @@ export class AcademyOverlay {
       return;
     }
 
+    const pages = paginateLessonBlocks(module.lesson);
+    this.lessonPageIndex = Phaser.Math.Clamp(this.lessonPageIndex, 0, pages.length - 1);
+    const isLastPage = this.lessonPageIndex >= pages.length - 1;
+
     const header = el("div", { style: { display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-3)" } }, [
       el("button", { className: "btn btn--ghost", text: "← BACK", on: { click: () => this.goToModuleList(module.track) } }),
       el("h2", { text: module.title.toUpperCase(), style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px" } }),
     ]);
 
+    const dots = el(
+      "div",
+      { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", margin: "0 0 var(--space-3)" } },
+      [
+        ...pages.map((_, i) =>
+          el("span", {
+            style: {
+              width: "10px",
+              height: "10px",
+              borderRadius: "50%",
+              background: i <= this.lessonPageIndex ? "var(--accent-gold)" : "var(--border-strong)",
+            },
+          }),
+        ),
+        el("span", {
+          text: `${this.lessonPageIndex + 1} of ${pages.length}`,
+          style: { marginLeft: "8px", fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" },
+        }),
+      ],
+    );
+
     const blocks = el(
       "div",
       { className: "briefing" },
-      module.lesson.map((block) => this.renderLessonBlock(block)),
+      pages[this.lessonPageIndex].map((block) => this.renderLessonBlock(block)),
     );
 
     const isDiagramQuiz = module.type === "lesson_diagramquiz";
-    const assessmentBtn = el("button", {
-      className: "btn btn--gold",
-      text: isDiagramQuiz ? "READ THE DIAGRAM" : "TAKE THE ASSESSMENT",
-      style: { marginTop: "var(--space-3)" },
-      on: { click: () => (isDiagramQuiz ? this.goToDiagramQuiz(module.id) : this.goToQuiz(module.id)) },
-    });
+    const navRow = el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-3)" } }, [
+      this.lessonPageIndex > 0
+        ? el("button", { className: "btn btn--ghost", text: "◂ BACK", on: { click: () => this.goToLessonPage(this.lessonPageIndex - 1) } })
+        : el("span", {}),
+      isLastPage
+        ? el("button", {
+            className: "btn btn--gold",
+            text: isDiagramQuiz ? "READ THE DIAGRAM" : "TAKE THE ASSESSMENT",
+            on: { click: () => (isDiagramQuiz ? this.goToDiagramQuiz(module.id) : this.goToQuiz(module.id)) },
+          })
+        : el("button", {
+            className: "btn btn--gold",
+            text: "CONTINUE ▸",
+            on: { click: () => this.goToLessonPage(this.lessonPageIndex + 1) },
+          }),
+    ]);
 
-    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "720px", maxHeight: "640px", overflowY: "auto" } }, [header, blocks, assessmentBtn]));
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "720px", maxHeight: "640px", overflowY: "auto" } }, [header, dots, blocks, navRow]));
+  }
+
+  private goToLessonPage(pageIndex: number) {
+    this.lessonPageIndex = pageIndex;
+    this.render();
   }
 
   private renderLessonBlock(block: LessonBlock): HTMLElement {
