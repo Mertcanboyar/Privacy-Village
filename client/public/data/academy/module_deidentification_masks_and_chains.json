@@ -61,6 +61,7 @@
       ]
     },
     {
+      "id": "deid_k_anonymity_violation",
       "q": "A dataset claims k=3. You find one row with exactly two identical twins and another row with none. The dataset satisfies:",
       "choices": ["k=3", "k=2", "Neither — k-anonymity fails"],
       "answer": 2,
@@ -68,7 +69,19 @@
         "Wrong — k is set by the WORST row, not the best. A row with zero twins breaks any k>1 claim.",
         "Wrong — the two-twin row would satisfy k=3, but the untwinned row still breaks the guarantee entirely.",
         "Correct — k is set by the WORST row. A row with zero twins means at least one person is unique — the guarantee fails outright, whatever the average looks like."
-      ]
+      ],
+      "hint": "k-anonymity is only as strong as its WORST row — averaging or best-casing across the other rows doesn't rescue a guarantee that a single row can break.",
+      "variant": {
+        "id": "deid_k_anonymity_violation_variant",
+        "q": "A guest log claims k=5. Eight rows have four identical twins each. One row has zero twins. The dataset satisfies:",
+        "choices": ["k=5", "k=4", "Neither — k-anonymity fails"],
+        "answer": 2,
+        "explain": [
+          "Wrong — k is set by the WORST row, not the best. A row with zero twins breaks any k>1 claim.",
+          "Wrong — the four-twin rows would satisfy k=4, but the untwinned row still breaks the guarantee entirely.",
+          "Correct — k is set by the WORST row. A row with zero twins means at least one person is unique — the guarantee fails outright, whatever the other eight rows look like."
+        ]
+      }
     },
     {
       "q": "Why is \"87% identifiable from ZIP + birth date + sex\" the same lesson as Room 7?",

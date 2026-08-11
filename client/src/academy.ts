@@ -81,12 +81,28 @@ export type LessonBlock =
   | { type: "evidence-image"; images: EvidenceImage[]; caption: string; buttonLabel: string };
 
 export interface QuizQuestion {
+  /** Stable id, needed to key wrong-attempt/hint-shown state and the
+   * `decisions` log — only required for a question that sets `hint` or
+   * `variant` (see academyOverlay.ts's progressive-hint mechanic);
+   * omitted on the many questions that don't opt into it. */
+  id?: string;
   q: string;
   choices: string[];
   answer: number;
   /** Explanation text per choice, same index as choices — shown whether
-   * the pick was right or wrong (see PLAN.md "The Academy" 3d). */
+   * the pick was right or wrong (see PLAN.md "The Academy" 3d). This is
+   * Stage 1 of the progressive-hint mechanic and never changes. */
   explain: string[];
+  /** Stage 2 — shown once the player's 2nd wrong pick lands on this
+   * question, alongside (not instead of) the per-choice explain text.
+   * Points at the reasoning rather than naming the answer outright. */
+  hint?: string;
+  /** Stage 3 — a fresh-scenario question testing the same concept,
+   * queued onto the end of the quiz once the player's 3rd wrong pick
+   * lands on this question (see academyOverlay.ts's answerQuiz()). The
+   * module only completes once every queued variant is answered
+   * correctly, same retry-until-correct rule as any other question. */
+  variant?: Omit<QuizQuestion, "hint" | "variant">;
 }
 
 export interface CardDrillCard {

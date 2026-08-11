@@ -52,6 +52,7 @@
       ]
     },
     {
+      "id": "purpose_limitation_grant_seal",
       "q": "Tavern tab records, collected to settle billing disputes, are requested to market hangover potions to heavy drinkers. Verdict?",
       "choices": ["GRANT", "CONDITIONAL", "SEAL"],
       "answer": 2,
@@ -59,7 +60,19 @@
         "Granting this lets billing data become a marketing profile — exactly the harm purpose limitation exists to stop.",
         "No safeguard fixes this — the problem isn't exposure risk, it's that marketing was never the purpose at all.",
         "Correct — billing to marketing is a classic incompatible repurposing (scope creep). It needs a fresh lawful basis / consent, not the billing purpose stretched to cover it."
-      ]
+      ],
+      "hint": "Ask only one thing: was this NEW use foreseeable within the reason the data was first collected — not whether it's profitable, harmless-sounding, or well-intentioned.",
+      "variant": {
+        "id": "purpose_limitation_grant_seal_variant",
+        "q": "Guardhouse shift logs, kept to track who's on duty, are requested by a merchant to time deliveries around guard rotations. Verdict?",
+        "choices": ["GRANT", "CONDITIONAL", "SEAL"],
+        "answer": 2,
+        "explain": [
+          "Granting hands a merchant a live map of security gaps — a shift log becoming a delivery-timing tool is scope creep with real risk.",
+          "No safeguard converts this — the problem isn't exposure, it's that commercial delivery-timing was never the purpose of a shift log.",
+          "Correct — shift-tracking to commercial delivery-timing is incompatible repurposing. It needs its own lawful basis, not the shift log's purpose stretched to cover it."
+        ]
+      }
     },
     {
       "q": "A guild wants health-visit data to decide where to dig a new well — a genuinely useful, compatible aim. The data names patients. Best verdict?",
@@ -90,6 +103,29 @@
         "Correct — emergency crowd-control and civic planning are different purposes regardless of how worthy the second is. Good intentions don't convert an incompatible purpose; the villagers must be asked afresh.",
         "Priority has nothing to do with it — even an urgent, important new purpose still needs its own lawful basis if it isn't compatible with the original one."
       ]
+    },
+    {
+      "id": "purpose_limitation_lawful_basis_consent_contract",
+      "q": "A tailor collects a customer's measurements to complete a commissioned coat, and separately asks if she may email her about a new autumn line. Which basis covers the EMAIL offer?",
+      "choices": ["The COMMISSION (contract) — a coat needs measurements", "Her CONSENT — freely given, separate from the coat", "No basis is needed for either"],
+      "answer": 1,
+      "explain": [
+        "The commission covers taking and using measurements to make the coat — it doesn't stretch to cover a marketing email about something else entirely.",
+        "Correct — fulfilling the coat is necessary for the CONTRACT; emailing about new items is a separate purpose that needs its own basis, here her freely given CONSENT.",
+        "Both bases exist for a reason — collecting and using data always needs one; there's no license to skip asking."
+      ],
+      "hint": "Ask which action was actually NECESSARY to deliver on the contract, and which one was optional, additional, and needed the customer's own yes.",
+      "variant": {
+        "id": "purpose_limitation_lawful_basis_consent_contract_variant",
+        "q": "A healer takes a patient's address to deliver medicine ordered under treatment, and separately asks to add her to a mailing list for seasonal remedies. Which basis covers the MAILING LIST?",
+        "choices": ["The TREATMENT (contract) — delivery needs an address", "Her CONSENT — freely given, separate from treatment", "Neither — healers don't need a basis"],
+        "answer": 1,
+        "explain": [
+          "The treatment contract covers delivering the ordered medicine — it doesn't extend to unrelated seasonal marketing.",
+          "Correct — delivering medicine is necessary for the CONTRACT; the mailing list is a separate purpose resting on her own CONSENT, freely given and revocable.",
+          "Healers handle personal data like anyone else — every use still needs its own lawful basis."
+        ]
+      }
     }
   ]
 }

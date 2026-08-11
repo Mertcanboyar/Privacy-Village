@@ -39,6 +39,7 @@
   ],
   "quiz": [
     {
+      "id": "threat_modeling_detective_control",
       "q": "A castle has a moat, a heavy iron gate, and a logbook recording everyone who enters. Which is the DETECTIVE control?",
       "choices": ["The moat", "The iron gate", "The logbook"],
       "answer": 2,
@@ -46,7 +47,19 @@
         "Preventative — a physical barrier that stops the approach before it starts.",
         "Preventative — an access barrier that stops entry before it starts.",
         "Detective — the logbook records and reveals who came, enabling audit after the fact."
-      ]
+      ],
+      "hint": "Ignore what each control looks like doing — ask only which one leaves a record you'd check AFTER the fact, not before.",
+      "variant": {
+        "id": "threat_modeling_detective_control_variant",
+        "q": "A vault has a reinforced steel door, a silent alarm wired to motion sensors, and a bribed guard who waves people through. Which is the DETECTIVE control?",
+        "choices": ["The steel door", "The silent alarm", "The guard"],
+        "answer": 1,
+        "explain": [
+          "Preventative — a physical barrier that stops entry before it starts.",
+          "Detective — the alarm doesn't stop anyone; it alerts you that someone got past the door.",
+          "This one's compromised, not a control at all — a bribed guard enforces nothing."
+        ]
+      }
     },
     {
       "q": "Your web app has a login page, a public API, and an old admin panel nobody remembers. Which is part of the attack surface?",

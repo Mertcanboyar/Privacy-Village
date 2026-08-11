@@ -50,6 +50,7 @@
   ],
   "quiz": [
     {
+      "id": "annex_iii_tier_fennick",
       "q": "Fennick's judgment engine — pricing customers and deciding credit. Tier?",
       "choices": ["Prohibited", "High-risk (Annex III)", "Transparency only"],
       "answer": 1,
@@ -57,7 +58,19 @@
         "Wrong — pricing and credit are not banned purposes, however badly run. Nothing about Fennick's engine falls under the Tier I refusals.",
         "Creditworthiness and essential services is an Annex III purpose — lawful, but under risk management, logging, and the human oversight you personally imposed.",
         "Wrong — declaring itself would not discharge Annex III duties. Transparency is a separate, lighter tier for machines that only need to say what they are."
-      ]
+      ],
+      "hint": "Ask what the system actually decides for a person — pricing/credit access is a tier defined by real-world consequence, not by how novel or clever the mechanism sounds.",
+      "variant": {
+        "id": "annex_iii_tier_fennick_variant",
+        "q": "A hiring engine screens job applications and ranks candidates for interview. Tier?",
+        "choices": ["Prohibited", "High-risk (Annex III)", "Transparency only"],
+        "answer": 1,
+        "explain": [
+          "Wrong — screening candidates isn't a banned practice, however flawed the screening.",
+          "Correct — employment and recruitment decisions are an Annex III purpose: lawful, but under risk management, logging, and human oversight.",
+          "Wrong — this isn't a machine that only needs to disclose itself; it's making consequential decisions about real people's livelihoods."
+        ]
+      }
     },
     {
       "q": "The rumored fountain device reading villagers' loyalty from their faces. Tier?",

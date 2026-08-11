@@ -144,6 +144,22 @@ function nextAnswerAttempt(key: string): number {
   return n;
 }
 
+// Progressive-hint state (see QuizQuestion.hint/.variant) — keyed by
+// `${moduleId}:${questionId}`, module-level like answerAttempts above so
+// a hint already shown or a variant already queued stays that way across
+// re-entering the quiz. Only questions that opt in (set `id` + `hint` or
+// `variant`) ever touch these maps; every other question's flow is
+// untouched.
+const quizWrongAttempts = new Map<string, number>();
+const quizHintShown = new Set<string>();
+const quizVariantQueued = new Set<string>();
+
+function nextWrongAttempt(key: string): number {
+  const n = (quizWrongAttempts.get(key) ?? 0) + 1;
+  quizWrongAttempts.set(key, n);
+  return n;
+}
+
 export class AcademyOverlay {
   private scene: Phaser.Scene;
 
@@ -169,6 +185,21 @@ export class AcademyOverlay {
   private quizIndex = 0;
   private quizRevealedChoice: number | null = null;
   private quizCorrect = false;
+  // module.quiz plus any Stage 3 variants queued onto the end during
+  // this session (see answerQuiz()) — nextQuizQuestion()/renderQuiz()
+  // read from this instead of module.quiz directly so a freshly queued
+  // variant is just one more question in the same list. quizVariantOf
+  // is a parallel array: null for an original question, or the parent
+  // question's id for a variant, so answerQuiz() knows which map to
+  // resolve the progressive-hint decision log against.
+  private quizQuestions: QuizQuestion[] = [];
+  private quizVariantOf: (string | null)[] = [];
+  // Snapshot of a tracked question's wrong-attempt count + whether its
+  // hint was shown, captured the moment its variant gets queued (Stage
+  // 3) — answerQuiz() reads this back when the variant is finally
+  // answered correctly, since by then the original question's own
+  // counters may have kept moving. Keyed by parent question id.
+  private quizVariantParentInfo = new Map<string, { attempts: number; hintUsed: boolean }>();
 
   // "Mapping the Flow"'s interactive-diagram assessment — same one-
   // question-at-a-time mastery/retry convention as the quiz above, but
@@ -350,11 +381,15 @@ export class AcademyOverlay {
   }
 
   private goToQuiz(moduleId: string) {
+    const module = academy.getModule(moduleId);
     this.currentModuleId = moduleId;
     this.currentView = "quiz";
     this.quizIndex = 0;
     this.quizRevealedChoice = null;
     this.quizCorrect = false;
+    this.quizQuestions =
+      module && module.type !== "card_drill" && module.type !== "card_drill_multi" && module.type !== "data_sieve" && module.type !== "lesson_diagramquiz" ? [...module.quiz] : [];
+    this.quizVariantOf = this.quizQuestions.map(() => null);
     this.render();
   }
 
@@ -731,14 +766,15 @@ export class AcademyOverlay {
       this.goToHub();
       return;
     }
-    const question = module.quiz[this.quizIndex];
+    const question = this.quizQuestions[this.quizIndex];
     if (!question) {
       this.goToHub();
       return;
     }
+    const isVariant = this.quizVariantOf[this.quizIndex] !== null;
 
     const header = el("div", {
-      text: `QUESTION ${this.quizIndex + 1} / ${module.quiz.length}`,
+      text: isVariant ? "REVISIT — FRESH SCENARIO" : `QUESTION ${this.quizIndex + 1} / ${this.quizQuestions.length}`,
       style: { fontFamily: "var(--font-mono)", fontSize: "12px", letterSpacing: "0.08em", color: "var(--text-muted)", marginBottom: "var(--space-2)" },
     });
     const questionEl = el("h3", { text: question.q, style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px", marginBottom: "var(--space-3)" } });
@@ -757,10 +793,31 @@ export class AcademyOverlay {
           style: { marginTop: "var(--space-3)", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" },
         }),
       );
+      // Stage 2 — a wrong pick's per-choice explain (above) never
+      // changes; this is the separate hint text, shown once this
+      // question's 2nd wrong attempt has landed (see answerQuiz()).
+      const hintKey = question.id ? `${this.currentModuleId}:${question.id}` : null;
+      if (!this.quizCorrect && question.hint && hintKey && quizHintShown.has(hintKey)) {
+        children.push(
+          el("div", {
+            text: `HINT — ${question.hint}`,
+            style: {
+              marginTop: "var(--space-2)",
+              borderLeft: "4px solid var(--accent-blue)",
+              background: "var(--bg-raised)",
+              padding: "var(--space-2)",
+              borderRadius: "var(--radius-sm)",
+              fontFamily: "var(--font-body)",
+              fontSize: "13px",
+              color: "var(--text-primary)",
+            },
+          }),
+        );
+      }
     }
 
     if (this.quizCorrect) {
-      const isLast = this.quizIndex >= module.quiz.length - 1;
+      const isLast = this.quizIndex >= this.quizQuestions.length - 1;
       children.push(
         el("button", {
           className: "btn btn--gold",
@@ -807,11 +864,59 @@ export class AcademyOverlay {
       attempt: nextAnswerAttempt(attemptKey),
     });
 
+    this.handleProgressiveHint(question);
+
     this.render();
   }
 
+  // Stages 2-3 of the progressive-hint mechanic (see QuizQuestion.hint/
+  // .variant doc comments) — a question needs an id plus hint/variant to
+  // opt in; every other question's flow is completely unaffected.
+  private handleProgressiveHint(question: QuizQuestion) {
+    if (!question.id) return;
+    const variantParentId = this.quizVariantOf[this.quizIndex];
+    const trackedKey = `${this.currentModuleId}:${question.id}`;
+
+    if (!this.quizCorrect) {
+      if (variantParentId) return; // the variant itself has no further staging
+      const wrongCount = nextWrongAttempt(trackedKey);
+      if (wrongCount === 2 && question.hint) quizHintShown.add(trackedKey);
+      if (wrongCount === 3 && question.variant && !quizVariantQueued.has(trackedKey)) {
+        quizVariantQueued.add(trackedKey);
+        this.quizVariantParentInfo.set(question.id, { attempts: wrongCount, hintUsed: quizHintShown.has(trackedKey) });
+        this.quizQuestions.push({ ...question.variant });
+        this.quizVariantOf.push(question.id);
+      }
+      return;
+    }
+
+    // Correct — log the {questionId, attempts, hintUsed, variantPassed}
+    // decision once per lineage, at whichever question actually
+    // resolved it: the variant if Stage 3 fired, otherwise the original.
+    if (variantParentId) {
+      const info = this.quizVariantParentInfo.get(variantParentId) ?? { attempts: 0, hintUsed: false };
+      logDecision("module_quiz_progressive", {
+        module: this.currentModuleId,
+        questionId: variantParentId,
+        attempts: info.attempts,
+        hintUsed: info.hintUsed,
+        variantPassed: true,
+      });
+    } else if ((question.hint || question.variant) && !quizVariantQueued.has(trackedKey)) {
+      logDecision("module_quiz_progressive", {
+        module: this.currentModuleId,
+        questionId: question.id,
+        attempts: quizWrongAttempts.get(trackedKey) ?? 0,
+        hintUsed: quizHintShown.has(trackedKey),
+      });
+    }
+    // else: hint/variant question answered correctly after its variant
+    // was already queued — skip logging here, the variant's own correct
+    // answer above is this lineage's real resolution.
+  }
+
   private nextQuizQuestion(module: AcademyLessonModule) {
-    const isLast = this.quizIndex >= module.quiz.length - 1;
+    const isLast = this.quizIndex >= this.quizQuestions.length - 1;
     if (isLast) {
       this.sealTheory(module.id);
       this.goToModuleList(module.track);
