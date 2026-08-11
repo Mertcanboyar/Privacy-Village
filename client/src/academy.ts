@@ -550,7 +550,7 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     // needs its own "already unlocked?" guard.
     if (module?.fieldWork) questEngine.unlockQuest(module.fieldWork.questId);
     if (module?.fieldWork && !p.fieldDone) {
-      this.emit("toast", `THEORY SEALED — your field assignment is now open at ${roomLabel(module.fieldWork.room)}.`);
+      this.emit("toast", `THEORY SEALED — "${module.fieldWork.label}" is now open at ${roomLabel(module.fieldWork.room)}.`);
     }
     this.tryCompleteModule(moduleId);
   }
@@ -561,7 +561,8 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     p.fieldDone = true;
     this.emit("progressChanged", moduleId);
     if (!p.theoryDone) {
-      this.emit("toast", "The Academy has recorded your field work. Complete the theory to seal the module.");
+      const title = this.modules.get(moduleId)?.title ?? "the theory";
+      this.emit("toast", `The Academy has recorded your field work. Complete "${title}" to seal the module.`);
     }
     this.tryCompleteModule(moduleId);
   }

@@ -197,14 +197,14 @@ function conditionMatches(cond: DialogueCondition | undefined): boolean {
 // for some OTHER reason (mid-chain, no module) just falls through to
 // ordinary ambient dialogue as before.
 const LOCKED_QUEST_LINES: Record<string, string> = {
-  breach_in_the_wall: "Not yet, Ranger. Read the Division's briefing on threat modeling first — then I'll hand you the blueprints.",
-  post_road_blueprint: "Not yet. Walk the mail route with me once you know how to map where it actually goes — the Academy teaches that part first.",
-  sealed_letter: "A forged letter needs a trained eye, Agent. Learn to secure a channel before you go hunting for a broken one.",
-  healers_ledger: "Study what makes data sensitive before you touch my ledger, Agent. I'd rather you learned on parchment than on my patients.",
-  maren_winter_report: "Before you touch my winter report, learn what a number can hide. The Academy will show you.",
-  archivists_desk: "The purpose test, first. Come back when you can recite it.",
-  innkeepers_shards: 'Those shards won’t un-shatter themselves, Agent — not without knowing what "de-identified" really means. Study first.',
-  treasury_two_keys: "Coin buys a heavier lock, Agent, not a smarter one. Learn what interlocks before you touch my Treasury.",
+  breach_in_the_wall: 'Not yet, Ranger. Complete "Threat Modeling Fundamentals" at the Academy first — then I\'ll hand you the blueprints.',
+  post_road_blueprint: 'Not yet. Complete "Mapping the Flow" at the Academy — then you\'ll know where the mail actually goes.',
+  sealed_letter: 'Complete "Secure Channels" at the Academy first, Agent. A forged letter needs a trained eye.',
+  healers_ledger: 'Complete "Personal Data or Not?" at the Academy before you touch my ledger, Agent.',
+  maren_winter_report: 'Complete "Shaping the Data" at the Academy first — then you\'ll know what a number can hide.',
+  archivists_desk: 'Complete "The Purpose Test" at the Academy. Come back when you can recite it.',
+  innkeepers_shards: 'Complete "De-identification: Masks & Chains" at the Academy first, Agent — those shards won\'t un-shatter themselves.',
+  treasury_two_keys: 'Complete "Measures that Interlock" at the Academy first, Agent — coin buys a heavier lock, not a smarter one.',
 };
 
 // First matching `if` wins; a set with no `if` is the fallback and

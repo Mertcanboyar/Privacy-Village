@@ -387,15 +387,15 @@ export class HUDController {
     this.academyDotEl.style.display = academy.hasAvailableUnstartedTheory() ? "block" : "none";
   }
 
-  /** The paired module's title for the first still-`locked` quest in
+  /** The paired module's id+title for the first still-`locked` quest in
    * QUEST_IDS order, or null if none is locked-behind-a-module right
    * now (nothing to report, or every remaining locked quest is gated
    * by something other than theory — e.g. still mid-`unlocks`-chain). */
-  private nextLockedQuestHint(): string | null {
+  private nextLockedQuestHint(): { id: string; title: string } | null {
     for (const id of QUEST_IDS) {
       if (questEngine.getState(id) !== "locked") continue;
       const module = academy.getModuleForQuest(id);
-      if (module) return module.title;
+      if (module) return { id: module.id, title: module.title };
     }
     return null;
   }
@@ -449,6 +449,12 @@ export class HUDController {
   }
 
   private refreshTracker() {
+    // Reset every render — only the LOCKED branch below re-enables this,
+    // so a stale click target never lingers into an unrelated state
+    // (the objective line is otherwise plain text, never clickable).
+    this.trackerObjectiveEl.style.cursor = "";
+    this.trackerObjectiveEl.onclick = null;
+
     const quest = questEngine.getActiveQuest();
     if (!quest) {
       // Between one quest completing and the player finding/accepting
@@ -476,7 +482,12 @@ export class HUDController {
       if (lockedHint && this.trackerVisible) {
         this.trackerEl.style.display = "block";
         this.trackerTitleEl.textContent = "LOCKED";
-        this.trackerObjectiveEl.textContent = `Complete "${lockedHint}" at the Academy.`;
+        this.trackerObjectiveEl.textContent = `Complete "${lockedHint.title}" at the Academy →`;
+        // Direct jump — click the objective line to open the Academy
+        // straight to that module's theory instead of the hub (same
+        // shortcut npc.ts's locked-quest dialogue offers).
+        this.trackerObjectiveEl.style.cursor = "pointer";
+        this.trackerObjectiveEl.onclick = () => academy.openToModule(lockedHint.id);
         this.trackerEvidenceRowEl.innerHTML = "";
         this.trackerCounterEl.textContent = "";
         return;
