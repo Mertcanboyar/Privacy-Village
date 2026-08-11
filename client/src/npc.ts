@@ -262,11 +262,11 @@ interface NPCDef {
 // buttons.
 
 const MISSION_1_PAGES = [
-  `The Council sits in their high tower, boasting that the Privacy Village is impregnable. "The walls are high," they say. "The wards are ancient." But they look only at what they built, not what they forgot.
+  `The Council boasts the Village is impregnable — they look only at what they built, not what they forgot.
 
-I have spent my life hunting the Shadownet. I know that a raider doesn't strike where the armor is thickest; he strikes where the leather is worn. I stole the architect's blueprints from the archives last night. The ink is faded, but the truth is there if you know how to look.
+I stole the architect's blueprints last night. A raider doesn't strike where the armor is thickest; he strikes where the leather is worn.
 
-To defend a system, you must first map the Attack Surface. You cannot secure what you do not see. The Council has layered defenses upon the main roads — but my eyes are drawn to the shadows, to the forgotten paths used by servants and smugglers.`,
+To defend a system, you must first map the Attack Surface. You cannot secure what you do not see.`,
   `NORTH GATE (The King's Road)
 ✅ Preventative: Iron Portcullis (Physical Barrier)
 ✅ Deterrent: Archer Tower (Visible Threat)
@@ -282,7 +282,7 @@ WEST GATE (The Service Entry)
 ❌ Deterrent: None.
 ❌ Detective: None (No Watchtower, No Logs).
 
-🔍 A security system fails when it relies solely on prevention without detection. If a lock is picked in the dark, and no one is watching, is the gate truly shut? Which Gate lacks a Detective Control and relies on a single point of failure?`,
+🔍 Prevention without detection fails silently — if a lock is picked in the dark and no one is watching, is the gate truly shut? Which Gate lacks a Detective Control?`,
 ];
 
 // Also 2 pages (intro / character-sheets-and-question together). Each
@@ -291,26 +291,26 @@ WEST GATE (The Service Entry)
 // below) — the images aren't legible enough on their own for the
 // player to actually work out the answer.
 const MISSION_2_PAGES = [
-  `Good work, Ranger. But knowing where they will strike is only half the battle. We must know who is coming. Not every beast in the Shadownet can exploit this breach.
+  `Good work, Ranger. Knowing where they'll strike is only half the battle — we must know who is coming.
 
 The West Gate sits atop the treacherous "Cliff of Crows."
 — An Army cannot march there; the path is too narrow.
-— A Wizard cannot strike there; their magic flares would be spotted by the distant Main Tower.
+— A Wizard cannot strike there; their flares would be spotted by the Main Tower.
 — A Troll is too heavy; the cliff ledge would crumble.
 
-To build a valid Threat Model, we must map the Attacker's Capabilities to the System's Vulnerabilities.`,
-  `My scouts have intercepted a missive from the enemy camp. Three lieutenants have volunteered for the mission — read their sheets carefully.
+To build a valid Threat Model, map the Attacker's Capabilities to the System's Vulnerabilities.`,
+  `Three lieutenants have volunteered for the mission — read their sheets carefully.
 
 THE DARK SORCERER — INT 18, Stealth 2
-Void Blast lights the sky like a signal fire. The Main Tower would spot the flare from a league away.
+Void Blast lights the sky like a signal fire; the Main Tower would spot it from a league away.
 
 THE GOBLIN SABOTEUR — DEX 18, Stealth 17
-Climbs sheer cliffs like a staircase. No flare, no noise — a shadow among stones.
+Climbs sheer cliffs like a staircase — no flare, no noise.
 
 IRONHORN BERSERKER — STR 18, Stealth 3
-Smashes any door, loudly. The cliff ledge would crumble under his weight before he reached the lock.
+Smashes any door, loudly; the cliff ledge would crumble under his weight first.
 
-🔍 We need a threat actor with high Stealth (to avoid the tower) and high Dexterity (to pick the rusted padlock we found). Which Threat Actor can exploit the West Gate without raising the alarm?`,
+🔍 We need high Stealth (to avoid the tower) and high Dexterity (to pick the rusted padlock). Which Threat Actor can exploit the West Gate without raising the alarm?`,
 ];
 
 // --- "The Innkeeper's Shards" — Odile's + Herald's mission briefings --
@@ -318,37 +318,37 @@ Smashes any door, loudly. The cliff ledge would crumble under his weight before 
 // question).
 
 const SHARDS_MISSION_1_PAGES = [
-  `The innkeeper has "sharded" his data into three isolated logs to prevent anyone from identifying his guests. The Room List knows only a Coat Check Ticket. The Coat Check Log knows only items and timestamps. The City Gate Log knows names and appearances — but nothing of the inn.
+  `The innkeeper "sharded" his data into three isolated logs to hide his guests' identities. The Room List knows only a ticket; the Coat Check Log knows only items and times; the City Gate Log knows names and appearances — but nothing of the inn.
 
-He believes separation makes the data anonymous. The Shadownet knows better. By CHAINING these three datasets, anyone can de-anonymize anyone.
+He believes separation makes the data anonymous. By CHAINING the three datasets, anyone can de-anonymize anyone.
 
 Trace the chain. Find the name of the guest in Room 7.`,
   `💾 THE EVIDENCE: THE SHARDED LOGS
-Three drawers, three logs — but nothing stops you from laying them side by side.
+Three drawers, three logs — nothing stops you laying them side by side.
 
 TABLE A links a Room to a Coat Check Ticket.
 TABLE B links a Ticket to an Item and a Check-in Time.
 TABLE C links a Name to an Appearance and an Entry Time.
 
 Chain them: Room → Ticket → Item & Time → Name.`,
-  `A quasi-identifier is rarely one attribute alone. An item description can match more than one person — the hour it was checked in is what breaks the tie.
+  `A quasi-identifier is rarely one attribute alone — an item description can match more than one person, but the check-in hour breaks the tie.
 
 🔍 Who sleeps in Room 7?`,
 ];
 
 const SHARDS_MISSION_2_PAGES = [
-  `Word of your trick reached the Archive. Quill's scribes have "sanitized" the Summit's safehouse log — GENERALIZATION (specifics become ranges) and SUPPRESSION (values become *). They claim the log now satisfies k-anonymity with k=2: every row identical to at least one other. If true, no guest stands alone in the data.
+  `Quill's scribes "sanitized" the safehouse log — GENERALIZATION (specifics become ranges) and SUPPRESSION (values become *) — and claim it satisfies k-anonymity with k=2: every row matches at least one other.
 
-They made a mistake. One entry's remaining attributes are STILL unique. If the Shadownet intercepts this log, it can mathematically prove who that person is. Your job: find the ONE row with no twin.`,
+They made a mistake. One entry is STILL unique. Find the ONE row with no twin.`,
   `💾 THE EVIDENCE: SAFEHOUSE LOG (SANITIZED)
 Quasi-identifiers: Trade | Age Range | District
 
-Twelve entries, generalized and suppressed. Eleven of them should each have at least one identical twin elsewhere in the log. One does not.
+Twelve entries, generalized and suppressed. Eleven should each have an identical twin elsewhere in the log — one does not.
 
-HOW TO CHECK A TWIN: a match must be exact across all three columns together — same Trade, same Age Range, AND same District. Matching on only one or two columns doesn't count.`,
-  `k-anonymity is a chain of twins, Ranger. Compare every row against every other — a single unmatched row breaks the promise for that one person, even if everyone else is safely hidden in a crowd.
+HOW TO CHECK A TWIN: a match must be exact across all three columns together. Matching on only one or two doesn't count.`,
+  `k-anonymity is a chain of twins — a single unmatched row breaks the promise for that one person.
 
-TIP: group the rows by Trade first (Wardens, Scribes, Smiths, Couriers, Weavers) — each group should be internally identical. One group has a row that doesn't match its groupmates.
+TIP: group the rows by Trade first (Wardens, Scribes, Smiths, Couriers, Weavers) — one group has a row that doesn't match its groupmates.
 
 🔍 Which Entry ID violates k=2?`,
 ];
@@ -368,19 +368,19 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questComplete: "night_the_wall_fell" },
           lines: [
-            "Seventy-two hours, give or take a nervous breakdown — the wall held because you refused to let the arithmetic beat you to it. The Council will frame this as their own triumph within the week. Grief counseling was never in the budget. Neither was gratitude.",
+            "Seventy-two hours, and the wall held because you didn't let the arithmetic beat you to it. Gratitude was never in the Council's budget.",
           ],
         },
         {
           if: { questActive: "night_the_wall_fell" },
           lines: [
-            "GO. Bram is standing at a hole in the wall having what I can only describe, clinically, as the worst night of his professional life. This is not a drill. I checked. Twice. My hands are still shaking, which is either adrenaline or the coffee — statistically, could be either.",
+            "GO. Bram's standing at a hole in the wall having the worst night of his professional life — this is not a drill.",
           ],
         },
         {
           if: { questComplete: "innkeepers_shards" },
           lines: [
-            "The mask slipped exactly once, and you were there to see the face underneath. Quill's scribes have been informed, in writing, that it must never happen again. They filed the memo. They will, of course, do it again. Bureaucracy has a memory like a leaking bucket.",
+            "The mask slipped once, and you were there to see the face underneath. Quill's scribes filed a memo swearing it won't happen again — it will.",
           ],
         },
         {
@@ -414,29 +414,29 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           gridChoices: true,
           lines: SHARDS_MISSION_2_PAGES,
           choices: [
-            { label: "S-01", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
-            { label: "S-02", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
+            { label: "S-01", response: "Compare each row against every other — eleven have a twin, one does not." },
+            { label: "S-02", response: "Compare each row against every other — eleven have a twin, one does not." },
             {
               label: "S-03",
-              response: "Suppressed twins are still twins — those two rows are identical, star for star. Look for the row with NO twin.",
+              response: "Suppressed twins are still twins, identical star for star. Look for the row with NO twin.",
             },
-            { label: "S-04", response: "Three of a kind satisfies k=2 twice over. Find the row that stands alone." },
-            { label: "S-05", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
-            { label: "S-06", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
+            { label: "S-04", response: "Three of a kind satisfies k=2 twice over — find the row that stands alone." },
+            { label: "S-05", response: "Compare each row against every other — eleven have a twin, one does not." },
+            { label: "S-06", response: "Compare each row against every other — eleven have a twin, one does not." },
             {
               label: "S-07",
-              response: "Suppressed twins are still twins — those two rows are identical, star for star. Look for the row with NO twin.",
+              response: "Suppressed twins are still twins, identical star for star. Look for the row with NO twin.",
             },
             {
               label: "S-08",
               setFlag: "mask_flaw_found",
               response:
-                "The courier of forty-some years from the Mill Quarter. Every other courier there is young; the mask slips on the one who isn't. k-anonymity is a chain of twins, Ranger — ONE unique row and the whole promise breaks for that person.",
+                "The courier in his forties from the Mill Quarter — every other courier there is young, so the mask slips on him. k-anonymity is a chain of twins: one unmatched row breaks the promise.",
             },
-            { label: "S-09", response: "Three of a kind satisfies k=2 twice over. Find the row that stands alone." },
-            { label: "S-10", response: "Three of a kind satisfies k=2 twice over. Find the row that stands alone." },
-            { label: "S-11", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
-            { label: "S-12", response: "Compare each row against every other. Eleven of them have an identical twin. One does not." },
+            { label: "S-09", response: "Three of a kind satisfies k=2 twice over — find the row that stands alone." },
+            { label: "S-10", response: "Three of a kind satisfies k=2 twice over — find the row that stands alone." },
+            { label: "S-11", response: "Compare each row against every other — eleven have a twin, one does not." },
+            { label: "S-12", response: "Compare each row against every other — eleven have a twin, one does not." },
           ],
         },
         {
@@ -469,17 +469,17 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
             {
               label: "THE DARK SORCERER",
               response:
-                "INT 18, aye — but Void Blast lights the sky. The Main Tower would see the flare from a league away. We need someone the tower CANNOT see.",
+                "INT 18, aye — but Void Blast lights the sky. We need someone the tower CANNOT see.",
             },
             {
               label: "THE GOBLIN SABOTEUR",
               setFlag: "threat_identified",
               response:
-                "The Saboteur. DEX 18 for the padlock, and the little wretch climbs sheer cliffs — the Cliff of Crows is a staircase to him. No flare, no noise, no witnesses. THIS is threat modeling, Ranger: not fearing every monster, but knowing exactly which one fits through your gap. Now we know where to post the watch.",
+                "The Saboteur — DEX 18 for the padlock, and he climbs sheer cliffs like a staircase, no flare, no noise. THIS is threat modeling.",
             },
             {
               label: "THE IRONHORN BERSERKER",
-              response: "STR 18 and he can smash any door — loudly, and the cliff ledge would crumble under him before he reached it. Weight and noise. Look again.",
+              response: "STR 18, but he smashes doors loudly, and the cliff ledge would crumble under him first. Weight and noise — look again.",
             },
           ],
         },
@@ -496,11 +496,11 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           choices: [
             {
               label: "NORTH GATE",
-              response: "Look again. The King's Road has iron, arrows, AND a ward that cries out. Three layers. Find the gate with no eyes at all.",
+              response: "Look again — the King's Road has iron, arrows, AND a ward that cries out. Find the gate with no eyes at all.",
             },
             {
               label: "EAST GATE",
-              response: "The Sea Wall watches — the lighthouse logs every sail. Find the gate where a picked lock would go unseen.",
+              response: "The Sea Wall watches — the lighthouse logs every sail. Find the gate a picked lock would go unseen at.",
             },
             {
               label: "WEST GATE",
@@ -509,13 +509,13 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
               milestone: "breach_m1",
               toast: "INTEL FILED — Prevention without detection is a gate left open.",
               response:
-                "The Service Entry. One rusted lock and not a single eye upon it. The Council forgot it because servants use it — attackers love what the powerful forget. You see like a Ranger already.",
+                "The Service Entry. One rusted lock and not a single eye upon it — the Council forgot it because servants use it.",
             },
           ],
         },
         {
           lines: [
-            "Not yet. You have the look of someone who hasn't finished orienting themselves in space and time, which is, statistically, most people, most days. Get your bearings. The wall's vulnerabilities have waited this long — they can wait for you to stop wobbling.",
+            "Not yet — get your bearings first. The wall's vulnerabilities have waited this long; they can wait for you to stop wobbling.",
           ],
         },
       ],
@@ -533,37 +533,37 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questComplete: "sealed_letter" },
           lines: [
-            "The gate stayed shut. Four measures between a forged seal and my desk, and not one of them relied on me simply recognizing a face — which is good, because I wouldn't have. I'm terrible with faces. I'm excellent with paperwork. This is apparently what passes for a personality now.",
+            "The gate stayed shut. Four measures between a forged seal and my desk, and not one relied on me simply recognizing a face — good, because I wouldn't have.",
           ],
         },
         {
           if: { questComplete: "post_road_blueprint" },
           lines: [
-            "It's filed. Twenty years at this desk, and I never once needed to draw where the letters actually go — I just trusted the system, the way you trust a floor to hold you, right up until you watch someone fall through it. I know the map now. I preferred not knowing.",
+            "It's filed. Twenty years at this desk and I never once needed to draw where the letters actually go — I know the map now, and I preferred not knowing.",
           ],
         },
         {
           if: { questActive: "post_road_blueprint", flag: "note_bram" },
           lines: [
-            "I've said my piece. Go bother the villager who posts and the courier who carries — I only manage the middle, the part nobody thinks about until it breaks. The unglamorous truth of most systems: someone is always quietly holding the middle.",
+            "I've said my piece. Go bother the villager who posts and the courier who carries — I only manage the middle.",
           ],
         },
         {
           if: { questActive: "post_road_blueprint" },
           lines: [
-            "Mail comes in from villagers at the drop box. I sort it at my desk by region — I read the ADDRESS, nothing else, I'm no gossip. Sorted bundles sleep in the vault overnight. Couriers take them at dawn.",
+            "Mail comes in at the drop box. I sort it by region — ADDRESS only, I'm no gossip — and sorted bundles sleep in the vault until couriers take them at dawn.",
           ],
         },
         {
           if: { questComplete: "night_the_wall_fell" },
           lines: [
-            "The gate's mended. The wax seal is set, official, reassuring. I still check that padlock twice a night, because paper promises and iron locks have a long, disappointing history together, and I've stopped pretending otherwise.",
+            "The gate's mended, the seal set. I still check that padlock twice a night — paper promises and iron locks have a disappointing history together.",
           ],
         },
         {
           if: { questActive: "night_the_wall_fell", flag: "warden_heard" },
           lines: [
-            "Go. That gate is not going to wedge itself shut through sheer force of my hoping, and every minute you spend admiring the scenery is a minute the clock doesn't care about. Move, Ranger — I'll stand here and have my crisis quietly.",
+            "Go. That gate isn't wedging itself shut through sheer force of my hoping, and the clock doesn't care how nice the scenery is.",
           ],
         },
         {
@@ -571,7 +571,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           briefing: { caseLabel: "STEP 1", title: "Hear the Warden" },
           ghostChoices: true,
           lines: [
-            "Agent! The West Gate — the padlock's picked, just as your Ranger said. The archive annex was ENTERED. Scrolls of villager records — debts, faction marks — may be copied, I can't yet say. I know what I saw at 02:00. What I don't know would fill that annex twice over. Two truths, and only one starts the clock the law watches: not what was taken, but the moment you learned something was.",
+            "Agent! The West Gate padlock's picked — the archive annex was ENTERED. Villager records may be copied; I can't yet say how many. I know what I saw at 02:00 — and only one truth starts the clock the law watches: not what was taken, but the moment you learned something was.",
           ],
           choices: [
             {
@@ -583,20 +583,18 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
               label: "Say nothing yet. We investigate fully first — days if we must.",
               setFlag: "warden_heard",
               clockPenalty: 24,
-              response: "Days?! Agent, the law counts from KNOWING, not from finishing! Every hour you spend confirming is an hour you'll owe later. The Herald will skin us.",
+              response: "Days?! The law counts from KNOWING, not from finishing — every hour you spend confirming is an hour you'll owe later.",
             },
           ],
         },
         {
           if: { questActive: "arrival" },
           lines: [
-            "Welcome to Privacy Village, {name}. The festival is just getting started — workshops, games, puzzles, the whole square dressed up like nothing bad has ever happened here. The walls keep us safe. Mostly. The Council likes the word 'impregnable.' I've personally retired it from my vocabulary, along with 'definitely,' 'certainly,' and 'I'm sure it's fine.'",
+            "Welcome to Privacy Village, {name}. The festival's just getting started, and the walls keep us safe — mostly.",
           ],
         },
         {
-          lines: [
-            "Keep exploring. The gates never truly close, which some people find charming and I find, on a purely professional level, deeply concerning.",
-          ],
+          lines: ["Keep exploring. The gates never truly close."],
         },
       ],
     },
@@ -617,7 +615,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           // recordPostRoadNote() below, keyed by this NPCDef's own id).
           if: { questActive: "post_road_blueprint", flag: "note_post_villager" },
           lines: [
-            "Find the courier if you haven't. I only know my end of the string — the part where I let go of it and stop thinking about where it lands. Healthy boundaries, or willful ignorance. The line gets blurry.",
+            "Find the courier if you haven't. I only know my end of the string — the part where I let go of it and stop thinking about where it lands.",
           ],
         },
         {
@@ -626,7 +624,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
         {
           lines: [
-            "Best festival in memory, if you're asking a man whose memory mostly consists of drop-box schedules. Mind the seal — the paint's still wet, and I will absolutely know if you touched it.",
+            "Best festival in memory. Mind the seal — the paint's still wet, and I will know if you touched it.",
           ],
         },
       ],
@@ -647,7 +645,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questActive: "post_road_blueprint", flag: "note_courier" },
           lines: [
-            "I've told you everything I know, which is one sentence long and mildly incriminating out of context: the vault, never the desk. Some of us have very narrow, very defensible jurisdictions.",
+            "I've told you everything I know: the vault, never the desk. Very narrow jurisdiction, very defensible.",
           ],
         },
         {
@@ -656,7 +654,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
         {
           lines: [
-            "Can't stop long. The dawn route waits for no one — not festivals, not existential dread, not whatever's happening with your face right now. Move along, I have a schedule and a deeply fragile sense of purpose tied to keeping it.",
+            "Can't stop long. The dawn route waits for no one — move along, I have a schedule to keep.",
           ],
         },
       ],
@@ -676,13 +674,13 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questComplete: "innkeepers_shards" },
           lines: [
-            "Wren's secret is safe with the Division, at least — a small comfort, filed next to all my other small comforts. My drawers, though, remain a philosophical embarrassment. I may need better locks. Or fewer secrets. The locks are cheaper.",
+            "Wren's secret is safe with the Division, at least. My drawers, though, remain a philosophical embarrassment.",
           ],
         },
         {
           if: { questActive: "innkeepers_shards", flag: "guest_identified" },
           lines: [
-            "Room 7 has a name now. Mine to lie awake remembering, yours to report to men who file things. I hear the Herald is already cackling about masks somewhere — that particular laugh means someone, somewhere, is about to have a very bad week.",
+            "Room 7 has a name now — mine to lie awake remembering, yours to report. I hear the Herald's already cackling about masks somewhere.",
           ],
         },
         {
@@ -748,31 +746,31 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           choices: [
             {
               label: "LARKIN",
-              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+              response: "Start at the room, Ranger. Room 7 holds a ticket, and the ticket holds an item and an hour.",
             },
             {
               label: "BERRIN",
-              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+              response: "Start at the room, Ranger. Room 7 holds a ticket, and the ticket holds an item and an hour.",
             },
             {
               label: "CORVIN",
-              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+              response: "Start at the room, Ranger. Room 7 holds a ticket, and the ticket holds an item and an hour.",
             },
             {
               label: "ALDERIC",
-              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+              response: "Start at the room, Ranger. Room 7 holds a ticket, and the ticket holds an item and an hour.",
             },
             {
               label: "GRUM",
-              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+              response: "Start at the room, Ranger. Room 7 holds a ticket, and the ticket holds an item and an hour.",
             },
             {
               label: "TOBIN",
-              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+              response: "Start at the room, Ranger. Room 7 holds a ticket, and the ticket holds an item and an hour.",
             },
             {
               label: "PETRA",
-              response: "The cloak matches — the hour does not. A quasi-identifier is rarely one attribute. Chain the TIME as well.",
+              response: "The cloak matches — the hour does not. Chain the TIME as well.",
             },
             {
               label: "WREN",
@@ -780,27 +778,27 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
               points: 150,
               toast: "INTEL FILED — Sharding without severing the links is a locked door with the key in the lock.",
               response:
-                "\"...Wren. Room 7. You chained my drawers together like beads on a string.\" The Herald, listening from the doorway, steps in: \"Three anonymous logs. One identity. That is a LINKAGE ATTACK, Ranger — separation is not anonymization when the links survive.\"",
+                "\"...Wren. Room 7. You chained my drawers together like beads on a string.\" The Herald steps in: \"That's a LINKAGE ATTACK — separation isn't anonymization when the links survive.\"",
             },
             {
               label: "SABLE",
-              response: "Start at the room, Ranger. Room 7 holds a ticket. The ticket holds an item and an hour. The gate saw who wore it, and when.",
+              response: "Start at the room, Ranger. Room 7 holds a ticket, and the ticket holds an item and an hour.",
             },
             {
               label: "HOLLIS",
-              response: "The cloak matches — the hour does not. A quasi-identifier is rarely one attribute. Chain the TIME as well.",
+              response: "The cloak matches — the hour does not. Chain the TIME as well.",
             },
           ],
         },
         {
           if: { questActive: "arrival" },
           lines: [
-            "A new face. Welcome to the festival — creativity is in the air, along with several other things I'd rather not analyze too closely. Every corner's got a workshop, a game, a puzzle desperate for your attention. Settle in, if you can. Though don't be surprised if the Herald finds you first — he's been pacing the square since dawn, wearing a groove into the cobblestones, itching to tell someone, anyone, about the wall's many, many feelings.",
+            "A new face. Welcome to the festival — every corner's got a workshop, a game, a puzzle desperate for your attention.",
           ],
         },
         {
           lines: [
-            "The Griffin's Drink serves stories alongside the ale, and frankly the stories have a longer shelf life. Pull up a stool. Nobody here is in a hurry to be anywhere else, which should tell you something.",
+            "The Griffin's Drink serves stories alongside the ale — the stories have a longer shelf life. Pull up a stool.",
           ],
         },
       ],
@@ -829,13 +827,13 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questComplete: "maren_winter_report" },
           lines: [
-            "The Council gets their numbers. Not a single villager's name leaves this desk. I keep turning the question over like a coin that won't land: why did it take a crisis for me to think to count BEFORE I sent, instead of after, in a panic, with a lantern and someone else's mistakes?",
+            "The Council gets their numbers — not a single villager's name leaves this desk. Why did it take a crisis for me to count BEFORE sending instead of after?",
           ],
         },
         {
           if: { questComplete: "healers_ledger" },
           lines: [
-            "The chest holds. My apprentices grumble about the key — about the extra step, the extra minute, the extra whatever — but grumbling I can live with. Grumbling has never once leaked a single record.",
+            "The chest holds. My apprentices grumble about the key, but grumbling has never once leaked a record.",
           ],
         },
         // Everything else about her interaction while a quest is
@@ -846,7 +844,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         // first quest offer.
         {
           lines: [
-            "Odile lets me keep a corner of the tavern, on the theory that my patients drink more after bad news, which is either sound business instinct or a quiet accusation. I've chosen not to examine it further.",
+            "Odile lets me keep a corner of the tavern, on the theory that my patients drink more after bad news.",
           ],
         },
       ],
@@ -869,21 +867,21 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questComplete: "night_the_wall_fell" },
           lines: [
-            "The Incident Register holds it now — every hour, every choice, every small cowardice and small courage, all filed under the same flat, indifferent ink. Even the ones that needed no notice get a page. Especially those, honestly. Nobody remembers the near-misses unless someone writes them down.",
+            "The Incident Register holds it now — every hour, every choice, filed under the same flat ink. Even the near-misses get a page, especially those.",
           ],
         },
         {
           if: { questActive: "night_the_wall_fell", flag: "notice_filed" },
           briefing: { caseLabel: "STEP 5", title: "The Record" },
           lines: [
-            "Last duty. Every hour, every choice, every reason — into the Incident Register. Including the East Gate probe last month that touched nothing.",
+            "Last duty. Every hour, every choice, every reason — into the Incident Register, including the East Gate probe that touched nothing.",
           ],
           choices: [
             {
               label: "Record everything.",
               setFlag: "incident_recorded",
               response:
-                "Even the breaches that need no notice get a page. When the Authority comes — and they come — they ask one thing first: \"show me your records.\"",
+                "Even the breaches that need no notice get a page. When the Authority comes, they ask one thing first: \"show me your records.\"",
             },
           ],
         },
@@ -892,31 +890,31 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           briefing: { caseLabel: "STEP 3", title: "File While Blind" },
           ghostChoices: true,
           lines: [
-            "The notification to the Authority is due within the seventy-second hour of first knowing, Agent — no exceptions for incomplete facts. I can file what we hold: nature of the breach, the categories touched, our containment. But the COUNT — we still cannot say how many scrolls were copied. Do we file incomplete now, or hold it for certainty and gamble on the deadline?",
+            "Notification is due within the seventy-second hour of first knowing, Agent — no exceptions for incomplete facts. We still can't say how many scrolls were copied. Do we file incomplete now, or hold it for certainty and gamble on the deadline?",
           ],
           choices: [
             {
               label: "File now, in phases. State what we know, state what we don't, supplement when we do.",
               setFlag: "notice_filed",
-              response: "\"Investigation continuing.\" Four honest words the law was built to accept — a partial notice filed on time beats a perfect one filed late. Filed.",
+              response: "\"Investigation continuing.\" Four honest words the law was built to accept — a partial notice filed on time beats a perfect one filed late.",
             },
             {
               label: "Wait for the full count. Accuracy first.",
               setFlag: "notice_filed",
               clockPenalty: 30,
-              response: "And if the count takes a week? Silence past the seventy-second hour is the violation — incompleteness is not. We file NOW.",
+              response: "And if the count takes a week? Silence past the seventy-second hour is the violation, not incompleteness — we file NOW.",
             },
           ],
         },
         {
           if: { questComplete: "archivists_desk" },
           lines: [
-            "Six requests, six rulings, and the ledger still balances, which in my experience is closer to a miracle than a Tuesday. The factions grumble — at me, specifically, and not at each other, which I've decided to consider a professional accomplishment rather than a personal tragedy.",
+            "Six requests, six rulings, and the ledger still balances — closer to a miracle than a Tuesday. The factions grumble at me, not each other.",
           ],
         },
         {
           lines: [
-            "Forty-six Trials. The tome on this desk once held exactly one, hand-copied, precious, alone — now the Academy holds all of them, organized, cross-referenced, and somehow still less comforting than the single lonely copy I remember.",
+            "Forty-six Trials. This desk once held exactly one, hand-copied, alone — now the Academy holds all of them, cross-referenced, and somehow still less comforting.",
           ],
         },
       ],
@@ -932,7 +930,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           lines: [
-            "Sit, if you wish. The bench asks nothing of you but patience, which is more than I can say for most of what happens in this building.",
+            "Sit, if you wish. The bench asks nothing of you but patience.",
           ],
         },
       ],
@@ -960,12 +958,12 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questComplete: "treasury_two_keys" },
           lines: [
-            "So the lock was the easy half, wasn't it. I bought iron when what I actually needed was rules, and a logbook, and possibly a long hard look at my own decision-making. Fine. FINE. I'm capable of growth. Well done, Agent.",
+            "So the lock was the easy half. I bought iron when what I needed was rules and a logbook — fine, FINE, I'm capable of growth.",
           ],
         },
         {
           lines: [
-            "The Treasury does not, regrettably, lock itself — I've raised the issue in three separate meetings. Mind the steps. I had them polished for the festival, mostly so I'd have something to point at when people ask what I actually do here.",
+            "The Treasury does not, regrettably, lock itself. Mind the steps — I had them polished for the festival.",
           ],
         },
       ],
@@ -987,10 +985,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           lines: [
-            "State your business — actually, don't bother, I already know why everyone comes here. It's the throne. It's always the throne. Nobody has ever once come to see me, specifically, and I've made my peace with that. Mostly.",
-            "Standing perfectly still for six hours either builds character or destroys a knee. The data, so far, is inconclusive. My knee has opinions.",
-            "The Mayor tips well. Percival, over there, insists HE'S the reason the Mayor tips well. I maintain that I'm the reason Percival still has a job, a pension, and someone to argue with at lunch.",
-            "Move along, Agent. There is nothing to see here except me, magnificently, tragically guarding a chair that has never once thanked me for it.",
+            "State your business — actually, don't bother. It's always the throne, never me, and I've made my peace with that.",
+            "Standing still for six hours either builds character or destroys a knee. My knee has opinions.",
+            "The Mayor tips well — Percival insists that's because of him. I maintain I'm the reason he still has a job.",
+            "Move along, Agent — nothing to see here except me, guarding a chair that's never once thanked me.",
           ],
         },
       ],
@@ -1007,10 +1005,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       dialogue: [
         {
           lines: [
-            "HALT. ...I'm kidding. Come through. We don't actually stop anyone — the halting is purely ceremonial, like most of what happens in this hall.",
-            "Fun fact: this armor has never once stopped a sword. It has, however, successfully stopped three separate arguments about who has to stand in the draft. I consider that a real, tangible victory.",
-            "Reginald believes he's funnier than me. He is incorrect, and deeply so. Please tell him I said that, Agent. Word for word. I'll wait.",
-            "Guarding a throne is ten percent vigilance and ninety percent the ongoing effort not to fall asleep standing up. Current reading: ninety-one percent. I may already be dreaming.",
+            "HALT. ...I'm kidding, come through — the halting's purely ceremonial.",
+            "This armor's never once stopped a sword — but it's stopped three arguments about who stands in the draft.",
+            "Reginald believes he's funnier than me. He's incorrect — tell him I said so, word for word.",
+            "Guarding a throne is ten percent vigilance, ninety percent not falling asleep standing up. Current reading: ninety-one percent.",
           ],
         },
       ],

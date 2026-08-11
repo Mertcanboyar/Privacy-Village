@@ -3,7 +3,7 @@
   "title": "The Archivist's Desk",
   "giver": "quill",
   "xp": 250,
-  "offer": "Every festival, the factions come begging for the villagers' data. My job is to remember WHY each scrap was given — and refuse every clever excuse to use it otherwise. Sit. Take the queue. I'll watch.",
+  "offer": "Every festival, the factions come begging for the villagers' data. My job is remembering WHY it was given — sit, take the queue.",
   "nextHint": "Find Quill in the Courthouse",
   "debrief": "Purpose limitation: match the use to why the data was given. Compatible may pass; incompatible must ask afresh; when in doubt, condition it.",
   "milestone": "archivists_desk",

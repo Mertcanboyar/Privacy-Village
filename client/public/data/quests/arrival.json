@@ -3,7 +3,7 @@
   "title": "The Welcome",
   "giver": "hq",
   "xp": 50,
-  "opener": "You're inside the wire, Agent. Get your bearings before the festival swallows you whole — a Warden guards these gates, and an Innkeeper keeps his own kind of ledger. Both are worth knowing.",
+  "opener": "You're inside the wire, Agent. Get your bearings — a Warden guards these gates, and an Innkeeper keeps his own kind of ledger.",
   "debrief": "Your welcome is complete — the village opens fully to you.",
   "milestone": "welcome",
   "unlocks": ["breach_in_the_wall"],

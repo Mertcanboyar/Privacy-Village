@@ -17,9 +17,8 @@ import { dossier } from "../dossier";
 const NAME_LIST = ["Portia", "Cicero", "Selden", "Themis", "Aurelia", "Marcus"];
 
 const RECRUITER_LINE =
-  "Welcome to Privacy Village, {name}. Here, ideas spark, creativity flows, and a small, determined army of privacy professionals gathers to solve real problems using workshops, gamified adventures, and an alarming amount of caffeine. Before you pass the gates, a formality really — tell us which spark lights your particular path. We do keep records.";
-const RECRUITER_CLOSING =
-  "Lovely to have you. Truly. Follow the lantern-light in — the village awaits, and so, somewhere just out of sight, do all its puzzles, patiently, the way old debts wait.";
+  "Welcome to Privacy Village, {name}. Before you pass the gates — one formality — tell us which spark lights your particular path.";
+const RECRUITER_CLOSING = "Lovely to have you. Follow the lantern-light in — the village awaits.";
 
 interface CharacterCreateInitData {
   // Set when Title's waitlist gate collects an email — pre-fills the name
@@ -132,7 +131,7 @@ export class CharacterCreate extends Phaser.Scene {
       { className: "panel", style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 40px" } },
       [
         el("p", {
-          text: "The village keeper welcomes you, notes your name for the festival roll, and quietly wonders — as she always does — what that name will cost you later.",
+          text: "The village keeper welcomes you and notes your name for the festival roll.",
           style: { fontFamily: "var(--font-body)", color: "var(--text-muted)", margin: "0 0 20px" },
         }),
         avatarRow,

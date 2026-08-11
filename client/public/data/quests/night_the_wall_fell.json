@@ -7,8 +7,8 @@
   "debrief": "The wall fell, and the village survived it — warned, notified, and recorded.",
   "milestone": "night_the_wall_fell",
   "clockDebrief": {
-    "clean": "Fifty-some hours from a picked lock to a warned village and a filed notice — with half the facts missing. THAT is incident response, Ranger: speed with honesty, not perfection with delay.",
-    "late": "The village was warned and the notice filed — late. Out there, late is a violation with your name on it. In here, it is a lesson with your name on it. Count the hours you spent deciding not to decide.",
+    "clean": "Fifty-some hours from a picked lock to a warned village and a filed notice, half the facts missing. THAT is incident response: speed with honesty, not perfection with delay.",
+    "late": "The village was warned and the notice filed — late. Count the hours you spent deciding not to decide.",
     "cleanBonusToast": "INTEL FILED — Under the wire. The clock forgives nothing and you asked no forgiveness."
   },
   "steps": [
@@ -36,12 +36,12 @@
       "trigger": { "type": "reach_zone", "zone": "fountain_crier" },
       "clockCost": 6,
       "choice": {
-        "prompt": "The Authority's been told. The village hasn't — not yet, and the crowd at the fountain already smells smoke. Their own debts and faction marks may be exposed. How do you address them?",
+        "prompt": "The Authority's been told; the village hasn't. Their own debts and faction marks may be exposed — how do you address them?",
         "options": [
           {
-            "label": "Announce it plainly: what happened, what it means, what to do — debts and faction marks may be exposed; change your seals, watch for imposters.",
+            "label": "Announce it plainly: what happened, what it means, what to do — change your seals, watch for imposters.",
             "correct": true,
-            "response": "The Authority hears what happened. The village must hear what it MEANS for them — that's a separate duty, Agent, and a harder one. High risk to people is the line the law draws; cross it, and the silence becomes its own breach.",
+            "response": "The Authority hears what happened; the village must hear what it MEANS for them. High risk to people is the line the law draws.",
             "speaker": "HERALD",
             "toast": "The village knows. As it must — the risk is theirs to carry, so the warning was theirs to have.",
             "sceneBeat": "villagersTurn"
@@ -49,7 +49,7 @@
           {
             "label": "Keep it quiet. Panic serves no one, and the festival's reputation—",
             "correct": false,
-            "response": "Reputation? Their allegiances may be in Shadownet hands and you'd let them walk unwarned? High risk to the PEOPLE means the PEOPLE are told. Again.",
+            "response": "Their allegiances may be in Shadownet hands and you'd let them walk unwarned? High risk to the PEOPLE means the PEOPLE are told.",
             "speaker": "HERALD",
             "clockPenalty": 12
           }
