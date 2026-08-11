@@ -17,6 +17,11 @@
       "text": "Defense-in-Depth — layered PREVENTATIVE (stop), DETERRENT (discourage), and DETECTIVE (observe & alert) controls. A system relying on prevention alone fails silently."
     },
     {
+      "type": "callout",
+      "variant": "blue",
+      "text": "Some controls blur — a barking dog both deters AND alerts. Classify by the control's PRIMARY purpose, and when in doubt ask: does it STOP the act, or RECORD it?"
+    },
+    {
       "type": "evidence-image",
       "images": [{ "src": "/assets/quest/village_map_mission1.jpeg", "label": "Stronghold Defense Grid" }],
       "caption": "EVIDENCE — STRONGHOLD DEFENSE GRID",
@@ -34,13 +39,13 @@
   ],
   "quiz": [
     {
-      "q": "A castle has a moat, guard dogs, and a logbook at the door. Which is the DETECTIVE control?",
-      "choices": ["Moat", "Guard dogs", "Logbook"],
+      "q": "A castle has a moat, a heavy iron gate, and a logbook recording everyone who enters. Which is the DETECTIVE control?",
+      "choices": ["The moat", "The iron gate", "The logbook"],
       "answer": 2,
       "explain": [
-        "Preventative — it stops the approach before it starts.",
-        "Deterrent — it discourages the attempt without necessarily recording it.",
-        "Detective — a logbook observes and creates an audit trail after the fact."
+        "Preventative — a physical barrier that stops the approach before it starts.",
+        "Preventative — an access barrier that stops entry before it starts.",
+        "Detective — the logbook records and reveals who came, enabling audit after the fact."
       ]
     },
     {
