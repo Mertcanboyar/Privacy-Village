@@ -206,7 +206,7 @@ export function openAlchemistsTrialsOverlay(onClose: (completed: boolean) => voi
     bodyEl.innerHTML = "";
 
     bodyEl.append(
-      isoldeLine('"The Scribe publishes only totals. No names, ever. Perfectly safe, she says. Ask her two questions."'),
+      isoldeLine('"The Scribe publishes only totals, no names, ever — perfectly safe, she says. Ask her two questions."'),
       el("div", { className: "panel", style: { marginTop: "var(--space-2)" } }, [
         el("div", { className: "briefing__case", text: "THE SCRIBE'S STATISTICS BOARD" }),
         el(
@@ -342,7 +342,7 @@ export function openAlchemistsTrialsOverlay(onClose: (completed: boolean) => voi
     if (setting === "calibrated") {
       noisePassed = true;
       resolvedText =
-        "Exact and ruinous, or nonsensical and useless — you found neither. The subtraction no longer proves anything: the difference could be noise. Useful for the Council, useless for the spy.";
+        "The subtraction no longer proves anything — the difference could be noise. Useful for the Council, useless for the spy.";
       flashCorrectSoon();
     } else {
       alchemistsTrialsState.trial1NoiseFirstTry = false;
@@ -597,7 +597,7 @@ export function openAlchemistsTrialsOverlay(onClose: (completed: boolean) => voi
     if (impasseResolved) {
       const text =
         impasseResolved === "third_party"
-          ? "You did not remove the risk, Agent. You moved it, and gave it a single address. The scribe is later bribed — both guilds' books leak."
+          ? "You did not remove the risk, Agent — you moved it, and gave it a single address. The scribe is later bribed; both guilds' books leak."
           : "Refusal is also an outcome. Both guilds refuse; the tax goes unset.";
       bodyEl.append(el("p", { className: "briefing__body", text: `ISOLDE — ${text}`, style: { marginTop: "var(--space-2)" } }));
       setInstructions("");
