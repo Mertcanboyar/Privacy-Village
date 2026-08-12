@@ -205,6 +205,7 @@ const LOCKED_QUEST_LINES: Record<string, string> = {
   archivists_desk: 'Complete "The Purpose Test" at the Academy. Come back when you can recite it.',
   innkeepers_shards: 'Complete "De-identification: Masks & Chains" at the Academy first, Agent — those shards won\'t un-shatter themselves.',
   treasury_two_keys: 'Complete "Measures that Interlock" at the Academy first, Agent — coin buys a heavier lock, not a smarter one.',
+  alchemists_trials: 'Complete "The Alchemist\'s Cabinet" at the Academy first, Agent. The locked drawer stays locked until you know what\'s in it.',
 };
 
 // First matching `if` wins; a set with no `if` is the fallback and
@@ -656,6 +657,37 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           lines: [
             "Can't stop long. The dawn route waits for no one — move along, I have a schedule to keep.",
           ],
+        },
+      ],
+    },
+    {
+      // Keeper of the Academy's locked cabinet drawer — placed just
+      // outside the Academy door (see village.json's door hotspot at
+      // x:50-120), clear of it and of the courier further down. Reuses
+      // post_villager's robed/cloaked strip (see LORE_NPC_IDS' doc
+      // comment above) rather than a new asset — see NPCDef.tint below,
+      // same reuse-and-tint convention as post_villager/courier sharing
+      // npc-knight-derived textures elsewhere in this file.
+      id: "isolde",
+      name: "Isolde",
+      x: 180,
+      y: 470,
+      texture: "npc-villager",
+      baseScale: 75 / 633,
+      idleAnim: "npc-villager-idle",
+      tint: 0x8f5ce0,
+      questGiver: "alchemists_trials",
+      dialogue: [
+        {
+          if: { questComplete: "alchemists_trials" },
+          lines: ["The drawer stays open for you now, Agent. Paradox is just a truth that hasn't found its shape yet."],
+        },
+        {
+          if: { questActive: "alchemists_trials" },
+          lines: ["The trials wait exactly where you left them, Agent. Some paradoxes are patient."],
+        },
+        {
+          lines: ["Everyone stops at the common shelves. Sensible people — I've never trusted one in my life."],
         },
       ],
     },

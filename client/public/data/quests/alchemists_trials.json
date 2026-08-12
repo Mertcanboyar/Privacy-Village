@@ -1,0 +1,16 @@
+{
+  "id": "alchemists_trials",
+  "title": "The Alchemist's Trials",
+  "giver": "isolde",
+  "xp": 300,
+  "offer": "You have used the cabinet's common shelves, Agent — the locked drawer holds three instruments the village barely believes in. Fail my trials honestly, and you will understand why they exist.",
+  "nextHint": "Find Isolde near the Academy",
+  "debrief": "Three instruments, three impossibilities made ordinary: publish truthfully without exposing anyone, hand over data that resembles life without being it, and compute upon what you cannot read.",
+  "milestone": "alchemists_trials",
+  "steps": [
+    {
+      "objective": "Complete Isolde's three trials",
+      "trigger": { "type": "reach_zone", "zone": "alchemists_trials_complete" }
+    }
+  ]
+}

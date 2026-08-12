@@ -29,6 +29,7 @@ export const QUEST_IDS = [
   "treasury_two_keys",
   "maren_winter_report",
   "archivists_desk",
+  "alchemists_trials",
 ] as const;
 
 // Clearance is 1 + however many of these narrative milestones are done,
@@ -53,6 +54,7 @@ export const MILESTONE_IDS = [
   "treasury_two_keys",
   "maren_winter_report",
   "archivists_desk",
+  "alchemists_trials",
 ] as const;
 export type MilestoneId = (typeof MILESTONE_IDS)[number];
 
