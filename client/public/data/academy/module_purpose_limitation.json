@@ -4,7 +4,7 @@
   "title": "The Purpose Test",
   "clearanceRequired": 4,
   "order": 5,
-  "type": "lesson",
+  "type": "advise_client",
   "fieldWork": { "questId": "archivists_desk", "label": "The Archivist's Desk", "room": "courthouse", "ping": "quill" },
   "lesson": [
     { "type": "heading", "text": "Data remembers why it was given." },
@@ -40,11 +40,17 @@
       "text": "Purpose limitation is also why you MINIMISE and why you set RETENTION limits: if data may serve only its purpose, then once the purpose is served, the data has no reason to remain. Specify the purpose, honour it, and let everything else — extra fields, extra time, extra uses — fall away."
     }
   ],
-  "quiz": [
+  "cases": [
     {
-      "q": "Before you can decide whether a NEW use of data is allowed, what must you first establish?",
-      "choices": ["Whether the requester is trustworthy", "The ORIGINAL specified purpose", "Whether the data is encrypted"],
-      "answer": 1,
+      "caseLabel": "Quill's Test",
+      "scenario": "Before he'll let you touch the ledger unsupervised, Quill poses one question: a request lands on the desk to reuse data for something new. What must be true before you can even begin judging it?",
+      "verdicts": ["The requester is trustworthy", "The ORIGINAL specified purpose is on record", "The data is encrypted"],
+      "correctVerdict": 1,
+      "consequence": [
+        "You wave through a request from someone respectable, no ledger check made — and a week later a perfectly untrustworthy requester's IDENTICAL request sails through too, because \"trustworthy\" was never a real test to begin with.",
+        "You pull the original ledger entry first, every time — and Quill nods. Whatever the verdict turns out to be, at least it will be judged against something real.",
+        "You check whether the data is encrypted, hand it over, and only later realize encryption never once asked whether the NEW use was any of the requester's business."
+      ],
       "explain": [
         "Trustworthiness isn't the test — even a trusted requester can't licence an incompatible reuse, and an untrusted one can still ask for something genuinely compatible.",
         "Correct — compatibility is measured against why the data was collected. No recorded purpose, no way to judge reuse — the ledger comes first.",
@@ -53,9 +59,15 @@
     },
     {
       "id": "purpose_limitation_grant_seal",
-      "q": "Tavern tab records, collected to settle billing disputes, are requested to market hangover potions to heavy drinkers. Verdict?",
-      "choices": ["GRANT", "CONDITIONAL", "SEAL"],
-      "answer": 2,
+      "caseLabel": "The Tavern Tab Request",
+      "scenario": "Tavern tab records, collected to settle billing disputes, are requested by a merchant to market hangover potions to heavy drinkers.",
+      "verdicts": ["GRANT", "CONDITIONAL", "SEAL"],
+      "correctVerdict": 2,
+      "consequence": [
+        "The merchant builds a full drinking-habits profile from records that were only ever meant to settle bar tabs — every regular at the Griffin's Drink now has a marketing target painted on their back.",
+        "You reach for a safeguard, but there isn't one that fixes this — the tab data itself IS the marketing profile. Conditioning it just delays the same harm.",
+        "You seal the request and tell the merchant plainly: come back with the tavern's actual patrons' consent, or don't come back at all. Billing stays billing."
+      ],
       "explain": [
         "Granting this lets billing data become a marketing profile — exactly the harm purpose limitation exists to stop.",
         "No safeguard fixes this — the problem isn't exposure risk, it's that marketing was never the purpose at all.",
@@ -64,9 +76,15 @@
       "hint": "Ask only one thing: was this NEW use foreseeable within the reason the data was first collected — not whether it's profitable, harmless-sounding, or well-intentioned.",
       "variant": {
         "id": "purpose_limitation_grant_seal_variant",
-        "q": "Guardhouse shift logs, kept to track who's on duty, are requested by a merchant to time deliveries around guard rotations. Verdict?",
-        "choices": ["GRANT", "CONDITIONAL", "SEAL"],
-        "answer": 2,
+        "caseLabel": "The Guardhouse Logs Request",
+        "scenario": "Guardhouse shift logs, kept to track who's on duty, are requested by a merchant to time deliveries around guard rotations.",
+        "verdicts": ["GRANT", "CONDITIONAL", "SEAL"],
+        "correctVerdict": 2,
+        "consequence": [
+          "The merchant now knows exactly when the watch changes at every gate — a shift log meant to track duty rosters just became a map of the village's weakest hours.",
+          "No safeguard turns a rotation schedule into something safe to hand a merchant — the problem is the PURPOSE, not the exposure.",
+          "You seal it. If deliveries need scheduling, the merchant can ask the guard captain directly — not read it off a duty roster never meant to leave the guardhouse."
+        ],
         "explain": [
           "Granting hands a merchant a live map of security gaps — a shift log becoming a delivery-timing tool is scope creep with real risk.",
           "No safeguard converts this — the problem isn't exposure, it's that commercial delivery-timing was never the purpose of a shift log.",
@@ -75,9 +93,15 @@
       }
     },
     {
-      "q": "A guild wants health-visit data to decide where to dig a new well — a genuinely useful, compatible aim. The data names patients. Best verdict?",
-      "choices": ["GRANT the raw data — the purpose is compatible", "CONDITIONAL: aggregate to district counts first", "SEAL — health data can never be reused"],
-      "answer": 1,
+      "caseLabel": "The Well-Siting Request",
+      "scenario": "A guild wants health-visit data to decide where to dig a new well — a genuinely useful, compatible aim. The data names patients.",
+      "verdicts": ["GRANT the raw data — the purpose is compatible", "CONDITIONAL: aggregate to district counts first", "SEAL — health data can never be reused"],
+      "correctVerdict": 1,
+      "consequence": [
+        "The guild gets a list of exactly who has been treated for what, and where they live — a genuinely good idea for the village now doubles as a directory of everyone's health history.",
+        "The guild gets district-level counts — enough to see where the need is greatest, nothing that points back to a single named patient. The well gets dug; no one's history leaves the desk.",
+        "You refuse outright, and the guild digs the well somewhere convenient instead of somewhere needed — the good the compatible purpose could have done never happens, for no real gain in anyone's protection."
+      ],
       "explain": [
         "The purpose being compatible doesn't clear raw, named health data — sensitive data raises the bar, and a safeguard is owed before it travels.",
         "Correct — the purpose is compatible, but sensitive data raises the bar: condition it by anonymizing to counts so the good deed exposes no one. Neither blanket grant nor blanket refusal.",
@@ -85,30 +109,56 @@
       ]
     },
     {
-      "q": "A request SOUNDS invasive — 'list who attended each performance' — but the ledger shows attendance was gathered to program the festival, and the use is to choose which acts to rebook. Verdict?",
-      "choices": ["SEAL — it sounds like surveillance", "GRANT — it matches the original programming purpose", "CONDITIONAL — always condition attendance data"],
-      "answer": 1,
+      "caseLabel": "The Programming Request",
+      "scenario": "A request SOUNDS invasive — \"list who attended each performance\" — but the ledger shows attendance was gathered to program the festival, and the use is to choose which acts to rebook.",
+      "verdicts": ["SEAL — it sounds like surveillance", "GRANT — it matches the original programming purpose", "CONDITIONAL — always condition attendance data"],
+      "correctVerdict": 1,
+      "consequence": [
+        "You seal a request that was never a threat — next year's festival gets programmed blind, worse for everyone, and the only thing you protected was your own discomfort with how the request SOUNDED.",
+        "The programmer gets exactly what they need to decide which acts return — the same purpose the attendance was recorded for in the first place. Nothing new was exposed.",
+        "You bolt a safeguard onto a request that never needed one — the programmer waits on an aggregation step that protects no one, because this was never a risky use to begin with."
+      ],
       "explain": [
         "Sealing a compatible use out of reflex is OVER-RESTRICTION — the mirror error of scope creep. It blocks legitimate work for no real gain in protection.",
         "Correct — compatibility is judged on the purpose, not on how sinister it feels. Attendance recorded to shape the programme, used to shape the programme — that's the same purpose.",
-        "Conditioning every request 'just in case' isn't free — it delays or degrades legitimate work that never needed a safeguard in the first place."
+        "Conditioning every request \"just in case\" isn't free — it delays or degrades legitimate work that never needed a safeguard in the first place."
       ]
     },
     {
-      "q": "The Tinkers' road-building request is refused despite being well-intentioned. Why doesn't the good cause make it compatible?",
-      "choices": ["The Tinkers are untrustworthy", "Compatibility is judged on the factors — link, context, consequences — not the requester's virtue", "Roads are always low priority"],
-      "answer": 1,
+      "caseLabel": "The Tinkers' Request",
+      "scenario": "The Tinkers — decent, well-meaning folk — want the emergency headcounts gathered during the spring evacuation drill, to help plan where a new road should go. It's a good cause.",
+      "verdicts": [
+        "GRANT — their cause is good, and good intentions matter",
+        "SEAL on this basis — ask the Tinkers to gather fresh planning data with its own basis",
+        "GRANT — but only because the Tinkers are well-known and trusted"
+      ],
+      "correctVerdict": 1,
+      "consequence": [
+        "The Tinkers get their road built faster — and every future \"good cause\" now has precedent to reach into data gathered for something else entirely, because good intentions were treated as a lawful basis.",
+        "The Tinkers are turned away from THIS ledger entry, but nothing stops them asking the village council directly for planning data gathered on its own terms — the road still gets built, just not on borrowed data.",
+        "You wave it through because you like the Tinkers — and the next requester you don't happen to trust gets held to a standard the Tinkers never had to meet."
+      ],
       "explain": [
-        "Trust isn't the issue here — the Tinkers aren't accused of bad faith. The problem is the purpose itself, regardless of who's asking.",
-        "Correct — emergency crowd-control and civic planning are different purposes regardless of how worthy the second is. Good intentions don't convert an incompatible purpose; the villagers must be asked afresh.",
-        "Priority has nothing to do with it — even an urgent, important new purpose still needs its own lawful basis if it isn't compatible with the original one."
+        "Trust and good intentions don't convert an incompatible purpose — emergency crowd-control and road planning are different purposes regardless of how worthy the second one is.",
+        "Correct — compatibility is judged on the link, context, and consequences between the two purposes, not on the requester's virtue. The Tinkers need their own basis for road-planning data.",
+        "Priority or personal trust has nothing to do with it — even a well-known, likable requester still needs a compatible purpose or a fresh basis."
       ]
     },
     {
       "id": "purpose_limitation_lawful_basis_consent_contract",
-      "q": "A tailor collects a customer's measurements to complete a commissioned coat, and separately asks if she may email her about a new autumn line. Which basis covers the EMAIL offer?",
-      "choices": ["The COMMISSION (contract) — a coat needs measurements", "Her CONSENT — freely given, separate from the coat", "No basis is needed for either"],
-      "answer": 1,
+      "caseLabel": "The Tailor's Two Requests",
+      "scenario": "A tailor collects a customer's measurements to complete a commissioned coat, and separately asks if she may email her about a new autumn line.",
+      "verdicts": [
+        "The COMMISSION (contract) covers both — a coat needs measurements, and telling her about new items is good service",
+        "The COMMISSION covers the coat; the EMAIL needs her separate CONSENT",
+        "Neither needs a basis — the tailor already has her details"
+      ],
+      "correctVerdict": 1,
+      "consequence": [
+        "The customer starts getting seasonal marketing emails she never agreed to, because \"good service\" quietly became the tailor's excuse to skip asking.",
+        "The coat gets made under the commission, and the customer gets asked — plainly — whether she wants autumn-line emails. She says yes or no, and either way, it was actually her choice.",
+        "The tailor emails her anyway, on the theory that having her address once means having it forever, for anything — exactly the assumption purpose limitation exists to forbid."
+      ],
       "explain": [
         "The commission covers taking and using measurements to make the coat — it doesn't stretch to cover a marketing email about something else entirely.",
         "Correct — fulfilling the coat is necessary for the CONTRACT; emailing about new items is a separate purpose that needs its own basis, here her freely given CONSENT.",
@@ -117,9 +167,19 @@
       "hint": "Ask which action was actually NECESSARY to deliver on the contract, and which one was optional, additional, and needed the customer's own yes.",
       "variant": {
         "id": "purpose_limitation_lawful_basis_consent_contract_variant",
-        "q": "A healer takes a patient's address to deliver medicine ordered under treatment, and separately asks to add her to a mailing list for seasonal remedies. Which basis covers the MAILING LIST?",
-        "choices": ["The TREATMENT (contract) — delivery needs an address", "Her CONSENT — freely given, separate from treatment", "Neither — healers don't need a basis"],
-        "answer": 1,
+        "caseLabel": "The Healer's Two Requests",
+        "scenario": "A healer takes a patient's address to deliver medicine ordered under treatment, and separately asks to add her to a mailing list for seasonal remedies.",
+        "verdicts": [
+          "The TREATMENT (contract) covers both — delivery needs an address, and the mailing list is a courtesy",
+          "The TREATMENT covers delivery; the MAILING LIST needs her separate CONSENT",
+          "Neither — healers don't need a basis"
+        ],
+        "correctVerdict": 1,
+        "consequence": [
+          "The patient starts getting seasonal remedy flyers she never asked for, because delivering her medicine was quietly stretched to cover marketing too.",
+          "The medicine gets delivered under the treatment, and the healer asks separately whether she'd like seasonal remedy notices — freely given, and just as freely revocable.",
+          "The healer signs her up without asking, on the theory that treating her once means her address is fair game for anything after — exactly the assumption purpose limitation forbids."
+        ],
         "explain": [
           "The treatment contract covers delivering the ordered medicine — it doesn't extend to unrelated seasonal marketing.",
           "Correct — delivering medicine is necessary for the CONTRACT; the mailing list is a separate purpose resting on her own CONSENT, freely given and revocable.",

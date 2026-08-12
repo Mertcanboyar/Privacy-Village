@@ -387,6 +387,50 @@ export interface AcademyBuildModule extends AcademyModuleBase {
   capstoneQuestion?: QuizQuestion;
 }
 
+// One request the player renders a verdict on (Playtest Session 3, P2 —
+// "ADVISE THE CLIENT: verdict + consequence scene"). Same one-at-a-time
+// mastery/retry shape as QuizQuestion (id/hint/variant), but each choice
+// carries a CONSEQUENCE line — the narrative scene of what actually
+// happens if that verdict is followed, shown before `explain` — instead
+// of a bare abstract question. See academyOverlay.ts's
+// renderAdviseClient().
+export interface AdviseCase {
+  /** Needed to key wrong-attempt/hint-shown state — only required for a
+   * case that sets `hint` or `variant`, same convention as
+   * QuizQuestion.id. */
+  id?: string;
+  caseLabel: string;
+  scenario: string;
+  verdicts: string[];
+  correctVerdict: number;
+  /** Keyed by verdict index — shown FIRST, before `explain`. What
+   * actually happens if this verdict is followed, not a restatement of
+   * the rule. */
+  consequence: string[];
+  /** Keyed by verdict index — the dry rule-based reasoning, shown after
+   * `consequence`. */
+  explain: string[];
+  /** Stage 2 — shown once this case's 2nd wrong verdict lands. Same
+   * semantics as QuizQuestion.hint. */
+  hint?: string;
+  /** Stage 3 — a fresh-scenario case testing the same concept, queued
+   * onto the end once this case's 3rd wrong verdict lands. Same
+   * semantics as QuizQuestion.variant. */
+  variant?: Omit<AdviseCase, "hint" | "variant">;
+}
+
+// "ADVISE THE CLIENT (verdict + consequence scene)" — one case at a
+// time (same mastery/retry shell as the ordinary text quiz, reusing its
+// proven progressive-hint mechanics in a parallel implementation rather
+// than the quiz view itself, since the chrome — case label, scenario
+// framing, CONSEQUENCE-then-RULING — is deliberately different from a
+// bare "QUESTION N/M" multiple-choice question).
+export interface AcademyAdviseModule extends AcademyModuleBase {
+  type: "advise_client";
+  lesson: LessonBlock[];
+  cases: AdviseCase[];
+}
+
 export type AcademyModule =
   | AcademyLessonModule
   | AcademyCardDrillModule
@@ -394,7 +438,8 @@ export type AcademyModule =
   | AcademyDataSieveModule
   | AcademyLessonDiagramQuizModule
   | AcademyCaseFileModule
-  | AcademyBuildModule;
+  | AcademyBuildModule
+  | AcademyAdviseModule;
 
 export interface ModuleProgress {
   theoryDone: boolean;

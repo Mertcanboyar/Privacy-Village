@@ -10,6 +10,7 @@ import {
   type AcademyLessonDiagramQuizModule,
   type AcademyCaseFileModule,
   type AcademyBuildModule,
+  type AcademyAdviseModule,
   type AcademyFieldWork,
   type AcademyModuleBase,
   type CardDrillCard,
@@ -17,6 +18,7 @@ import {
   type DataSieveCard,
   type CaseFileEntry,
   type BuildSlot,
+  type AdviseCase,
   type LessonBlock,
   type QuizQuestion,
   type DiagramQuizQuestion,
@@ -146,7 +148,8 @@ type AcademyView =
   | "dataSieve"
   | "diagramQuiz"
   | "caseFile"
-  | "buildDefense";
+  | "buildDefense"
+  | "adviseClient";
 
 // Attempt counter for decision-log rows (see answerQuiz()/answerCardDrill()/
 // answerCardDrillMulti()) — keyed by module+question/item so a retry on
@@ -199,6 +202,18 @@ const buildVariantQueued = new Set<string>();
 function nextBuildWrongAttempt(key: string): number {
   const n = (buildWrongAttempts.get(key) ?? 0) + 1;
   buildWrongAttempts.set(key, n);
+  return n;
+}
+
+// Same trio again for advise-the-client cases — a separate id space
+// from the quiz/case-file/build-defense ones above.
+const adviseWrongAttempts = new Map<string, number>();
+const adviseHintShown = new Set<string>();
+const adviseVariantQueued = new Set<string>();
+
+function nextAdviseWrongAttempt(key: string): number {
+  const n = (adviseWrongAttempts.get(key) ?? 0) + 1;
+  adviseWrongAttempts.set(key, n);
   return n;
 }
 
@@ -315,6 +330,19 @@ export class AcademyOverlay {
   private buildRunOnce = false;
   private buildVariantParentInfo = new Map<string, { attempts: number; hintUsed: boolean }>();
 
+  // Advise-the-client state — one case at a time, same mastery-model
+  // shape as the text quiz's own quizIndex/quizVariantOf/etc (see
+  // renderAdviseClient()/answerAdviseCase()), kept as a parallel
+  // implementation rather than reusing the quiz view itself since the
+  // chrome differs (case label + scenario framing, CONSEQUENCE shown
+  // before the ruling).
+  private adviseIndex = 0;
+  private adviseRevealedVerdict: number | null = null;
+  private adviseCorrect = false;
+  private adviseCases: AdviseCase[] = [];
+  private adviseVariantOf: (string | null)[] = [];
+  private adviseVariantParentInfo = new Map<string, { attempts: number; hintUsed: boolean }>();
+
   private badgeEl: HTMLElement;
   private badgeNameEl: HTMLElement;
   private badgeXpEl: HTMLElement;
@@ -423,6 +451,7 @@ export class AcademyOverlay {
     else if (this.currentView === "dataSieve") this.renderDataSieve();
     else if (this.currentView === "caseFile") this.renderCaseFile();
     else if (this.currentView === "buildDefense") this.renderBuildDefense();
+    else if (this.currentView === "adviseClient") this.renderAdviseClient();
     else this.renderDiagramQuiz();
   }
 
@@ -470,7 +499,8 @@ export class AcademyOverlay {
       module.type !== "data_sieve" &&
       module.type !== "lesson_diagramquiz" &&
       module.type !== "case_file" &&
-      module.type !== "build_defense"
+      module.type !== "build_defense" &&
+      module.type !== "advise_client"
         ? [...module.quiz]
         : [];
     this.quizVariantOf = this.quizQuestions.map(() => null);
@@ -543,6 +573,18 @@ export class AcademyOverlay {
     this.buildResolved = this.buildSlots.map(() => false);
     this.buildWrong = new Set();
     this.buildRunOnce = false;
+    this.render();
+  }
+
+  private goToAdviseClient(moduleId: string) {
+    const module = academy.getModule(moduleId);
+    this.currentModuleId = moduleId;
+    this.currentView = "adviseClient";
+    this.adviseIndex = 0;
+    this.adviseRevealedVerdict = null;
+    this.adviseCorrect = false;
+    this.adviseCases = module?.type === "advise_client" ? [...module.cases] : [];
+    this.adviseVariantOf = this.adviseCases.map(() => null);
     this.render();
   }
 
@@ -818,6 +860,7 @@ export class AcademyOverlay {
 
     const isDiagramQuiz = module.type === "lesson_diagramquiz";
     const isBuildDefense = module.type === "build_defense";
+    const isAdviseClient = module.type === "advise_client";
     const navRow = el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-3)" } }, [
       this.lessonPageIndex > 0
         ? el("button", { className: "btn btn--ghost", text: "◂ BACK", on: { click: () => this.goToLessonPage(this.lessonPageIndex - 1) } })
@@ -825,11 +868,12 @@ export class AcademyOverlay {
       isLastPage
         ? el("button", {
             className: "btn btn--gold",
-            text: isDiagramQuiz ? "READ THE DIAGRAM" : isBuildDefense ? "BUILD THE DEFENSE" : "TAKE THE ASSESSMENT",
+            text: isDiagramQuiz ? "READ THE DIAGRAM" : isBuildDefense ? "BUILD THE DEFENSE" : isAdviseClient ? "ADVISE THE CLIENT" : "TAKE THE ASSESSMENT",
             on: {
               click: () => {
                 if (isDiagramQuiz) this.goToDiagramQuiz(module.id);
                 else if (isBuildDefense) this.goToBuildDefense(module.id);
+                else if (isAdviseClient) this.goToAdviseClient(module.id);
                 else this.goToQuiz(module.id);
               },
             },
@@ -2040,6 +2084,188 @@ export class AcademyOverlay {
     }
     this.sealTheory(module.id);
     this.goToModuleList(module.track);
+  }
+
+  // "The Purpose Test" — ADVISE THE CLIENT (verdict + consequence
+  // scene), Playtest Session 3, P2. One case at a time, same mastery/
+  // retry shell as renderQuiz() (question counter, NEXT/FINISH once
+  // correct, progressive hint/variant), reimplemented rather than
+  // reused because the chrome is deliberately different: a case label
+  // and scenario framing instead of a bare "QUESTION N/M", and a
+  // CONSEQUENCE scene — what actually happens if this verdict is
+  // followed — shown before the dry ruling, per the ticket's
+  // "consequences before explanation" rule.
+  private renderAdviseClient() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "advise_client") {
+      this.goToHub();
+      return;
+    }
+    const c = this.adviseCases[this.adviseIndex];
+    if (!c) {
+      this.goToHub();
+      return;
+    }
+    const isVariant = this.adviseVariantOf[this.adviseIndex] !== null;
+
+    const header = el("div", {
+      text: isVariant ? "REVISIT — FRESH SCENARIO" : `CLIENT REQUEST ${this.adviseIndex + 1} / ${this.adviseCases.length}`,
+      style: { fontFamily: "var(--font-mono)", fontSize: "12px", letterSpacing: "0.08em", color: "var(--text-muted)", marginBottom: "var(--space-2)" },
+    });
+
+    const caseBox = el(
+      "div",
+      { style: { borderLeft: "4px solid var(--accent-gold)", background: "var(--bg-raised)", padding: "8px 12px", borderRadius: "var(--radius-sm)", marginBottom: "var(--space-3)" } },
+      [
+        el("span", {
+          text: c.caseLabel.toUpperCase(),
+          style: { fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.06em", color: "var(--accent-gold)", fontWeight: "700" },
+        }),
+        el("p", { text: c.scenario, style: { fontFamily: "var(--font-body)", fontSize: "14px", color: "var(--text-primary)", margin: "6px 0 0" } }),
+      ],
+    );
+
+    const verdictList = el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: "var(--space-2)" } },
+      c.verdicts.map((verdict, i) => this.renderAdviseVerdictButton(c, i, verdict)),
+    );
+
+    const children: HTMLElement[] = [header, caseBox, verdictList];
+
+    if (this.adviseRevealedVerdict !== null) {
+      children.push(
+        el("p", {
+          text: `CONSEQUENCE — ${c.consequence[this.adviseRevealedVerdict]}`,
+          style: { marginTop: "var(--space-3)", fontFamily: "var(--font-body)", fontSize: "13px", fontWeight: "600", color: "var(--accent-red)" },
+        }),
+        el("p", {
+          text: c.explain[this.adviseRevealedVerdict],
+          style: { marginTop: "4px", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)" },
+        }),
+      );
+      const hintKey = c.id ? `${this.currentModuleId}:${c.id}` : null;
+      if (!this.adviseCorrect && c.hint && hintKey && adviseHintShown.has(hintKey)) {
+        children.push(
+          el("div", {
+            text: `HINT — ${c.hint}`,
+            style: {
+              marginTop: "var(--space-2)",
+              borderLeft: "4px solid var(--accent-blue)",
+              background: "var(--bg-raised)",
+              padding: "var(--space-2)",
+              borderRadius: "var(--radius-sm)",
+              fontFamily: "var(--font-body)",
+              fontSize: "13px",
+              color: "var(--text-primary)",
+            },
+          }),
+        );
+      }
+    }
+
+    if (this.adviseCorrect) {
+      const isLast = this.adviseIndex >= this.adviseCases.length - 1;
+      children.push(
+        el("button", {
+          className: "btn btn--gold",
+          text: isLast ? "FINISH" : "NEXT",
+          style: { marginTop: "var(--space-3)" },
+          on: { click: () => this.nextAdviseCase(module) },
+        }),
+      );
+    }
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "680px" } }, children));
+  }
+
+  private renderAdviseVerdictButton(c: AdviseCase, index: number, text: string): HTMLElement {
+    const isRevealed = this.adviseRevealedVerdict === index;
+    const isAnswer = index === c.correctVerdict;
+
+    const style: Partial<CSSStyleDeclaration> = { width: "100%", justifyContent: "flex-start", textAlign: "left" };
+    if (isRevealed) {
+      if (isAnswer) {
+        style.borderColor = "var(--accent-gold)";
+        style.animation = "ds-quiz-correct 500ms ease-out";
+      } else {
+        style.borderColor = "var(--accent-red)";
+        style.animation = "ds-shake 400ms ease-in-out";
+      }
+    }
+
+    return el("button", { className: "btn btn--ghost", text, style, on: { click: () => this.answerAdviseCase(index, c) } });
+  }
+
+  // No penalty, no score — a wrong verdict just reveals its consequence
+  // scene + ruling and stays retryable, same as answerQuiz().
+  private answerAdviseCase(index: number, c: AdviseCase) {
+    this.adviseRevealedVerdict = index;
+    this.adviseCorrect = index === c.correctVerdict;
+
+    const attemptKey = `${this.currentModuleId}:${c.id ?? this.adviseIndex}`;
+    logDecision("module_advise_verdict", {
+      module: this.currentModuleId,
+      case: c.caseLabel,
+      picked: index,
+      correct: this.adviseCorrect,
+      attempt: nextAnswerAttempt(attemptKey),
+    });
+
+    this.handleAdviseProgressive(c);
+    this.render();
+  }
+
+  // Stages 2-3 of the progressive-hint mechanic, same shape as
+  // handleProgressiveHint() for the text quiz.
+  private handleAdviseProgressive(c: AdviseCase) {
+    if (!c.id) return;
+    const variantParentId = this.adviseVariantOf[this.adviseIndex];
+    const trackedKey = `${this.currentModuleId}:${c.id}`;
+
+    if (!this.adviseCorrect) {
+      if (variantParentId) return;
+      const wrongCount = nextAdviseWrongAttempt(trackedKey);
+      if (wrongCount === 2 && c.hint) adviseHintShown.add(trackedKey);
+      if (wrongCount === 3 && c.variant && !adviseVariantQueued.has(trackedKey)) {
+        adviseVariantQueued.add(trackedKey);
+        this.adviseVariantParentInfo.set(c.id, { attempts: wrongCount, hintUsed: adviseHintShown.has(trackedKey) });
+        this.adviseCases.push({ ...c.variant });
+        this.adviseVariantOf.push(c.id);
+      }
+      return;
+    }
+
+    if (variantParentId) {
+      const info = this.adviseVariantParentInfo.get(variantParentId) ?? { attempts: 0, hintUsed: false };
+      logDecision("module_advise_progressive", {
+        module: this.currentModuleId,
+        caseId: variantParentId,
+        attempts: info.attempts,
+        hintUsed: info.hintUsed,
+        variantPassed: true,
+      });
+    } else if ((c.hint || c.variant) && !adviseVariantQueued.has(trackedKey)) {
+      logDecision("module_advise_progressive", {
+        module: this.currentModuleId,
+        caseId: c.id,
+        attempts: adviseWrongAttempts.get(trackedKey) ?? 0,
+        hintUsed: adviseHintShown.has(trackedKey),
+      });
+    }
+  }
+
+  private nextAdviseCase(module: AcademyAdviseModule) {
+    const isLast = this.adviseIndex >= this.adviseCases.length - 1;
+    if (isLast) {
+      this.sealTheory(module.id);
+      this.goToModuleList(module.track);
+      return;
+    }
+    this.adviseIndex++;
+    this.adviseRevealedVerdict = null;
+    this.adviseCorrect = false;
+    this.render();
   }
 
   // "Mapping the Flow"'s interactive-diagram assessment — same mastery/
