@@ -18,46 +18,46 @@
     },
     {
       "type": "paragraph",
-      "text": "Picture an inn that sharded its guest records into three separate logs, trusting that separation meant safety: a room list, a coat-check log, a gate log. No single log ever paired a room with a name — yet Room 7 → Ticket T-822 → a green cloak at 20:15 → Wren. Each hop used a shared attribute; the chain gets there anyway. This is a linkage attack, and it is not theoretical: a famous study showed that ~87% of the US population is uniquely identifiable from just three quasi-identifiers — ZIP code, birth date, and sex. A researcher used exactly this chain, linking an \"anonymized\" hospital dataset to a public voter roll, to re-identify a state governor's medical records."
+      "text": "Picture a caravan that split its manifest into three separate ledgers, trusting that separation meant safety: a checkpoint log, a warehouse tally, a courier's delivery slip. No single ledger ever paired a crate with a name — yet a shared crate number and a shared hour let anyone walk the chain from checkpoint to warehouse to courier, and from courier to name. Each hop used a shared attribute; the chain gets there anyway. This is a linkage attack, and it is not theoretical: a famous study showed that ~87% of the US population is uniquely identifiable from just three quasi-identifiers — ZIP code, birth date, and sex. A researcher used exactly this chain, linking an \"anonymized\" hospital dataset to a public voter roll, to re-identify a state governor's medical records."
     },
     {
       "type": "callout",
       "variant": "blue",
-      "text": "PSEUDONYMIZATION ≠ ANONYMIZATION. Replacing names with codes (Agent NIGHTINGALE, Ticket T-822) is pseudonymization — reversible wherever a key or a chain exists, and still personal data under the law. Anonymization means no one, using reasonable means, can re-identify. It is a high bar, and most 'anonymized' datasets do not clear it."
+      "text": "PSEUDONYMIZATION ≠ ANONYMIZATION. Replacing names with codes (Agent NIGHTINGALE, Manifest CR-822) is pseudonymization — reversible wherever a key or a chain exists, and still personal data under the law. Anonymization means no one, using reasonable means, can re-identify. It is a high bar, and most 'anonymized' datasets do not clear it."
     },
     {
       "type": "paragraph",
-      "text": "One defense is k-anonymity: generalize (ages become ranges) and suppress (values become *) until every row is identical to at least k−1 others on its quasi-identifiers. Each person hides in a crowd of at least k. But the promise is only as strong as its weakest row — a single unique combination, like the one courier in the Mill Quarter who wasn't young, and the mask slips for that person entirely."
+      "text": "One defense is k-anonymity: generalize (ages become ranges) and suppress (values become *) until every row is identical to at least k−1 others on its quasi-identifiers. Each person hides in a crowd of at least k. But the promise is only as strong as its weakest row — a single unique combination breaks it, and the mask slips for that one person entirely."
     },
     {
       "type": "callout",
       "variant": "gold",
-      "text": "AUDIT RULE — k-anonymity is a property you VERIFY, not declare. Count the twins, every row, no exceptions — a dataset can look safe on average and still expose the one row with no twin at all, like that courier. Declarations are not proofs."
+      "text": "AUDIT RULE — k-anonymity is a property you VERIFY, not declare. Count the twins, every row, no exceptions — a dataset can look safe on average and still expose the one row with no twin at all. Declarations are not proofs."
     },
     {
       "type": "paragraph",
-      "text": "And k-anonymity has limits even when perfect: if everyone in a group shares the same sensitive value, hiding in the crowd reveals it anyway (all twelve guests in one wing testing positive tells you everything without naming anyone). Stronger tools exist — l-diversity, differential privacy — and they await at higher clearance. For now, carry these two lessons with you to the inn: chains link, and masks slip."
+      "text": "And k-anonymity has limits even when perfect: if everyone in a group shares the same sensitive value, hiding in the crowd reveals it anyway (every crate in one shipment carrying the same contraband tells you everything without naming a single smuggler). Stronger tools exist — l-diversity, differential privacy — and they await at higher clearance. For now, carry these two lessons with you into the field: chains link, and masks slip."
     }
   ],
   "quiz": [
     {
-      "q": "Odile's coat check ticket \"T-822\" is best described as:",
+      "q": "A caravan's manifest code \"CR-822\" for a border crossing is best described as:",
       "choices": ["Anonymous data", "A pseudonym — still personal data", "A direct identifier"],
       "answer": 1,
       "explain": [
-        "Wrong — chaining it to a name de-anonymizes it. Nothing about the ticket was ever truly anonymous.",
+        "Wrong — chaining it to a name de-anonymizes it. Nothing about the code was ever truly anonymous.",
         "Correct — a code standing in for a person, reversible via the chain. Pseudonymized data remains personal data.",
-        "Wrong — the ticket names no one by itself; it only became identifying once chained to the other logs."
+        "Wrong — the code names no one by itself; it only became identifying once chained to the other ledgers."
       ]
     },
     {
-      "q": "Which single change would have DEFEATED the linkage attack chaining Room 7 to Wren?",
-      "choices": ["Deleting names from the gate log too", "Renaming the logs", "Adding more rooms"],
+      "q": "Which single change would have DEFEATED the linkage attack chaining a crate to its owner?",
+      "choices": ["Deleting names from the delivery slip too", "Renaming the ledgers", "Adding more checkpoints"],
       "answer": 0,
       "explain": [
         "Correct — the attack needed one dataset that resolves to real identities. Remove the identity anchor and the chain ends in codes.",
-        "Wrong — renaming the logs leaves every link intact; the shared attributes are what matter, not the labels.",
-        "Wrong — adding more rooms leaves every link intact; the shared attributes are what matter, not the volume of data."
+        "Wrong — renaming the ledgers leaves every link intact; the shared attributes are what matter, not the labels.",
+        "Wrong — adding more checkpoints leaves every link intact; the shared attributes are what matter, not the volume of data."
       ]
     },
     {
@@ -84,12 +84,12 @@
       }
     },
     {
-      "q": "Why is \"87% identifiable from ZIP + birth date + sex\" the same lesson as Room 7?",
-      "choices": ["Both involve hotels", "Harmless attributes combine into a fingerprint", "Both required hacking"],
+      "q": "Why is \"87% identifiable from ZIP + birth date + sex\" the same lesson as the caravan's crate-to-name chain?",
+      "choices": ["Both involve smuggling", "Harmless attributes combine into a fingerprint", "Both required hacking"],
       "answer": 1,
       "explain": [
-        "Wrong — the hospital study and the voter roll involve no hotel at all; the parallel is structural, not situational.",
-        "Correct — no single attribute identifies; the combination does. Quasi-identifiers are judged together, never alone — in an inn, a hospital, or a census.",
+        "Wrong — the hospital study and the voter roll involve no smuggling at all; the parallel is structural, not situational.",
+        "Correct — no single attribute identifies; the combination does. Quasi-identifiers are judged together, never alone — on a caravan route, in a hospital, or a census.",
         "Wrong — no hacking was involved in either case, just cross-referencing public or shared records."
       ]
     }
