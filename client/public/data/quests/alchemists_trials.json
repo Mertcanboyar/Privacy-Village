@@ -5,7 +5,7 @@
   "xp": 300,
   "offer": "You have used the cabinet's common shelves, Agent — the locked drawer holds three instruments the village barely believes in. Fail my trials honestly, and you will understand why they exist.",
   "nextHint": "Find Isolde near the Academy",
-  "debrief": "Three instruments, three impossibilities made ordinary: publish truthfully without exposing anyone, hand over data that resembles life without being it, and compute upon what you cannot read.",
+  "debrief": "Advanced PETs: noise protects the individual inside true statistics; synthetic data serves builders, not spies; sealed computation answers the question without revealing the inputs.",
   "milestone": "alchemists_trials",
   "steps": [
     {
