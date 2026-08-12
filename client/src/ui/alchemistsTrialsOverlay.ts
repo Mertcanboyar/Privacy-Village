@@ -17,13 +17,55 @@ import { alchemistsTrialsState, resetAlchemistsTrialsState } from "../alchemists
 //   Trial 3 = homomorphic encryption / secure multiparty computation;
 //             removing the trusted third party; minimal disclosure
 
-type Stage = "hook" | "trial1_query" | "trial1_noise" | "trial1_debrief";
+type Stage =
+  | "hook"
+  | "trial1_query"
+  | "trial1_noise"
+  | "trial1_debrief"
+  | "trial2_demand"
+  | "trial2_loom"
+  | "trial2_outlier"
+  | "trial2_remedy"
+  | "trial2_debrief";
 
 interface Query {
   id: string;
   label: string;
   answer: number;
 }
+
+interface CensusRow {
+  name: string;
+  age: number;
+  district: string;
+  trade: string;
+}
+
+// REAL: five named villagers, including the village's only centenarian
+// herbalist (Hazel) — the outlier the loom below ends up memorising.
+const REAL_CENSUS: CensusRow[] = [
+  { name: "Rowan", age: 34, district: "Lantern Row", trade: "Miller" },
+  { name: "Bettina", age: 28, district: "Orchard District", trade: "Weaver" },
+  { name: "Ansel", age: 45, district: "East Gate", trade: "Guard" },
+  { name: "Corin", age: 19, district: "Market Square", trade: "Apprentice" },
+  { name: "Hazel", age: 103, district: "Cinder Row", trade: "Herbalist" },
+];
+
+// SYNTHETIC: plausible invented rows matching the real distribution —
+// except the last, which the loom reproduced almost exactly from Hazel
+// (same name, one year off, same district and trade). That row is the
+// one the player must click to flag in Phase C.
+const SYNTHETIC_CENSUS: CensusRow[] = [
+  { name: "Elowen", age: 32, district: "Lantern Row", trade: "Miller" },
+  { name: "Sable", age: 25, district: "Orchard District", trade: "Weaver" },
+  { name: "Bran", age: 47, district: "East Gate", trade: "Guard" },
+  { name: "Fenn", age: 20, district: "Market Square", trade: "Apprentice" },
+  { name: "Hazel", age: 102, district: "Cinder Row", trade: "Herbalist" },
+];
+const OUTLIER_ROW_INDEX = 4;
+
+type DemandChoice = "handover" | "refuse" | "synthetic";
+type RemedyChoice = "suppress" | "publish" | "discard";
 
 // The one discoverable differencing pair: two totals that differ by
 // exactly one villager (the miller). The other four are decoys with no
@@ -325,8 +367,189 @@ export function openAlchemistsTrialsOverlay(onClose: (completed: boolean) => voi
         "DIFFERENTIAL PRIVACY: add just enough uncertainty that no single villager's presence can be detected — even by someone who knows all the others — while the picture of the whole stays true.",
       ),
       continueButton("BEGIN TRIAL TWO", () => {
-        // Trial 2 (Synthetic Data) lands in the next section — placeholder
-        // exit for now so this stage is independently testable.
+        stage = "trial2_demand";
+        render();
+      }),
+    );
+    setInstructions("");
+  }
+
+  // --- Stage: trial2_demand (the apprentice's demand) -----------------------
+  let demandResolved: DemandChoice | null = null;
+  let demandAttempted = false;
+
+  function renderTrial2Demand() {
+    trialCounterEl.textContent = "TRIAL 2 OF 3 — THE CARTOGRAPHER'S APPRENTICE";
+    bodyEl.innerHTML = "";
+
+    bodyEl.append(
+      isoldeLine(
+        "A visiting apprentice engineer needs the full census to test his new tally-machine before the harvest. He needs data that BEHAVES like the census — not the villagers themselves.",
+      ),
+      el(
+        "div",
+        { style: { display: "flex", gap: "12px", marginTop: "var(--space-3)", justifyContent: "center" } },
+        [
+          el("button", { className: "btn btn--ghost", text: "HAND OVER THE REAL CENSUS", on: { click: () => pickDemand("handover") } }),
+          el("button", { className: "btn btn--ghost", text: "REFUSE — NO DATA", on: { click: () => pickDemand("refuse") } }),
+          el("button", { className: "btn btn--gold", text: "GENERATE A SYNTHETIC CENSUS", on: { click: () => pickDemand("synthetic") } }),
+        ],
+      ),
+    );
+
+    if (demandResolved) {
+      const text =
+        demandResolved === "handover"
+          ? "He needs data that BEHAVES like the census. You gave him the villagers themselves."
+          : "The apprentice's machine ships untested and miscounts at harvest. Privacy that halts the work invites its own disaster.";
+      bodyEl.append(el("p", { className: "briefing__body", text: `ISOLDE — ${text}`, style: { marginTop: "var(--space-2)" } }));
+      setInstructions("");
+      flashRedSoon();
+    } else {
+      setInstructions("The apprentice needs the census's patterns, not its people. Choose how to answer him.");
+    }
+  }
+
+  function pickDemand(choice: DemandChoice) {
+    playSound("select");
+    if (choice === "synthetic") {
+      alchemistsTrialsState.trial2ApproachFirstTry = !demandAttempted;
+      stage = "trial2_loom";
+      render();
+      return;
+    }
+    demandAttempted = true;
+    demandResolved = choice;
+    render();
+  }
+
+  // --- Stage: trial2_loom (real vs synthetic side-by-side) ------------------
+  function censusTable(label: string, rows: CensusRow[], onRowClick?: (i: number) => void): HTMLElement {
+    return el("div", { style: { flex: "1" } }, [
+      el("div", { className: "briefing__case", text: label }),
+      el("div", { className: "evidence-table", style: { marginTop: "8px" } }, [
+        el("table", {}, [
+          el("thead", {}, [el("tr", {}, [el("th", { text: "Name" }), el("th", { text: "Age" }), el("th", { text: "District" }), el("th", { text: "Trade" })])]),
+          el(
+            "tbody",
+            {},
+            rows.map((r, i) =>
+              el(
+                "tr",
+                {
+                  style: onRowClick ? { cursor: "pointer" } : {},
+                  on: onRowClick ? { click: () => onRowClick(i) } : {},
+                },
+                [el("td", { text: r.name }), el("td", { text: String(r.age) }), el("td", { text: r.district }), el("td", { text: r.trade })],
+              ),
+            ),
+          ),
+        ]),
+      ]),
+    ]);
+  }
+
+  function renderTrial2Loom() {
+    trialCounterEl.textContent = "TRIAL 2 OF 3 — THE LOOM";
+    bodyEl.innerHTML = "";
+    bodyEl.append(
+      isoldeLine("It behaves like the census in every pattern that matters. Not one of these people exists."),
+      el("div", { style: { display: "flex", gap: "16px", marginTop: "var(--space-2)" } }, [censusTable("REAL CENSUS", REAL_CENSUS), censusTable("SYNTHETIC CENSUS", SYNTHETIC_CENSUS)]),
+      continueButton("INSPECT THE WEAVE", () => {
+        stage = "trial2_outlier";
+        render();
+      }),
+    );
+    setInstructions("The loom wove a fresh dataset from the real one, matching its ages, districts, and trades.");
+  }
+
+  // --- Stage: trial2_outlier (find + remedy the memorised row) --------------
+  let outlierFound = false;
+  let remedyResolved: RemedyChoice | null = null;
+  let remedyWrongCount = 0;
+
+  function renderTrial2Outlier() {
+    trialCounterEl.textContent = "TRIAL 2 OF 3 — THE TRAP";
+    bodyEl.innerHTML = "";
+
+    const syntheticTable = censusTable("SYNTHETIC CENSUS", SYNTHETIC_CENSUS, outlierFound ? undefined : (i) => flagOutlier(i));
+
+    bodyEl.append(
+      isoldeLine(outlierFound ? "Synthetic data learns from real data — and rare souls are learned too well. Always audit the outliers before you release the cloth." : "One of these rows is unmistakably a real villager, memorised almost exactly. Click it."),
+      el("div", { style: { display: "flex", gap: "16px", marginTop: "var(--space-2)" } }, [censusTable("REAL CENSUS", REAL_CENSUS), syntheticTable]),
+    );
+
+    if (!outlierFound) {
+      setInstructions("Compare every synthetic row against the real census — one of them is too close to be an invention.");
+      return;
+    }
+
+    bodyEl.append(
+      el(
+        "div",
+        { style: { display: "flex", gap: "12px", marginTop: "var(--space-3)", justifyContent: "center" } },
+        [
+          el("button", { className: "btn btn--gold", text: "SUPPRESS THE OUTLIER ROW", on: { click: () => pickRemedy("suppress") } }),
+          el("button", { className: "btn btn--ghost", text: "PUBLISH ANYWAY, IT'S SYNTHETIC", on: { click: () => pickRemedy("publish") } }),
+          el("button", { className: "btn btn--danger", text: "DISCARD THE WHOLE DATASET", on: { click: () => pickRemedy("discard") } }),
+        ],
+      ),
+    );
+
+    if (remedyResolved === "suppress") {
+      bodyEl.append(
+        el("p", { className: "briefing__body", text: "ISOLDE — Correct. Suppress her row, and the rest of the cloth remains sound.", style: { marginTop: "var(--space-2)" } }),
+        continueButton("CONTINUE", () => {
+          stage = "trial2_debrief";
+          render();
+        }),
+      );
+      setInstructions("");
+    } else if (remedyResolved) {
+      const text = remedyResolved === "publish" ? "Synthetic in name only, if she is recognisable." : "Over-reaction, Agent — the rest of the dataset is sound.";
+      bodyEl.append(el("p", { className: "briefing__body", text: `ISOLDE — ${text}`, style: { marginTop: "var(--space-2)" } }));
+      setInstructions(remedyWrongCount >= 2 ? "HINT — Only one option removes the risk without losing the rest of the dataset." : "");
+      flashRedSoon();
+    } else {
+      setInstructions("Flagging her is not enough — decide what to do with the row.");
+    }
+  }
+
+  function flagOutlier(i: number) {
+    if (outlierFound) return;
+    if (i !== OUTLIER_ROW_INDEX) {
+      flashRedSoon();
+      return;
+    }
+    outlierFound = true;
+    playSound("alarm-bell");
+    render();
+  }
+
+  function pickRemedy(choice: RemedyChoice) {
+    if (remedyResolved === "suppress") return;
+    playSound("select");
+    if (choice !== "suppress") {
+      remedyWrongCount++;
+      if (remedyWrongCount >= 2) alchemistsTrialsState.hintsUsed++;
+    }
+    remedyResolved = choice;
+    if (choice === "suppress") alchemistsTrialsState.trial2Choice = "suppress";
+    render();
+  }
+
+  // --- Stage: trial2_debrief -------------------------------------------------
+  function renderTrial2Debrief() {
+    trialCounterEl.textContent = "TRIAL 2 OF 3 — COMPLETE";
+    bodyEl.innerHTML = "";
+    bodyEl.append(
+      isoldeLine(
+        "SYNTHETIC DATA: hand over cloth that behaves like the census for those who only need to build or test — never the villagers themselves, and never an unaudited outlier.",
+      ),
+      continueButton("BEGIN TRIAL THREE", () => {
+        // Trial 3 (Homomorphic Encryption) + completion lands in the next
+        // section — placeholder exit for now so this stage is
+        // independently testable.
         teardown();
         onClose(true);
       }),
@@ -339,7 +562,11 @@ export function openAlchemistsTrialsOverlay(onClose: (completed: boolean) => voi
     if (stage === "hook") return renderHook();
     if (stage === "trial1_query") return renderTrial1Query();
     if (stage === "trial1_noise") return renderTrial1Noise();
-    return renderTrial1Debrief();
+    if (stage === "trial1_debrief") return renderTrial1Debrief();
+    if (stage === "trial2_demand") return renderTrial2Demand();
+    if (stage === "trial2_loom") return renderTrial2Loom();
+    if (stage === "trial2_outlier") return renderTrial2Outlier();
+    return renderTrial2Debrief();
   }
 
   // --- Teardown -----------------------------------------------------------
