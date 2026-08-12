@@ -1113,6 +1113,11 @@ export class NPCController {
   private briefingChoiceRowEl: HTMLElement | null = null;
 
   private eKey: Phaser.Input.Keyboard.Key;
+  // Advances an open dialogue box (see update()) — never opens one, so it
+  // doesn't collide with WASD or the interaction-initiation role E keeps
+  // (Playtest Session 3, P1: advancing text should accept Space/click too,
+  // but starting a fresh exchange stays an explicit E-press-while-near).
+  private spaceKey: Phaser.Input.Keyboard.Key;
 
   private mode: DialogueMode = "closed";
   private activeNpc: NPCDef | null = null;
@@ -1131,6 +1136,7 @@ export class NPCController {
 
   constructor(scene: Phaser.Scene, roomName: RoomName) {
     this.eKey = scene.input.keyboard!.addKey("E");
+    this.spaceKey = scene.input.keyboard!.addKey("SPACE");
 
     for (const def of NPC_SPAWNS[roomName] ?? []) {
       let textureKey = def.texture;
@@ -1221,6 +1227,14 @@ export class NPCController {
     );
 
     document.getElementById("ui-root")!.appendChild(this.dialogueEl);
+    // Click/tap anywhere on the box advances (see update()'s Space/E
+    // handling for the same). Excludes clicks on a button within it (the
+    // back button, or a choice once one's rendered) — those already have
+    // their own handler, and calling advance() too would double-fire.
+    this.dialogueEl.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).closest("button")) return;
+      this.advance();
+    });
 
     this.briefingCaseEl = el("span", { className: "briefing__case" });
     this.briefingTitleEl = el("h2", { className: "briefing__title" });
@@ -1291,6 +1305,12 @@ export class NPCController {
     );
     document.getElementById("ui-root")!.appendChild(this.briefingBackdropEl);
     document.getElementById("ui-root")!.appendChild(this.briefingEl);
+    // Same click-to-advance as dialogueEl above, excluding buttons (back,
+    // choices, the evidence/table button) so they keep their own handler.
+    this.briefingEl.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).closest("button")) return;
+      this.advance();
+    });
 
     // scene.restart() (room transitions) tears down this controller and
     // builds a fresh one — without this, the old instance's DOM nodes would
@@ -1443,7 +1463,10 @@ export class NPCController {
 
   update(playerX: number, playerY: number) {
     if (this.mode !== "closed") {
-      if (Phaser.Input.Keyboard.JustDown(this.eKey)) this.advance();
+      // Advancing accepts E, Space, or a click anywhere on the box (see
+      // the dialogueEl/briefingEl click listeners in the constructor) —
+      // only STARTING a fresh exchange stays E-while-in-range, below.
+      if (Phaser.Input.Keyboard.JustDown(this.eKey) || Phaser.Input.Keyboard.JustDown(this.spaceKey)) this.advance();
       return;
     }
 
@@ -1644,13 +1667,31 @@ export class NPCController {
     });
   }
 
+  // Playtest Session 3, P1: one E press must carry the whole exchange —
+  // greeting → offer → acceptance → objective handoff — with no re-press
+  // needed to reach whatever comes next. Previously this always called
+  // closeDialogue(), which meant every quest-giver-is-also-content-host
+  // NPC (Bram/mayor/maren/quill/isolde's minigame overlays, Herald's
+  // Mission 1 briefing) needed a SECOND separate E press before its
+  // open() dispatch would notice the quest was now active. Re-dispatching
+  // through open() here reuses that exact same dispatch (special-case
+  // overlays, locked-module bounce, generic dialogue) with the
+  // just-accepted quest already active, so whatever this NPC does next
+  // for it continues immediately — the accept/decline choice itself
+  // still required a deliberate click, per the "genuine choices don't
+  // auto-advance" rule; this only removes the redundant re-press AFTER
+  // that choice is made.
   private acceptOffer() {
+    const def = this.activeNpc;
     if (this.offerQuestId) {
       playSound("quill-scratch");
       questEngine.acceptQuest(this.offerQuestId);
       logFirstQuestAccept();
     }
-    this.closeDialogue();
+    this.offerQuestId = null;
+    this.clearChoices();
+    if (def) this.open(def);
+    else this.closeDialogue();
   }
 
   private declineOffer() {
@@ -1725,7 +1766,11 @@ export class NPCController {
           this.activeSet!.gridChoices ?? false,
         );
       } else {
-        hintEl.textContent = isLast ? "[E] ▸ CLOSE" : "[E] ▸ CONTINUE";
+        // No "[E]" prefix — click/tap, Space, and E all advance now (see
+        // update()'s Space handling and the dialogueEl/briefingEl click
+        // listeners in the constructor), so the affordance shouldn't
+        // name just one of the three.
+        hintEl.textContent = isLast ? "▸ CLOSE" : "▸ CONTINUE";
       }
     });
   }
@@ -1824,12 +1869,18 @@ export class NPCController {
   private advance() {
     if (!this.activeNpc) return;
     if (this.choiceRowEl || this.briefingChoiceRowEl) return; // must click a button
-    if (this.mode === "offer") return; // must click Accept/Not yet
 
+    // An in-progress typewriter (offer text included) can always be
+    // skipped — only the eventual choice itself (caught above, once the
+    // buttons render) is the deliberate-click checkpoint. Previously an
+    // offer blocked advance() outright even mid-reveal, so a player who
+    // pressed E to hurry the text along got nothing until it finished on
+    // its own.
     if (this.currentTypewriter && !this.currentTypewriter.finished) {
       this.currentTypewriter.skip();
       return;
     }
+    if (this.mode === "offer") return; // revealed in full — must click Accept/Not yet
 
     if (!this.activeSet) return;
     this.lineIndex++;
