@@ -464,6 +464,7 @@ export class AcademyOverlay {
     else if (fieldWork.room === "village" && ping === "courthouseDoor") roomScene.pingCourthouseDoor();
     else if (fieldWork.room === "tavern" && ping === "maren") roomScene.pingMaren();
     else if (fieldWork.room === "courthouse" && ping === "quill") roomScene.pingQuill();
+    else if (fieldWork.room === "village" && ping === "isolde") roomScene.pingIsolde();
   }
 
   // Closes the overlay and sends the player to wherever a module's field

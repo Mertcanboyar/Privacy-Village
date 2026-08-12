@@ -186,6 +186,12 @@ export class Room extends Phaser.Scene {
     this.npcController.pingQuill(this);
   }
 
+  // Same technique, anchored to Isolde — "The Alchemist's Trials"'s
+  // giver (see academy.ts's AcademyFieldWork.ping).
+  pingIsolde() {
+    this.npcController.pingIsolde(this);
+  }
+
   // One-shot flash on the Village Square's door hotspot leading to the
   // Courthouse — same technique as pingHerald(), just anchored to a door
   // hotspot's coordinates instead of an NPC sprite (see academy.ts's

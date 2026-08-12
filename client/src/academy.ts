@@ -131,8 +131,9 @@ export interface AcademyFieldWork {
    * work, "The Night the Wall Fell," auto-triggers on village entry
    * rather than being offered by any NPC, so there's no sprite to ping;
    * "maren", used by "Shaping the Data"'s "Maren's Winter Report"; "quill",
-   * used by "The Purpose Test"'s "The Archivist's Desk"). */
-  ping?: "herald" | "bram" | "mayor" | "courthouseDoor" | "maren" | "quill";
+   * used by "The Purpose Test"'s "The Archivist's Desk"; "isolde", used by
+   * "The Alchemist's Cabinet"'s "The Alchemist's Trials"). */
+  ping?: "herald" | "bram" | "mayor" | "courthouseDoor" | "maren" | "quill" | "isolde";
 }
 
 interface AcademyModuleBase {

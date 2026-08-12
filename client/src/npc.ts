@@ -1377,6 +1377,17 @@ export class NPCController {
     scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
   }
 
+  // One-shot flash on Isolde, same technique as pingHerald()/pingBram()/
+  // pingMayor()/pingMaren()/pingQuill() — used by the Academy's "IN THE
+  // VILLAGE →" pip for "The Alchemist's Cabinet"'s "The Alchemist's
+  // Trials" (see academy.ts's AcademyFieldWork.ping).
+  pingIsolde(scene: Phaser.Scene) {
+    const isolde = this.npcs.find((n) => n.def.id === "isolde");
+    if (!isolde) return;
+    const g = scene.add.circle(isolde.image.x, isolde.image.y - 20, 10, 0xf0b429, 0.9).setDepth(isolde.image.y + 1);
+    scene.tweens.add({ targets: g, radius: 60, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => g.destroy() });
+  }
+
   // "The Night the Wall Fell"'s opening beat — Bram slides straight to
   // the player (no pathfinding, just a tween) rather than the player
   // needing to hunt him down mid-alarm. Only tweens the sprite — never

@@ -178,5 +178,35 @@
     "sourceId": "pets",
     "track": "privacy_ops",
     "unlockedAt": "Unlocked in the Academy — The Alchemist's Cabinet"
+  },
+  {
+    "id": "differential_privacy",
+    "name": "Differential Privacy",
+    "citation": "",
+    "definition": "Calibrated noise hides any one person inside a true statistic.",
+    "sourceType": "quest",
+    "sourceId": "alchemists_trials",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked at the locked drawer — The Alchemist's Trials"
+  },
+  {
+    "id": "synthetic_data",
+    "name": "Synthetic Data",
+    "citation": "",
+    "definition": "Invented data that behaves like the real thing, and corresponds to no one.",
+    "sourceType": "quest",
+    "sourceId": "alchemists_trials",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked at the locked drawer — The Alchemist's Trials"
+  },
+  {
+    "id": "homomorphic_encryption",
+    "name": "Homomorphic Encryption",
+    "citation": "",
+    "definition": "Arithmetic performed on sealed data, never once decrypted.",
+    "sourceType": "quest",
+    "sourceId": "alchemists_trials",
+    "track": "privacy_ops",
+    "unlockedAt": "Unlocked at the locked drawer — The Alchemist's Trials"
   }
 ]

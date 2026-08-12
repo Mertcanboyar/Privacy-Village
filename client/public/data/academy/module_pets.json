@@ -5,6 +5,7 @@
   "clearanceRequired": 5,
   "order": 8,
   "type": "lesson",
+  "fieldWork": { "questId": "alchemists_trials", "label": "The Alchemist's Trials", "room": "village", "ping": "isolde" },
   "lesson": [
     {
       "type": "heading",
