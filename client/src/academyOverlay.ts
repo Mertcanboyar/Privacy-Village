@@ -9,10 +9,12 @@ import {
   type AcademyCardDrillMultiModule,
   type AcademyDataSieveModule,
   type AcademyLessonDiagramQuizModule,
+  type AcademyCaseFileModule,
   type AcademyFieldWork,
   type CardDrillCard,
   type CardDrillMultiCard,
   type DataSieveCard,
+  type CaseFileEntry,
   type LessonBlock,
   type QuizQuestion,
   type DiagramQuizQuestion,
@@ -130,7 +132,18 @@ function roomCallToAction(room: AcademyFieldWork["room"]): string {
 // →" pip can reach the Room scene via the shared SceneManager.
 const FADE_MS = 200;
 
-type AcademyView = "hub" | "moduleList" | "lesson" | "quiz" | "cardDrillIntro" | "cardDrill" | "cardDrillMultiIntro" | "cardDrillMulti" | "dataSieve" | "diagramQuiz";
+type AcademyView =
+  | "hub"
+  | "moduleList"
+  | "lesson"
+  | "quiz"
+  | "cardDrillIntro"
+  | "cardDrill"
+  | "cardDrillMultiIntro"
+  | "cardDrillMulti"
+  | "dataSieve"
+  | "diagramQuiz"
+  | "caseFile";
 
 // Attempt counter for decision-log rows (see answerQuiz()/answerCardDrill()/
 // answerCardDrillMulti()) — keyed by module+question/item so a retry on
@@ -157,6 +170,20 @@ const quizVariantQueued = new Set<string>();
 function nextWrongAttempt(key: string): number {
   const n = (quizWrongAttempts.get(key) ?? 0) + 1;
   quizWrongAttempts.set(key, n);
+  return n;
+}
+
+// Same progressive-hint bookkeeping as the quizWrongAttempts trio above,
+// kept as a separate set of maps (rather than reused) since a case-file
+// entry id and a quiz question id are different id spaces that could
+// otherwise collide across modules.
+const caseFileWrongAttempts = new Map<string, number>();
+const caseFileHintShown = new Set<string>();
+const caseFileVariantQueued = new Set<string>();
+
+function nextCaseFileWrongAttempt(key: string): number {
+  const n = (caseFileWrongAttempts.get(key) ?? 0) + 1;
+  caseFileWrongAttempts.set(key, n);
   return n;
 }
 
@@ -241,6 +268,26 @@ export class AcademyOverlay {
   // validated (see renderDataSieve()/toggleSieveCard()/validateSieve()).
   private sieveRemoved = new Set<string>();
   private sieveValidated = false;
+
+  // Case file (registry markup) state — module.entries plus any Stage 3
+  // variants queued this session (see caseFileVariantOf, same
+  // quizQuestions/quizVariantOf pattern as the text quiz above). Every
+  // array below is parallel, indexed against caseFileEntries: a row's
+  // mark (null until the player stamps it), whether it's locked in as
+  // correctly filed, and whether the last filing pass flagged it wrong
+  // (open for a re-mark, showing consequence/explain/hint — see
+  // renderCaseFile()/fileRegistry()).
+  private caseFileEntries: CaseFileEntry[] = [];
+  private caseFileVariantOf: (string | null)[] = [];
+  private caseFileMarks: (boolean | null)[] = [];
+  private caseFileResolved: boolean[] = [];
+  private caseFileWrong = new Set<number>();
+  private caseFileFiledOnce = false;
+  // Snapshot of a tracked entry's wrong-mark count + whether its hint was
+  // shown, captured when its variant gets queued — same role as
+  // quizVariantParentInfo, read back once the variant is finally marked
+  // correctly so the decision log reflects the ORIGINAL entry's stats.
+  private caseFileVariantParentInfo = new Map<string, { attempts: number; hintUsed: boolean }>();
 
   private badgeEl: HTMLElement;
   private badgeNameEl: HTMLElement;
@@ -348,6 +395,7 @@ export class AcademyOverlay {
     else if (this.currentView === "cardDrillMultiIntro") this.renderCardDrillMultiIntro();
     else if (this.currentView === "cardDrillMulti") this.renderCardDrillMulti();
     else if (this.currentView === "dataSieve") this.renderDataSieve();
+    else if (this.currentView === "caseFile") this.renderCaseFile();
     else this.renderDiagramQuiz();
   }
 
@@ -370,6 +418,7 @@ export class AcademyOverlay {
     if (module?.type === "card_drill") this.goToCardDrillIntro(moduleId);
     else if (module?.type === "card_drill_multi") this.goToCardDrillMultiIntro(moduleId);
     else if (module?.type === "data_sieve") this.goToDataSieve(moduleId);
+    else if (module?.type === "case_file") this.goToCaseFile(moduleId);
     else this.goToLesson(moduleId);
   }
 
@@ -388,7 +437,14 @@ export class AcademyOverlay {
     this.quizRevealedChoice = null;
     this.quizCorrect = false;
     this.quizQuestions =
-      module && module.type !== "card_drill" && module.type !== "card_drill_multi" && module.type !== "data_sieve" && module.type !== "lesson_diagramquiz" ? [...module.quiz] : [];
+      module &&
+      module.type !== "card_drill" &&
+      module.type !== "card_drill_multi" &&
+      module.type !== "data_sieve" &&
+      module.type !== "lesson_diagramquiz" &&
+      module.type !== "case_file"
+        ? [...module.quiz]
+        : [];
     this.quizVariantOf = this.quizQuestions.map(() => null);
     this.render();
   }
@@ -433,6 +489,19 @@ export class AcademyOverlay {
     this.currentView = "dataSieve";
     this.sieveRemoved = new Set();
     this.sieveValidated = false;
+    this.render();
+  }
+
+  private goToCaseFile(moduleId: string) {
+    const module = academy.getModule(moduleId);
+    this.currentModuleId = moduleId;
+    this.currentView = "caseFile";
+    this.caseFileEntries = module?.type === "case_file" ? [...module.entries] : [];
+    this.caseFileVariantOf = this.caseFileEntries.map(() => null);
+    this.caseFileMarks = this.caseFileEntries.map(() => null);
+    this.caseFileResolved = this.caseFileEntries.map(() => false);
+    this.caseFileWrong = new Set();
+    this.caseFileFiledOnce = false;
     this.render();
   }
 
@@ -659,7 +728,7 @@ export class AcademyOverlay {
 
   private renderLesson() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    if (!module || module.type === "card_drill" || module.type === "card_drill_multi" || module.type === "data_sieve") {
+    if (!module || module.type === "card_drill" || module.type === "card_drill_multi" || module.type === "data_sieve" || module.type === "case_file") {
       this.goToHub();
       return;
     }
@@ -763,7 +832,14 @@ export class AcademyOverlay {
 
   private renderQuiz() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    if (!module || module.type === "card_drill" || module.type === "card_drill_multi" || module.type === "data_sieve" || module.type === "lesson_diagramquiz") {
+    if (
+      !module ||
+      module.type === "card_drill" ||
+      module.type === "card_drill_multi" ||
+      module.type === "data_sieve" ||
+      module.type === "lesson_diagramquiz" ||
+      module.type === "case_file"
+    ) {
       this.goToHub();
       return;
     }
@@ -1398,6 +1474,256 @@ export class AcademyOverlay {
   }
 
   private completeDataSieve(module: AcademyDataSieveModule) {
+    this.sealTheory(module.id);
+    this.goToModuleList(module.track);
+  }
+
+  // "Personal Data or Not?" — CASE FILE (registry markup), Playtest
+  // Session 3, P2. Every entry shown at once as a registry (same "all at
+  // once" shell as renderDataSieve() above), but a row filed wrong stays
+  // open instead of just being marked wrong: it shows its CONSEQUENCE
+  // (the practical fallout of the misfile) before its dry EXPLAIN text,
+  // gains a HINT on its 2nd wrong mark, and queues a fresh-scenario
+  // variant onto the end of the registry on its 3rd — the same
+  // progressive-hint mechanics as handleProgressiveHint() for the text
+  // quiz (see caseFileWrongAttempts etc. below). The module only
+  // completes once every row, including any queued variants, has been
+  // filed correctly.
+  private renderCaseFile() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "case_file") {
+      this.goToHub();
+      return;
+    }
+
+    const header = el("div", { style: { display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-3)" } }, [
+      el("button", { className: "btn btn--ghost", text: "← BACK", on: { click: () => this.goToModuleList(module.track) } }),
+      el("h2", { text: module.title.toUpperCase(), style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px" } }),
+    ]);
+
+    const caseHeader = el(
+      "div",
+      { style: { borderLeft: "4px solid var(--accent-gold)", background: "var(--bg-raised)", padding: "8px 12px", borderRadius: "var(--radius-sm)", marginBottom: "var(--space-3)" } },
+      [
+        el("span", {
+          text: module.caseLabel.toUpperCase(),
+          style: { fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.06em", color: "var(--accent-gold)", fontWeight: "700" },
+        }),
+        el("p", { text: module.brief, style: { fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-primary)", margin: "6px 0 0" } }),
+      ],
+    );
+
+    const rows = el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: "8px" } },
+      this.caseFileEntries.map((_, i) => this.renderCaseFileRow(module, i)),
+    );
+
+    const children: HTMLElement[] = [header, caseHeader, rows];
+
+    const allResolved = this.caseFileResolved.length > 0 && this.caseFileResolved.every(Boolean);
+    if (allResolved) {
+      children.push(
+        el("button", {
+          className: "btn btn--gold",
+          text: "COMPLETE CASE FILE",
+          style: { marginTop: "var(--space-3)" },
+          on: { click: () => this.completeCaseFile(module) },
+        }),
+      );
+    } else {
+      const markedCount = this.caseFileMarks.filter((m, i) => this.caseFileResolved[i] || m !== null).length;
+      const allMarked = markedCount === this.caseFileEntries.length;
+      children.push(
+        el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "var(--space-3)" } }, [
+          el("span", {
+            text: `${markedCount} of ${this.caseFileEntries.length} marked`,
+            style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" },
+          }),
+          el("button", {
+            className: "btn btn--gold",
+            text: this.caseFileFiledOnce ? "REFILE" : "FILE THE REGISTRY",
+            style: allMarked ? {} : { opacity: "0.4", pointerEvents: "none" },
+            on: { click: () => this.fileRegistry() },
+          }),
+        ]),
+      );
+    }
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "700px", maxHeight: "640px", overflowY: "auto" } }, children));
+  }
+
+  // A resolved row collapses to a locked gold summary line — only a row
+  // still open (fresh, or wrong from the last filing pass) shows its
+  // stamp buttons, and only a WRONG one additionally shows
+  // consequence/explain/hint (see the class doc comment above).
+  private renderCaseFileRow(module: AcademyCaseFileModule, index: number): HTMLElement {
+    const entry = this.caseFileEntries[index];
+    const mark = this.caseFileMarks[index];
+    const resolved = this.caseFileResolved[index];
+    const isWrong = this.caseFileWrong.has(index);
+    const isVariant = this.caseFileVariantOf[index] !== null;
+
+    const style: Partial<CSSStyleDeclaration> = {
+      display: "flex",
+      flexDirection: "column",
+      gap: "6px",
+      padding: "10px 12px",
+      borderRadius: "var(--radius-sm)",
+      border: "2px solid var(--border-strong)",
+      background: "var(--bg-panel)",
+    };
+    if (resolved) style.borderColor = "var(--accent-gold)";
+    else if (isWrong) style.borderColor = "var(--accent-red)";
+
+    const children: HTMLElement[] = [];
+    if (isVariant && !resolved) {
+      children.push(
+        el("span", { text: "REVISIT — FRESH SCENARIO", style: { fontFamily: "var(--font-mono)", fontSize: "10px", letterSpacing: "0.06em", color: "var(--text-muted)" } }),
+      );
+    }
+    children.push(el("p", { text: entry.item, style: { fontFamily: "var(--font-body)", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", margin: "0" } }));
+
+    if (resolved) {
+      children.push(el("span", { className: "chip chip--gold", text: `✓ FILED — ${entry.answer ? module.trueLabel : module.falseLabel}` }));
+      return el("div", { style }, children);
+    }
+
+    children.push(
+      el("div", { style: { display: "flex", gap: "8px" } }, [
+        el("button", {
+          className: mark === true ? "btn btn--gold" : "btn btn--ghost",
+          text: module.trueLabel,
+          style: { flex: "1" },
+          on: { click: () => this.markCaseFileEntry(index, true) },
+        }),
+        el("button", {
+          className: mark === false ? "btn btn--gold" : "btn btn--ghost",
+          text: module.falseLabel,
+          style: { flex: "1" },
+          on: { click: () => this.markCaseFileEntry(index, false) },
+        }),
+      ]),
+    );
+
+    if (isWrong) {
+      children.push(
+        el("p", {
+          text: `CONSEQUENCE — ${entry.consequence}`,
+          style: { fontFamily: "var(--font-body)", fontSize: "13px", fontWeight: "600", color: "var(--accent-red)", margin: "4px 0 0" },
+        }),
+        el("p", { text: entry.explain, style: { fontFamily: "var(--font-body)", fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0" } }),
+      );
+      const hintKey = entry.id ? `${this.currentModuleId}:${entry.id}` : null;
+      if (entry.hint && hintKey && caseFileHintShown.has(hintKey)) {
+        children.push(
+          el("div", {
+            text: `HINT — ${entry.hint}`,
+            style: {
+              marginTop: "2px",
+              borderLeft: "4px solid var(--accent-blue)",
+              background: "var(--bg-raised)",
+              padding: "8px",
+              borderRadius: "var(--radius-sm)",
+              fontFamily: "var(--font-body)",
+              fontSize: "12px",
+              color: "var(--text-primary)",
+            },
+          }),
+        );
+      }
+    }
+
+    return el("div", { style }, children);
+  }
+
+  // Picking/changing a stamp never clears an existing wrong-mark's
+  // consequence/explain (see caseFileWrong) — that only gets recomputed
+  // by fileRegistry(), so the player keeps that context visible while
+  // deciding on a re-mark rather than it vanishing the instant they
+  // click something new.
+  private markCaseFileEntry(index: number, value: boolean) {
+    if (this.caseFileResolved[index]) return;
+    this.caseFileMarks[index] = value;
+    this.render();
+  }
+
+  // Validates every open (unresolved) row against its mark, all at once
+  // — a row already resolved from an earlier pass is skipped so it never
+  // gets a second attempt-count/decision-log entry. Rebuilds
+  // caseFileWrong from scratch each pass rather than accumulating, so a
+  // row fixed this round silently drops out of the "still wrong" set.
+  private fileRegistry() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "case_file") return;
+    this.caseFileFiledOnce = true;
+    const stillWrong = new Set<number>();
+    for (let i = 0; i < this.caseFileEntries.length; i++) {
+      if (this.caseFileResolved[i]) continue;
+      const entry = this.caseFileEntries[i];
+      const mark = this.caseFileMarks[i];
+      if (mark === null) continue;
+      const correct = mark === entry.answer;
+
+      logDecision("module_case_file_mark", {
+        module: this.currentModuleId,
+        item: entry.item,
+        picked: mark,
+        correct,
+        attempt: nextAnswerAttempt(`${this.currentModuleId}:${entry.id ?? entry.item}`),
+      });
+
+      if (correct) this.caseFileResolved[i] = true;
+      else stillWrong.add(i);
+      this.handleCaseFileProgressive(entry, i, correct);
+    }
+    this.caseFileWrong = stillWrong;
+    this.render();
+  }
+
+  // Stages 2-3 of the progressive-hint mechanic, same shape as
+  // handleProgressiveHint() for the text quiz — a row needs an id plus
+  // hint/variant to opt in; every other row's flow is unaffected.
+  private handleCaseFileProgressive(entry: CaseFileEntry, index: number, correct: boolean) {
+    if (!entry.id) return;
+    const variantParentId = this.caseFileVariantOf[index];
+    const trackedKey = `${this.currentModuleId}:${entry.id}`;
+
+    if (!correct) {
+      if (variantParentId) return; // the variant itself has no further staging
+      const wrongCount = nextCaseFileWrongAttempt(trackedKey);
+      if (wrongCount === 2 && entry.hint) caseFileHintShown.add(trackedKey);
+      if (wrongCount === 3 && entry.variant && !caseFileVariantQueued.has(trackedKey)) {
+        caseFileVariantQueued.add(trackedKey);
+        this.caseFileVariantParentInfo.set(entry.id, { attempts: wrongCount, hintUsed: caseFileHintShown.has(trackedKey) });
+        this.caseFileEntries.push({ ...entry.variant });
+        this.caseFileVariantOf.push(entry.id);
+        this.caseFileMarks.push(null);
+        this.caseFileResolved.push(false);
+      }
+      return;
+    }
+
+    if (variantParentId) {
+      const info = this.caseFileVariantParentInfo.get(variantParentId) ?? { attempts: 0, hintUsed: false };
+      logDecision("module_case_file_progressive", {
+        module: this.currentModuleId,
+        entryId: variantParentId,
+        attempts: info.attempts,
+        hintUsed: info.hintUsed,
+        variantPassed: true,
+      });
+    } else if ((entry.hint || entry.variant) && !caseFileVariantQueued.has(trackedKey)) {
+      logDecision("module_case_file_progressive", {
+        module: this.currentModuleId,
+        entryId: entry.id,
+        attempts: caseFileWrongAttempts.get(trackedKey) ?? 0,
+        hintUsed: caseFileHintShown.has(trackedKey),
+      });
+    }
+  }
+
+  private completeCaseFile(module: AcademyCaseFileModule) {
     this.sealTheory(module.id);
     this.goToModuleList(module.track);
   }

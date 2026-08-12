@@ -4,50 +4,82 @@
   "title": "Personal Data or Not?",
   "clearanceRequired": 2,
   "order": 1,
-  "type": "card_drill",
+  "type": "case_file",
   "fieldWork": { "questId": "healers_ledger", "label": "The Healer's Ledger", "room": "tavern" },
+  "caseLabel": "Case File #014 — Village Registry",
+  "brief": "The registry office needs this batch marked up before it circulates, Agent. The law's test is not \"does it contain a name?\" — it is \"does it relate to an identified or IDENTIFIABLE living person?\" Identifiable directly, or indirectly, by anyone reasonably likely to try. Stamp each entry PERSONAL DATA or NOT PERSONAL DATA before the registry files.",
   "trueLabel": "PERSONAL DATA",
   "falseLabel": "NOT PERSONAL DATA",
-  "intro": "Before you can protect data, Agent, you must recognize which of it is PERSONAL. The law's test is not \"does it contain a name?\" — it is \"does it relate to an identified or IDENTIFIABLE living person?\" Identifiable directly, or indirectly, by anyone reasonably likely to try. Judge the following evidence from around the village.",
-  "cards": [
+  "entries": [
     {
+      "id": "entry_bram",
       "item": "Odile's ledger entry: \"Bram of the North Gate — owes 3 silver.\"",
       "answer": true,
+      "consequence": "Filed as ordinary bookkeeping, this entry ships with the tavern's public accounts ledger — Bram's name and his debt become gossip fodder for anyone who reads it.",
       "explain": "Name plus a fact about him. Directly identified person + information relating to him. The classic case."
     },
     {
+      "id": "entry_ales",
       "item": "The tavern sold 44 ales on festival night.",
       "answer": false,
+      "consequence": "Filed as personal data, this innocuous headcount gets buried behind the same access controls as a real case file — the tavern's public festival report stalls waiting on a review it never needed.",
       "explain": "An aggregate about the tavern, relating to no individual. Unless the village has one legendary drinker — aggregates over tiny groups can flip."
     },
     {
+      "id": "entry_cloaked",
       "item": "A report: \"A cloaked figure with a limp visits the fountain every dawn.\"",
       "answer": true,
-      "explain": "No name — but a pattern that singles one person out. Identifiability, not naming, is the test. This is how tracking works."
+      "consequence": "Filed as harmless observation, this pattern report circulates unrestricted — and a distinctive limp plus a fixed daily route is enough for anyone watching to work out exactly who visits the fountain, and when.",
+      "explain": "No name — but a pattern that singles one person out. Identifiability, not naming, is the test. This is how tracking works.",
+      "hint": "Ask what identifies someone: is it always a NAME, or can it be a pattern that only fits one person?",
+      "variant": {
+        "item": "A note: \"A rider with a scar over one eye passes the East Gate at dusk, without fail.\"",
+        "answer": true,
+        "consequence": "Filed as harmless observation, the rider's fixed route and timing let anyone watching connect the pattern to a real person and predict their movements.",
+        "explain": "Same test as the cloaked figure at the fountain: no name, but a distinguishing feature plus a reliable pattern singles one person out. Identifiability doesn't require a name."
+      }
     },
     {
+      "id": "entry_nightingale",
       "item": "Division file: \"Agent NIGHTINGALE filed three reports this month.\"",
       "answer": true,
-      "explain": "A codename is a pseudonym. Pseudonymized data is STILL personal data — the Division holds the key linking Nightingale to a person."
+      "consequence": "Filed as an internal codename with nothing to protect, this record sits outside the Division's usual safeguards — anyone who later cracks the Nightingale-to-agent link gets a clean audit trail of everything she's filed.",
+      "explain": "A codename is a pseudonym. Pseudonymized data is STILL personal data — the Division holds the key linking Nightingale to a person.",
+      "hint": "The Division holds a KEY somewhere linking \"Nightingale\" back to a real person. Does that key existing change whether this is personal data?",
+      "variant": {
+        "item": "Supply manifest: \"Requisition approved for Agent CROWFOOT, third shipment this quarter.\"",
+        "answer": true,
+        "consequence": "Filed as a routine supply line, the requisition sits unprotected — and once Crowfoot's codename is ever linked to a name, every shipment on this manifest becomes a map of that agent's movements.",
+        "explain": "Same reasoning as Nightingale: a codename is a pseudonym, and pseudonymized data stays personal data as long as a key exists that could re-identify the person behind it."
+      }
     },
     {
+      "id": "entry_census",
       "item": "The census: \"The village counts 312 residents.\"",
       "answer": false,
+      "consequence": "Filed as personal data, the village's total population count gets locked behind the same clearance as a real case file — routine reporting grinds to a halt over a number that identifies no one.",
       "explain": "Pure statistic about the village. No individual is identified or identifiable from the number alone."
     },
     {
+      "id": "entry_apprentice",
       "item": "A note: \"The blacksmith's apprentice was seen near the West Gate.\"",
       "answer": true,
-      "explain": "No name — but the village has exactly ONE blacksmith's apprentice. In small populations, a role identifies a person. Context decides."
+      "consequence": "Filed as an anonymous sighting, this note omits nothing that actually protects anyone — the village has exactly one blacksmith's apprentice, so \"near the West Gate\" reads as a name to anyone who knows the village.",
+      "explain": "No name — but the village has exactly ONE blacksmith's apprentice. In small populations, a role identifies a person. Context decides.",
+      "hint": "How many people in the village actually hold this ROLE? If the answer is exactly one, the role itself identifies them."
     },
     {
+      "id": "entry_cat",
       "item": "The Cat's daily patrol route through the tavern.",
       "answer": false,
+      "consequence": "Filed as personal data, the Cat's route gets folded into the Division's confidential case files — which the Cat, magnificent as it is, has no legal standing to appear in.",
       "explain": "The Cat is magnificent, but not a natural person. Data protection law protects living humans. (The Cat has filed an objection.)"
     },
     {
+      "id": "entry_banners",
       "item": "A scroll listing \"households that displayed Apocalypse faction banners.\"",
       "answer": true,
+      "consequence": "Filed as a simple household list, this scroll circulates without the special-category protections faction affiliation requires — turning who displayed which banner into information any snooping party could use against them.",
       "explain": "Households resolve to identifiable people — and this reveals beliefs/affiliations. Not just personal data: a SPECIAL CATEGORY needing extra care."
     }
   ]

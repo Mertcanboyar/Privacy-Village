@@ -285,12 +285,60 @@ export interface AcademyLessonDiagramQuizModule extends AcademyModuleBase {
   questions: DiagramQuizQuestion[];
 }
 
+// One row of a "registry" the player marks up directly (Playtest Session
+// 3, P2 — "too quiz-like": judgment tasks should feel like the real work
+// a Division Agent does, not a multiple-choice test). Same progressive-
+// hint shape as QuizQuestion (id/hint/variant), opt-in per entry — see
+// academyOverlay.ts's renderCaseFile()/fileRegistry().
+export interface CaseFileEntry {
+  /** Needed to key wrong-attempt/hint-shown state, same convention as
+   * QuizQuestion.id — only required for an entry that sets `hint` or
+   * `variant`. */
+  id?: string;
+  item: string;
+  answer: boolean;
+  /** Shown FIRST on a wrong mark, before `explain` — the practical/
+   * narrative fallout of filing this entry wrong (who it exposes, what
+   * leaks), not a restatement of the rule. Per the P2 ticket's
+   * "consequences before explanation" rule. */
+  consequence: string;
+  /** The dry rule-based reasoning, shown after `consequence` — same role
+   * CardDrillCard.explain played before this format existed. */
+  explain: string;
+  /** Stage 2 — shown once this entry's 2nd wrong mark lands, alongside
+   * (not instead of) consequence/explain. Same semantics as
+   * QuizQuestion.hint. */
+  hint?: string;
+  /** Stage 3 — a fresh-scenario entry testing the same concept, queued
+   * onto the end of the registry once this entry's 3rd wrong mark lands.
+   * Same semantics as QuizQuestion.variant. */
+  variant?: Omit<CaseFileEntry, "hint" | "variant">;
+}
+
+// "CASE FILE (registry markup)" — every entry shown at once as a
+// registry document (same "all at once" shape as AcademyDataSieveModule)
+// that the player marks PERSONAL DATA / NOT PERSONAL DATA row by row,
+// then files the whole batch together; wrong rows stay open for revision
+// with their consequence+explanation shown inline (see
+// academyOverlay.ts's renderCaseFile()). trueLabel/falseLabel are the
+// two per-row stamp buttons' text, same convention as
+// AcademyCardDrillModule.
+export interface AcademyCaseFileModule extends AcademyModuleBase {
+  type: "case_file";
+  caseLabel: string;
+  brief: string;
+  trueLabel: string;
+  falseLabel: string;
+  entries: CaseFileEntry[];
+}
+
 export type AcademyModule =
   | AcademyLessonModule
   | AcademyCardDrillModule
   | AcademyCardDrillMultiModule
   | AcademyDataSieveModule
-  | AcademyLessonDiagramQuizModule;
+  | AcademyLessonDiagramQuizModule
+  | AcademyCaseFileModule;
 
 export interface ModuleProgress {
   theoryDone: boolean;
