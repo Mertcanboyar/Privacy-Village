@@ -26,7 +26,11 @@ type Stage =
   | "trial2_loom"
   | "trial2_outlier"
   | "trial2_remedy"
-  | "trial2_debrief";
+  | "trial2_debrief"
+  | "trial3_impasse"
+  | "trial3_casket"
+  | "trial3_check"
+  | "complete";
 
 interface Query {
   id: string;
@@ -66,6 +70,19 @@ const OUTLIER_ROW_INDEX = 4;
 
 type DemandChoice = "handover" | "refuse" | "synthetic";
 type RemedyChoice = "suppress" | "publish" | "discard";
+type ImpasseChoice = "third_party" | "publish_own" | "sealed";
+type CouncilAnswer = "individual" | "combined" | "nothing";
+
+const MERCHANTS_TOTAL = 2400;
+const TINKERS_TOTAL = 1850;
+const COMBINED_TOTAL = MERCHANTS_TOTAL + TINKERS_TOTAL;
+
+function ciphertextGibberish(): string {
+  const chars = "0123456789abcdef";
+  let s = "";
+  for (let i = 0; i < 24; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s.match(/.{1,4}/g)!.join(" ");
+}
 
 // The one discoverable differencing pair: two totals that differ by
 // exactly one villager (the miller). The other four are decoys with no
@@ -547,14 +564,247 @@ export function openAlchemistsTrialsOverlay(onClose: (completed: boolean) => voi
         "SYNTHETIC DATA: hand over cloth that behaves like the census for those who only need to build or test — never the villagers themselves, and never an unaudited outlier.",
       ),
       continueButton("BEGIN TRIAL THREE", () => {
-        // Trial 3 (Homomorphic Encryption) + completion lands in the next
-        // section — placeholder exit for now so this stage is
-        // independently testable.
-        teardown();
-        onClose(true);
+        stage = "trial3_impasse";
+        render();
       }),
     );
     setInstructions("");
+  }
+
+  // --- Stage: trial3_impasse (the two guilds) --------------------------------
+  let impasseResolved: ImpasseChoice | null = null;
+  let impasseAttempted = false;
+
+  function renderTrial3Impasse() {
+    trialCounterEl.textContent = "TRIAL 3 OF 3 — THE TWO GUILDS";
+    bodyEl.innerHTML = "";
+
+    bodyEl.append(
+      isoldeLine(
+        "The Merchants and the Tinkers must learn their COMBINED winter earnings to set a fair tax. Neither will show its books to the other, nor to the Council.",
+      ),
+      el(
+        "div",
+        { style: { display: "flex", gap: "12px", marginTop: "var(--space-3)", justifyContent: "center" } },
+        [
+          el("button", { className: "btn btn--ghost", text: "GIVE BOTH LEDGERS TO A TRUSTED THIRD PARTY", style: { fontSize: "12px" }, on: { click: () => pickImpasse("third_party") } }),
+          el("button", { className: "btn btn--ghost", text: "HAVE EACH GUILD PUBLISH ITS OWN TOTAL", style: { fontSize: "12px" }, on: { click: () => pickImpasse("publish_own") } }),
+          el("button", { className: "btn btn--gold", text: "USE THE SEALED CALCULATION", style: { fontSize: "12px" }, on: { click: () => pickImpasse("sealed") } }),
+        ],
+      ),
+    );
+
+    if (impasseResolved) {
+      const text =
+        impasseResolved === "third_party"
+          ? "You did not remove the risk, Agent. You moved it, and gave it a single address. The scribe is later bribed — both guilds' books leak."
+          : "Refusal is also an outcome. Both guilds refuse; the tax goes unset.";
+      bodyEl.append(el("p", { className: "briefing__body", text: `ISOLDE — ${text}`, style: { marginTop: "var(--space-2)" } }));
+      setInstructions("");
+      flashRedSoon();
+    } else {
+      setInstructions("Neither guild will show its books — to the other, or to the Council. Choose an approach.");
+    }
+  }
+
+  function pickImpasse(choice: ImpasseChoice) {
+    playSound("select");
+    if (choice === "sealed") {
+      alchemistsTrialsState.trial3ApproachFirstTry = !impasseAttempted;
+      alchemistsTrialsState.trial3Choice = "sealed_calculation";
+      stage = "trial3_casket";
+      render();
+      return;
+    }
+    impasseAttempted = true;
+    impasseResolved = choice;
+    render();
+  }
+
+  // --- Stage: trial3_casket (the sealed calculation, animated) --------------
+  let casketsSealed = false;
+  let scaleComputed = false;
+  let resultOpened = false;
+  let hoverCaption = "";
+  const merchantsCipher = ciphertextGibberish();
+  const tinkersCipher = ciphertextGibberish();
+
+  function sealedCasket(label: string, cipher: string, opts: { hoverable?: boolean; opened?: boolean; revealValue?: string } = {}): HTMLElement {
+    const box = el(
+      "div",
+      {
+        className: "panel",
+        style: {
+          width: "180px",
+          textAlign: "center",
+          borderColor: opts.opened ? "var(--accent-gold)" : "var(--border-strong)",
+          cursor: opts.hoverable ? "help" : "default",
+        },
+        on: opts.hoverable
+          ? {
+              mouseenter: () => {
+                hoverCaption = "CONTENTS NEVER OPENED";
+                const capEl = bodyEl.querySelector("[data-casket-caption]");
+                if (capEl) capEl.textContent = hoverCaption;
+              },
+              mouseleave: () => {
+                hoverCaption = "";
+                const capEl = bodyEl.querySelector("[data-casket-caption]");
+                if (capEl) capEl.textContent = "";
+              },
+            }
+          : {},
+      },
+      [
+        el("div", { className: "briefing__case", text: label }),
+        el("div", {
+          style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: opts.opened ? "var(--accent-gold)" : "var(--text-muted)", marginTop: "8px", wordBreak: "break-all" },
+          text: opts.opened ? opts.revealValue ?? "" : cipher,
+        }),
+      ],
+    );
+    return box;
+  }
+
+  function renderTrial3Casket() {
+    trialCounterEl.textContent = "TRIAL 3 OF 3 — THE SEALED CALCULATION";
+    bodyEl.innerHTML = "";
+
+    const line = !casketsSealed
+      ? "Each guild's number goes into its own sealed casket — locked, contents shown only as ciphertext. Watch closely."
+      : !scaleComputed
+        ? "The scale performs the addition upon the sealed caskets themselves. A third casket emerges — still sealed."
+        : !resultOpened
+          ? "Only the Council's key opens the result casket."
+          : "The sum was computed without a single ledger being read. That is HOMOMORPHIC ENCRYPTION — arithmetic performed upon locked boxes.";
+
+    bodyEl.append(
+      isoldeLine(line),
+      el(
+        "div",
+        { style: { display: "flex", gap: "20px", marginTop: "var(--space-3)", justifyContent: "center", alignItems: "center" } },
+        [
+          sealedCasket("MERCHANTS' LEDGER", merchantsCipher, { hoverable: true }),
+          el("div", { style: { fontFamily: "var(--font-mono)", fontSize: "20px", color: "var(--text-muted)" }, text: "+" }),
+          sealedCasket("TINKERS' LEDGER", tinkersCipher, { hoverable: true }),
+          el("div", { style: { fontFamily: "var(--font-mono)", fontSize: "20px", color: "var(--text-muted)" }, text: "=" }),
+          scaleComputed
+            ? sealedCasket("RESULT", ciphertextGibberish(), { opened: resultOpened, revealValue: `${COMBINED_TOTAL} GOLD (COMBINED)` })
+            : el("div", { style: { width: "180px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" }, text: "— not yet computed —" }),
+        ],
+      ),
+      el("div", { attrs: { "data-casket-caption": "true" }, style: { textAlign: "center", marginTop: "8px", fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--accent-blue)", minHeight: "14px" } }),
+    );
+
+    if (!casketsSealed) {
+      bodyEl.append(continueButton("SEAL BOTH LEDGERS", () => {
+        casketsSealed = true;
+        playSound("select");
+        render();
+      }));
+      setInstructions("Hover either ledger once sealed — its contents are never opened, even by the scale.");
+    } else if (!scaleComputed) {
+      bodyEl.append(continueButton("SLIDE ONTO THE ALCHEMIST'S SCALE", () => {
+        scaleComputed = true;
+        playSound("select");
+        render();
+      }));
+      setInstructions("");
+    } else if (!resultOpened) {
+      bodyEl.append(continueButton("OPEN WITH THE COUNCIL'S KEY", () => {
+        resultOpened = true;
+        playSound("chime");
+        render();
+      }));
+      setInstructions("");
+    } else {
+      bodyEl.append(continueButton("CONTINUE", () => {
+        stage = "trial3_check";
+        render();
+      }));
+      setInstructions("");
+    }
+  }
+
+  // --- Stage: trial3_check (comprehension check) -----------------------------
+  let checkAnswer: CouncilAnswer | null = null;
+  let checkWrongCount = 0;
+
+  function renderTrial3Check() {
+    trialCounterEl.textContent = "TRIAL 3 OF 3 — ONE QUESTION";
+    bodyEl.innerHTML = "";
+
+    bodyEl.append(
+      isoldeLine("One question, Agent. What did the Council learn?"),
+      el(
+        "div",
+        { style: { display: "flex", gap: "12px", marginTop: "var(--space-3)", justifyContent: "center" } },
+        [
+          el("button", { className: "btn btn--ghost", text: "BOTH GUILDS' INDIVIDUAL EARNINGS", style: { fontSize: "12px" }, on: { click: () => pickCheck("individual") } }),
+          el("button", { className: "btn btn--gold", text: "ONLY THE COMBINED TOTAL", style: { fontSize: "12px" }, on: { click: () => pickCheck("combined") } }),
+          el("button", { className: "btn btn--ghost", text: "NOTHING AT ALL", style: { fontSize: "12px" }, on: { click: () => pickCheck("nothing") } }),
+        ],
+      ),
+    );
+
+    if (checkAnswer === "combined") {
+      bodyEl.append(
+        el("p", { className: "briefing__body", text: "ISOLDE — Exactly the answer that was needed, and nothing else. That is the ideal every PET aims at.", style: { marginTop: "var(--space-2)" } }),
+        continueButton("CONTINUE", () => {
+          stage = "complete";
+          render();
+        }),
+      );
+      setInstructions("");
+    } else if (checkAnswer) {
+      const text =
+        checkAnswer === "individual"
+          ? "The Council's key opens only the result casket. The input caskets were never touched."
+          : "The Council did learn something — the combined total, exactly what the tax requires.";
+      bodyEl.append(el("p", { className: "briefing__body", text: `ISOLDE — ${text}`, style: { marginTop: "var(--space-2)" } }));
+      setInstructions(checkWrongCount >= 2 ? "HINT — Which casket was opened, and which never were?" : "");
+      flashRedSoon();
+    } else {
+      setInstructions("Think back to the sealed calculation — what did the Council's key actually open?");
+    }
+  }
+
+  function pickCheck(answer: CouncilAnswer) {
+    if (checkAnswer === "combined") return;
+    playSound("select");
+    if (answer !== "combined") {
+      checkWrongCount++;
+      if (checkWrongCount >= 2) alchemistsTrialsState.hintsUsed++;
+    }
+    checkAnswer = answer;
+    render();
+  }
+
+  // --- Stage: complete --------------------------------------------------------
+  let completeLineIndex = 0;
+  const COMPLETE_LINES = [
+    "Three instruments, three impossibilities made ordinary: publish truthfully without exposing anyone; hand over data that resembles life without being it; and compute upon what you cannot read.",
+    "The cabinet is open to you, Agent. Use it before you invent a reason not to.",
+  ];
+
+  function renderComplete() {
+    trialCounterEl.textContent = "THE LOCKED DRAWER — OPEN";
+    bodyEl.innerHTML = "";
+    bodyEl.append(
+      isoldeLine(COMPLETE_LINES[completeLineIndex]),
+      continueButton(completeLineIndex + 1 >= COMPLETE_LINES.length ? "CLOSE THE CABINET" : "CONTINUE", onCompleteContinue),
+    );
+    setInstructions("");
+  }
+
+  function onCompleteContinue() {
+    completeLineIndex++;
+    if (completeLineIndex >= COMPLETE_LINES.length) {
+      teardown();
+      onClose(true);
+      return;
+    }
+    render();
   }
 
   // --- Render dispatch ------------------------------------------------------
@@ -566,7 +816,11 @@ export function openAlchemistsTrialsOverlay(onClose: (completed: boolean) => voi
     if (stage === "trial2_demand") return renderTrial2Demand();
     if (stage === "trial2_loom") return renderTrial2Loom();
     if (stage === "trial2_outlier") return renderTrial2Outlier();
-    return renderTrial2Debrief();
+    if (stage === "trial2_debrief") return renderTrial2Debrief();
+    if (stage === "trial3_impasse") return renderTrial3Impasse();
+    if (stage === "trial3_casket") return renderTrial3Casket();
+    if (stage === "trial3_check") return renderTrial3Check();
+    return renderComplete();
   }
 
   // --- Teardown -----------------------------------------------------------

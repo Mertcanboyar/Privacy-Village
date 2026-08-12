@@ -11,6 +11,7 @@ import { openSealedLetterOverlay } from "./ui/sealedLetterOverlay";
 import { openTreasuryOverlay } from "./ui/treasuryOverlay";
 import { openMarenWinterReportOverlay } from "./ui/marenWinterReportOverlay";
 import { openArchivistsDeskOverlay } from "./ui/archivistsDeskOverlay";
+import { openAlchemistsTrialsOverlay } from "./ui/alchemistsTrialsOverlay";
 import { getSession, type Faction } from "./session";
 import { questEngine, type MilestoneId } from "./questEngine";
 import { academy } from "./academy";
@@ -25,6 +26,7 @@ import { treasuryKeysState } from "./treasuryKeysState";
 import { marenWinterReportState } from "./marenWinterReportState";
 import { logFirstQuestAccept, logLockedQuestBounce } from "./instrumentation";
 import { archivistsDeskState } from "./archivistsDeskState";
+import { alchemistsTrialsState } from "./alchemistsTrialsState";
 
 // Static NPCs with a "Press E" interaction prompt and a sequential
 // dialogue box (see PLAN.md Days 11-12, Phase 2 Days 2-3). Not
@@ -1587,6 +1589,14 @@ export class NPCController {
       return;
     }
 
+    // "The Alchemist's Trials" — one continuous full-screen overlay
+    // covering the hook and all three trials, same "no partial resume"
+    // simplification as every other full-screen minigame in this file.
+    if (def.id === "isolde" && questEngine.isActive("alchemists_trials")) {
+      this.openAlchemistsTrials();
+      return;
+    }
+
     this.activeSet = pickDialogueSet(def.dialogue);
     this.lineIndex = 0;
     if (this.activeSet.briefing) {
@@ -1936,6 +1946,21 @@ export class NPCController {
         questEngine.toast("COMMENDATION — Every verdict true to the ledger.");
       }
       questEngine.notifyReachZone("archivists_desk_complete");
+    });
+  }
+
+  private openAlchemistsTrials() {
+    this.mode = "minigame";
+    openAlchemistsTrialsOverlay((completed) => {
+      this.mode = "closed";
+      if (!completed) return;
+      const { trial1Attempts, trial1BrokeAggregate, trial1NoiseFirstTry, trial2Choice, trial2ApproachFirstTry, trial3Choice, trial3ApproachFirstTry, hintsUsed } = alchemistsTrialsState;
+      logDecision("alchemists_trials", { trial1Attempts, trial1BrokeAggregate, trial2Choice, trial3Choice, hintsUsed });
+      dossier.recordQuestStat("alchemists_trials", { trial1Attempts, trial1BrokeAggregate, trial2Choice, trial3Choice, hintsUsed });
+      if (trial1Attempts <= 3 && trial1NoiseFirstTry && trial2ApproachFirstTry && trial3ApproachFirstTry && hintsUsed === 0) {
+        questEngine.toast("COMMENDATION — The locked drawer opened at a touch.");
+      }
+      questEngine.notifyReachZone("alchemists_trials_complete");
     });
   }
 
