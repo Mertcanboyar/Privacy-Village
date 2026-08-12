@@ -5,8 +5,136 @@
   "clearanceRequired": 5,
   "order": 7,
   "type": "lesson",
-  "theoryInDevelopment": true,
   "fieldWork": { "questId": "maren_winter_report", "label": "Maren's Winter Report", "room": "tavern", "ping": "maren" },
-  "lesson": [],
-  "quiz": []
+  "lesson": [
+    { "type": "heading", "text": "Minimisation is not deletion." },
+    {
+      "type": "paragraph",
+      "text": "Most people hear \"collect less\" and reach for the delete key. But the sharper question is not how much data you hold — it is what SHAPE it is in. A record naming a sick villager, and a count of how many were sick, can answer the same question — only one of them can ruin a life if it leaks. Shaping the data means transforming it so the risk falls away while the answer survives."
+    },
+    {
+      "type": "callout",
+      "variant": "gold",
+      "text": "THE EARLIER, THE SAFER — Transform data as early in the pipeline as possible. If identifiers are stripped at the source, every system downstream — every vault, backup, report and recipient — never holds the dangerous version at all. You cannot leak what you never stored. Deleting downstream is cleanup; transforming upstream is design. (This is data protection BY DESIGN and BY DEFAULT.)"
+    },
+    { "type": "heading", "text": "The tools of shaping" },
+    { "type": "paragraph", "text": "AGGREGATION — report the statistic, drop the individuals. \"34 cases of fever\" instead of thirty-four named patients." },
+    { "type": "paragraph", "text": "GENERALISATION — replace precise values with ranges. An exact age becomes \"30–40\"; a street becomes a district." },
+    { "type": "paragraph", "text": "SUPPRESSION — remove the field entirely where nothing else will do." },
+    { "type": "paragraph", "text": "PSEUDONYMISATION — swap identifiers for codes. Useful, but reversible: still personal data, not a finish line." },
+    {
+      "type": "callout",
+      "variant": "blue",
+      "text": "PRIVATE AND USELESS IS ALSO A FAILURE — Strip too hard and a report can end up saying only \"something happened, somewhere\" — technically safe, and useless to whoever asked for it. Anonymisation must still SERVE THE PURPOSE. The test is not \"how little can I reveal?\" but \"what is the least that still answers the question?\" Too much detail is a breach waiting to happen; too little is a decision no one can make. Proportion, again."
+    },
+    { "type": "heading", "text": "The engineer's question" },
+    {
+      "type": "paragraph",
+      "text": "Before designing any flow, ask three things in order: (1) What decision does the recipient need to make? (2) What is the smallest shape of data that supports that decision? (3) Where in the pipeline can I put it in that shape — earliest wins. Answer those and minimisation stops being a rule you comply with and becomes an architecture you design."
+    }
+  ],
+  "quiz": [
+    {
+      "id": "aggregation_smallest_shape",
+      "q": "The Council needs to plan the winter medicine budget. What is the SMALLEST shape of data that answers their question?",
+      "choices": ["Named patient records", "Counts of cases per illness", "A total number of sick villagers"],
+      "answer": 1,
+      "explain": [
+        "Wrong — far more than the decision requires. Names add risk with no added value to a budget question.",
+        "Correct — enough to plan medicine by illness, and no more. This is the smallest shape that still answers the question.",
+        "Wrong — private, but useless. A single total can't tell them which medicines to buy."
+      ],
+      "hint": "Ask what decision they must make, then give exactly that much.",
+      "variant": {
+        "id": "aggregation_smallest_shape_variant",
+        "q": "A guild wants to know which MONTH illness peaks, to time their supply run. Smallest useful shape?",
+        "choices": ["Daily named visit logs", "Monthly case counts", "A single yearly total"],
+        "answer": 1,
+        "explain": [
+          "Wrong — far more than the decision requires. Named daily logs add risk with no added value to a timing question.",
+          "Correct — enough to see which month peaks, and no more. This is the smallest shape that still answers the question.",
+          "Wrong — private, but useless. A yearly total can't reveal which month to prepare for."
+        ]
+      }
+    },
+    {
+      "id": "aggregation_transform_early",
+      "q": "Why is transforming data EARLY in the pipeline better than deleting it later?",
+      "choices": ["It runs faster", "Downstream systems never hold the risky version", "The law requires speed"],
+      "answer": 1,
+      "explain": [
+        "Wrong — speed is irrelevant to the privacy argument here.",
+        "Correct — you cannot leak what a system never stored. Every vault, backup, and report downstream stays clean by construction.",
+        "Wrong — no such rule exists. The principle is by-design, not by-deadline."
+      ],
+      "hint": "What can a vault leak if the dangerous version never reached it?",
+      "variant": {
+        "id": "aggregation_transform_early_variant",
+        "q": "A pipeline runs Collection → Processing → Storage → Report. Where should identifiers be stripped?",
+        "choices": ["At Storage", "At Processing, before Storage", "At the Report, on reading"],
+        "answer": 1,
+        "explain": [
+          "Wrong — Storage would already hold the risky version by then, along with anything backed up from it.",
+          "Correct — the earliest point after collection. Strip there and nothing downstream ever holds the dangerous version at all.",
+          "Wrong — by the time a report is read, every earlier stage has already stored the risky version."
+        ]
+      }
+    },
+    {
+      "id": "aggregation_generalise_suppress",
+      "q": "A report replaces exact ages with ranges and removes street names. Which techniques are these?",
+      "choices": ["Aggregation and pseudonymisation", "Generalisation and suppression", "Encryption and access control"],
+      "answer": 1,
+      "explain": [
+        "Wrong — aggregation would report a statistic instead of a person; pseudonymisation would swap in a code, not a range.",
+        "Correct — an age blurred into a band is generalisation; a field removed outright is suppression.",
+        "Wrong — neither technique here locks or restricts the data; both reshape the values themselves."
+      ],
+      "hint": "One blurs a value into a band; the other removes a field outright."
+    },
+    {
+      "id": "aggregation_anonymous_vs_pseudonymous",
+      "q": "Which change makes data ANONYMOUS rather than merely pseudonymous?",
+      "choices": ["Replacing names with codes held in a key", "Publishing only group counts with no way back to individuals", "Encrypting the names"],
+      "answer": 1,
+      "explain": [
+        "Wrong — reversible wherever the key exists. Pseudonymized data remains personal data under the law.",
+        "Correct — with no route back to any individual, no one, using reasonable means, can re-identify. That's the bar anonymization has to clear.",
+        "Wrong — also reversible with the key. Encryption protects the data; it doesn't anonymise it."
+      ],
+      "hint": "If someone, somewhere, holds the way back — is it truly anonymous?",
+      "variant": {
+        "id": "aggregation_anonymous_vs_pseudonymous_variant",
+        "q": "A dataset replaces every villager's name with a random token, and the clerk keeps the token list in her drawer. Anonymous?",
+        "choices": ["Yes", "No — the drawer is the way back"],
+        "answer": 1,
+        "explain": [
+          "Wrong — a token is only ever pseudonymous while something, somewhere, can reverse it.",
+          "Correct — the drawer is the key. As long as it exists, this is pseudonymization, not anonymization."
+        ]
+      }
+    },
+    {
+      "id": "aggregation_over_strip",
+      "q": "A guild asks for health data to decide where to dig a well. You aggregate so hard that the output says only \"people are ill somewhere in the village.\" What have you done wrong?",
+      "choices": ["Nothing — maximum privacy is always correct", "Over-stripped: the data no longer serves its purpose", "Used the wrong encryption"],
+      "answer": 1,
+      "explain": [
+        "Wrong — privacy that prevents the decision it was collected for isn't a win, it's a different failure.",
+        "Correct — private and useless is still a failure. The shape has to survive carrying the answer, not just carrying no risk.",
+        "Wrong — no encryption is involved here at all; the problem is how far the data was aggregated."
+      ],
+      "hint": "Privacy that prevents the good decision is its own kind of failure.",
+      "variant": {
+        "id": "aggregation_over_strip_variant",
+        "q": "You anonymise a delivery list so thoroughly that couriers can't tell which district to visit. Diagnosis?",
+        "choices": ["Correct minimisation", "Over-stripped: the purpose can no longer be served"],
+        "answer": 1,
+        "explain": [
+          "Wrong — minimisation that erases the one thing couriers actually needed isn't correct, it's over-correction.",
+          "Correct — the district was the smallest shape that still let couriers do their job. Stripping past it broke the purpose."
+        ]
+      }
+    }
+  ]
 }
