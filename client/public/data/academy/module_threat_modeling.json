@@ -22,12 +22,6 @@
       "text": "Some controls blur — a barking dog both deters AND alerts. Classify by the control's PRIMARY purpose, and when in doubt ask: does it STOP the act, or RECORD it?"
     },
     {
-      "type": "evidence-image",
-      "images": [{ "src": "/assets/quest/village_map_mission1.jpeg", "label": "Stronghold Defense Grid" }],
-      "caption": "EVIDENCE — STRONGHOLD DEFENSE GRID",
-      "buttonLabel": "VIEW THE BLUEPRINT"
-    },
-    {
       "type": "paragraph",
       "text": "Capability mapping: real threat modeling defends against the SPECIFIC actors capable of exploiting SPECIFIC gaps, not \"everyone.\" Reference the Saboteur: high dexterity and stealth versus an unwatched lock on a cliff path."
     },
