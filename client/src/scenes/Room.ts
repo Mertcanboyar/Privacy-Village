@@ -16,6 +16,7 @@ import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE } fr
 import { isUiLocked } from "../cloud/uiLock";
 import { ChatController } from "../chat";
 import { markSpawn, logOnboardingOrientationShown } from "../instrumentation";
+import { recordLoadError, logRenderFailure } from "../renderDiagnostics";
 
 const PLAYER_SPEED = 160;
 const SCALE_FAR = 0.75;
@@ -115,6 +116,13 @@ function roomDisplayName(room: RoomName): string {
   return "VILLAGE";
 }
 
+// The hub every door/Academy trip eventually returns to — its bg/fg
+// textures stay resident across room transitions rather than being
+// freed by unloadRoomTextures() (see init()/create() below), same
+// reasoning as any other "keep the frequently-revisited thing warm"
+// cache decision.
+const HUB_ROOM: RoomName = "village";
+
 export class Room extends Phaser.Scene {
   private roomName: RoomName = "village";
   private player!: Phaser.GameObjects.Image;
@@ -147,6 +155,11 @@ export class Room extends Phaser.Scene {
   private chatController!: ChatController;
   private localChatBubble: Phaser.GameObjects.Text | null = null;
   private localChatBubbleExpiresAt = 0;
+  // Playtest Session 3, P0 (texture diagnostics + cleanup) — see init(),
+  // preload(), create() below.
+  private hasEnteredAnyRoom = false;
+  private roomToUnload: RoomName | null = null;
+  private renderFailed = false;
 
   constructor() {
     super("Room");
@@ -206,16 +219,120 @@ export class Room extends Phaser.Scene {
   }
 
   init(data: RoomInitData) {
+    // Per-scene texture cleanup (Playtest Session 3, P0): note which
+    // room we're LEAVING (not the very first Room.create() of the
+    // session, and not if we're "transitioning" into the same room or
+    // into the hub) — actually freed once the new room's own textures
+    // are confirmed loaded, in create() below.
+    const leavingRoom = this.hasEnteredAnyRoom ? this.roomName : null;
     this.roomName = data.room ?? "village";
+    this.roomToUnload = leavingRoom && leavingRoom !== this.roomName && leavingRoom !== HUB_ROOM ? leavingRoom : null;
     this.transitioning = false;
+    this.renderFailed = false;
     this.wanderers = [];
     this.pendingCourthouseDoorPing = data.pingCourthouseDoor ?? false;
+  }
+
+  preload() {
+    // Normally a no-op — every room's bg/fg is already resident from
+    // Preload.ts's eager boot-time load. Only does real work if this
+    // room's textures were freed by a previous unloadRoomTextures() call
+    // (a revisit after leaving) or genuinely failed to load the first
+    // time — either way, Phaser's own preload → create sequencing means
+    // create() below never runs until this either succeeds or fails.
+    const bgKey = `room-bg-${this.roomName}`;
+    const fgKey = `room-fg-${this.roomName}`;
+    this.load.on("loaderror", (file: Phaser.Loader.File) => {
+      if (file.key.startsWith("room-fg-")) return;
+      recordLoadError(file.key, file.src);
+    });
+    if (!this.textures.exists(bgKey)) this.load.image(bgKey, `assets/rooms/${this.roomName}_bg.png`);
+    if (!this.textures.exists(fgKey)) this.load.image(fgKey, `assets/rooms/${this.roomName}_fg.png`);
+  }
+
+  // Frees a room's bg/fg textures from the game's (global, cross-scene)
+  // TextureManager — called from create() once the room we're arriving
+  // in is confirmed loaded, never for HUB_ROOM. A later revisit re-fetches
+  // via preload()'s existence check above.
+  private unloadRoomTextures(room: RoomName) {
+    const bgKey = `room-bg-${room}`;
+    const fgKey = `room-fg-${room}`;
+    if (this.textures.exists(bgKey)) this.textures.remove(bgKey);
+    if (this.textures.exists(fgKey)) this.textures.remove(fgKey);
+  }
+
+  // Fail loudly, not silently (Playtest Session 3, P0) — a tester's
+  // machine once rendered every non-hub room as green-stripes-on-black
+  // with nothing surfaced anywhere. If the background this room needs
+  // genuinely isn't in the TextureManager by the time create() runs
+  // (decode failure, 404, or a corrupted upload some GPU driver still
+  // reports as "loaded"), show this instead of drawing garbage, and log
+  // it so a report like that one comes with real diagnostic data attached.
+  private showRenderFailure(textureKey: string) {
+    this.renderFailed = true;
+    logRenderFailure(this.game, textureKey);
+
+    const el = document.createElement("div");
+    el.id = "render-failure-banner";
+    Object.assign(el.style, {
+      position: "fixed",
+      inset: "0",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "16px",
+      background: "#0a0a0f",
+      color: "#f2f0e9",
+      fontFamily: '"Inter", sans-serif',
+      zIndex: "1000000",
+      textAlign: "center",
+      padding: "24px",
+    });
+    const message = document.createElement("div");
+    message.style.fontFamily = '"Space Grotesk", sans-serif';
+    message.style.fontSize = "20px";
+    message.style.fontWeight = "700";
+    message.textContent = "A scene failed to load — please refresh.";
+    const reportBtn = document.createElement("button");
+    reportBtn.textContent = "[Report]";
+    Object.assign(reportBtn.style, {
+      fontFamily: '"JetBrains Mono", monospace',
+      padding: "10px 20px",
+      background: "#f0b429",
+      color: "#1a1500",
+      border: "none",
+      borderRadius: "6px",
+      fontWeight: "700",
+      cursor: "pointer",
+    });
+    reportBtn.addEventListener("click", () => {
+      logRenderFailure(this.game, textureKey);
+      reportBtn.textContent = "Reported — thank you";
+      reportBtn.disabled = true;
+    });
+    el.append(message, reportBtn);
+    document.body.appendChild(el);
   }
 
   create() {
     const bgKey = `room-bg-${this.roomName}`;
     const fgKey = `room-fg-${this.roomName}`;
     const dataKey = `room-data-${this.roomName}`;
+
+    // Now that this room's own textures are confirmed present (preload()
+    // above ran to completion before Phaser calls create()), free
+    // whatever room we left behind.
+    if (this.roomToUnload) {
+      this.unloadRoomTextures(this.roomToUnload);
+      this.roomToUnload = null;
+    }
+    this.hasEnteredAnyRoom = true;
+
+    if (!this.textures.exists(bgKey)) {
+      this.showRenderFailure(bgKey);
+      return;
+    }
 
     this.add.image(0, 0, bgKey).setOrigin(0, 0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
 
@@ -662,7 +779,7 @@ export class Room extends Phaser.Scene {
   }
 
   update(time: number) {
-    if (this.transitioning) return;
+    if (this.transitioning || this.renderFailed) return;
 
     // Clamp dt: the first frame's delta can be anomalously large (time
     // since page load, not since last frame), which would otherwise let

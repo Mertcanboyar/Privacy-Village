@@ -610,7 +610,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       x: 1000,
       y: 560,
       texture: "npc-villager",
-      baseScale: 75 / 633,
+      // Downscaled from an original 633px-tall frame to 161px (see
+      // Preload.ts's P0 doc comment) — baseScale recomputed against the
+      // new frame height to keep the same ~75px on-screen size.
+      baseScale: 75 / 161,
       idleAnim: "npc-villager-idle",
       dialogue: [
         {
@@ -640,9 +643,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       x: 220,
       y: 610,
       texture: "npc-courier",
-      // Real sprite: an 18-frame idle strip (414x554/frame, see
-      // Preload.ts), cropped from a "Forest Ranger" character pack.
-      baseScale: 75 / 554,
+      // Real sprite: an 18-frame idle strip (200x267/frame after the P0
+      // downscale, see Preload.ts), cropped from a "Forest Ranger"
+      // character pack.
+      baseScale: 75 / 267,
       idleAnim: "npc-courier-idle",
       dialogue: [
         {
@@ -675,7 +679,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       x: 180,
       y: 470,
       texture: "npc-villager",
-      baseScale: 75 / 633,
+      // Downscaled from an original 633px-tall frame to 161px (see
+      // Preload.ts's P0 doc comment) — baseScale recomputed against the
+      // new frame height to keep the same ~75px on-screen size.
+      baseScale: 75 / 161,
       idleAnim: "npc-villager-idle",
       tint: 0x8f5ce0,
       questGiver: "alchemists_trials",
@@ -846,10 +853,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       x: 850,
       y: 600,
       texture: "npc-maren",
-      // Real sprite: a 10-frame idle strip (501x461/frame, see
-      // Preload.ts), cropped from a fairy character pack. Targets the
-      // same ~75px on-screen height every other NPC uses.
-      baseScale: 75 / 461,
+      // Real sprite: a 10-frame idle strip (360x331/frame after the P0
+      // downscale, see Preload.ts), cropped from a fairy character pack.
+      // Targets the same ~75px on-screen height every other NPC uses.
+      baseScale: 75 / 331,
       idleAnim: "npc-maren-idle",
       fallbackTexture: { key: "npc-knight", expectedPath: "client/public/assets/npc/healer/maren.png" },
       // "Maren's Winter Report" is a direct sequel to "The Healer's
@@ -983,9 +990,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       x: 828,
       y: 348,
       texture: "npc-mayor",
-      // Real sprite: a 30-frame idle strip (414x567/frame, see
-      // Preload.ts), cropped from a "Blacksmith" character pack.
-      baseScale: 75 / 567,
+      // Real sprite: a 30-frame idle strip (120x164/frame after the P0
+      // downscale, see Preload.ts), cropped from a "Blacksmith" character
+      // pack.
+      baseScale: 75 / 164,
       idleAnim: "npc-mayor-idle",
       questGiver: "treasury_two_keys",
       dialogue: [
@@ -1012,9 +1020,10 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       x: 650,
       y: 495,
       texture: "npc-knight-guard",
-      // Real sprite: a 10-frame idle strip (559x510/frame, see
-      // Preload.ts), cropped from a "Knight_02" character pack.
-      baseScale: 75 / 510,
+      // Real sprite: a 10-frame idle strip (360x328/frame after the P0
+      // downscale, see Preload.ts), cropped from a "Knight_02" character
+      // pack.
+      baseScale: 75 / 328,
       idleAnim: "npc-knight-guard-idle",
       dialogue: [
         {
@@ -1033,7 +1042,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
       x: 1015,
       y: 495,
       texture: "npc-knight-guard",
-      baseScale: 75 / 510,
+      baseScale: 75 / 328,
       flipX: true,
       idleAnim: "npc-knight-guard-idle",
       dialogue: [

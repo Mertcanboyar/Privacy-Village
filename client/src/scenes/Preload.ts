@@ -6,6 +6,7 @@ import { QUEST_IDS, questEngine, type QuestDef } from "../questEngine";
 import { ACADEMY_TRACK_IDS, ACADEMY_MODULE_IDS, academy, type AcademyTrack, type AcademyModule } from "../academy";
 import { events, type EventVideo } from "../events";
 import { dossier, type CodexConcept, type TitleDef } from "../dossier";
+import { recordLoadError } from "../renderDiagnostics";
 
 export class Preload extends Phaser.Scene {
   constructor() {
@@ -42,6 +43,20 @@ export class Preload extends Phaser.Scene {
       bar.fillRoundedRect(centerX - 156, centerY - 8, 312 * value, 16, 4);
     });
 
+    // Playtest Session 3, P0 — a failed image/spritesheet load used to be
+    // silent (Phaser just skips it, and whatever later tries to draw
+    // that texture key falls through to a broken/missing-texture look).
+    // Every UNEXPECTED load failure across this whole queue now lands in
+    // renderDiagnostics.ts's error log, visible via `?debug=render` and
+    // attached to any later "render_failure" decisions row. Foreground
+    // room PNGs are excluded — none exist yet for any room, and Room.ts
+    // already treats that as a normal, optional state (see its
+    // `textures.exists(fgKey)` check), not a failure worth surfacing.
+    this.load.on("loaderror", (file: Phaser.Loader.File) => {
+      if (file.key.startsWith("room-fg-")) return;
+      recordLoadError(file.key, file.src);
+    });
+
     // Player avatar — single painted pose (no walk-cycle frames), flipped
     // horizontally for left/right facing. See Room.ts.
     this.load.image("player", "assets/sprites/player/wizard.png");
@@ -66,25 +81,34 @@ export class Preload extends Phaser.Scene {
     // npc.ts's fallbackTexture doc comment): if this file is ever
     // missing, it 404s quietly and npc.ts falls back to the knight
     // placeholder + a console.warn.
-    this.load.spritesheet("npc-maren", "assets/npc/healer/maren.png", { frameWidth: 501, frameHeight: 461 });
+    // Frame dimensions below reflect a one-time downscale (see Playtest
+    // Session 3, P0): the source strips were exported at up to 14160px
+    // wide, well past the ~4096px MAX_TEXTURE_SIZE many integrated/older
+    // GPUs enforce — a WebGL texture upload past that cap silently
+    // corrupts (the reported "green stripes on black"). Every strip below
+    // was resampled to a 3600px total width (comfortable margin under
+    // 4096), frame count unchanged, frameWidth/frameHeight recomputed
+    // from the resized file — see ?debug=render for a live texture-size
+    // report against the current device's actual cap.
+    this.load.spritesheet("npc-maren", "assets/npc/healer/maren.png", { frameWidth: 360, frameHeight: 331 });
 
     // Courier ("The Blueprint of the Post Road" — see npc.ts) — an
     // 18-frame idle strip (a "Forest Ranger" character pack), same
     // union-bbox-crop-across-all-frames treatment as Maren above.
-    this.load.spritesheet("npc-courier", "assets/npc/courier/courier.png", { frameWidth: 414, frameHeight: 554 });
+    this.load.spritesheet("npc-courier", "assets/npc/courier/courier.png", { frameWidth: 200, frameHeight: 267 });
     // Villager — 30-frame greeting-animation strip, same treatment,
     // from a different user-provided character pack.
-    this.load.spritesheet("npc-villager", "assets/npc/villager/villager.png", { frameWidth: 472, frameHeight: 633 });
+    this.load.spritesheet("npc-villager", "assets/npc/villager/villager.png", { frameWidth: 120, frameHeight: 161 });
 
     // Mayor ("The Treasury's Two Keys" — see npc.ts) — a 30-frame idle
     // strip (a "Blacksmith" character pack), same treatment.
-    this.load.spritesheet("npc-mayor", "assets/npc/mayor/mayor.png", { frameWidth: 414, frameHeight: 567 });
+    this.load.spritesheet("npc-mayor", "assets/npc/mayor/mayor.png", { frameWidth: 120, frameHeight: 164 });
 
     // Throne guards (Great Hall, flanking the Mayor) — one 10-frame idle
     // strip (a "Knight_02" character pack) reused for both, mirrored via
     // NPCDef.flipX so they face each other rather than reading as the
     // same person twice over.
-    this.load.spritesheet("npc-knight-guard", "assets/npc/knight_guard/knight_guard.png", { frameWidth: 559, frameHeight: 510 });
+    this.load.spritesheet("npc-knight-guard", "assets/npc/knight_guard/knight_guard.png", { frameWidth: 360, frameHeight: 328 });
 
     // Kenney character sheet — not used by the player anymore, kept
     // loaded for the NPC system (Week 2, see PLAN.md).
