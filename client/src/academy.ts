@@ -136,7 +136,7 @@ export interface AcademyFieldWork {
   ping?: "herald" | "bram" | "mayor" | "courthouseDoor" | "maren" | "quill" | "isolde";
 }
 
-interface AcademyModuleBase {
+export interface AcademyModuleBase {
   id: string;
   track: string;
   title: string;
@@ -332,13 +332,69 @@ export interface AcademyCaseFileModule extends AcademyModuleBase {
   entries: CaseFileEntry[];
 }
 
+// One option in a BuildSlot's palette — e.g. "The Logbook", "A Hidden
+// Alarm". `consequence`/`explain` on the slot are keyed by this id.
+export interface BuildControlOption {
+  id: string;
+  label: string;
+}
+
+// One defense point the player must assign a control to (Playtest
+// Session 3, P2 — "BUILD: place controls, watch attack"). Same
+// progressive-hint shape as CaseFileEntry, generalized from a binary
+// mark to an N-way pick among `options` — see academyOverlay.ts's
+// renderBuildDefense()/runAttack().
+export interface BuildSlot {
+  /** Needed to key wrong-attempt/hint-shown state — only required for a
+   * slot that sets `hint` or `variant`, same convention as
+   * CaseFileEntry.id. */
+  id?: string;
+  label: string;
+  options: BuildControlOption[];
+  correctOptionId: string;
+  /** Keyed by option id — shown FIRST on a wrong pick, before `explain`.
+   * The attack's actual outcome against that specific choice (what the
+   * Saboteur did, what got missed), not a restatement of the rule. */
+  consequence: Record<string, string>;
+  /** Keyed by option id — the dry rule-based reasoning, shown after
+   * `consequence`. */
+  explain: Record<string, string>;
+  /** Stage 2 — shown once this slot's 2nd wrong pick lands. Same
+   * semantics as QuizQuestion.hint. */
+  hint?: string;
+  /** Stage 3 — a fresh-scenario slot testing the same concept, queued
+   * onto the end once this slot's 3rd wrong pick lands. Same semantics
+   * as QuizQuestion.variant. */
+  variant?: Omit<BuildSlot, "hint" | "variant">;
+}
+
+// "BUILD (place controls, watch attack)" — every defense point shown at
+// once (same "all at once" shell as AcademyCaseFileModule); the player
+// assigns one control per point, then the whole configuration is tested
+// together against the scenario's attacker. A wrong assignment stays
+// open for reassignment with its consequence+explanation shown inline.
+// `capstoneQuestion` is optional — the P2 ticket's "at most ONE
+// multiple-choice item per module, placed last" rule: once every slot
+// (including queued variants) resolves correctly, academyOverlay.ts
+// routes into the ordinary single-question quiz flow for this one
+// question before sealing the module, reusing renderQuiz() rather than
+// duplicating it.
+export interface AcademyBuildModule extends AcademyModuleBase {
+  type: "build_defense";
+  lesson: LessonBlock[];
+  brief: string;
+  slots: BuildSlot[];
+  capstoneQuestion?: QuizQuestion;
+}
+
 export type AcademyModule =
   | AcademyLessonModule
   | AcademyCardDrillModule
   | AcademyCardDrillMultiModule
   | AcademyDataSieveModule
   | AcademyLessonDiagramQuizModule
-  | AcademyCaseFileModule;
+  | AcademyCaseFileModule
+  | AcademyBuildModule;
 
 export interface ModuleProgress {
   theoryDone: boolean;

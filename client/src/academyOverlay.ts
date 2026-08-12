@@ -4,17 +4,19 @@ import {
   academy,
   type AcademyTrack,
   type AcademyModuleSummary,
-  type AcademyLessonModule,
   type AcademyCardDrillModule,
   type AcademyCardDrillMultiModule,
   type AcademyDataSieveModule,
   type AcademyLessonDiagramQuizModule,
   type AcademyCaseFileModule,
+  type AcademyBuildModule,
   type AcademyFieldWork,
+  type AcademyModuleBase,
   type CardDrillCard,
   type CardDrillMultiCard,
   type DataSieveCard,
   type CaseFileEntry,
+  type BuildSlot,
   type LessonBlock,
   type QuizQuestion,
   type DiagramQuizQuestion,
@@ -143,7 +145,8 @@ type AcademyView =
   | "cardDrillMulti"
   | "dataSieve"
   | "diagramQuiz"
-  | "caseFile";
+  | "caseFile"
+  | "buildDefense";
 
 // Attempt counter for decision-log rows (see answerQuiz()/answerCardDrill()/
 // answerCardDrillMulti()) — keyed by module+question/item so a retry on
@@ -184,6 +187,18 @@ const caseFileVariantQueued = new Set<string>();
 function nextCaseFileWrongAttempt(key: string): number {
   const n = (caseFileWrongAttempts.get(key) ?? 0) + 1;
   caseFileWrongAttempts.set(key, n);
+  return n;
+}
+
+// Same trio again for build-defense slots — a separate id space from
+// both the quiz and case-file ones above, for the same collision reason.
+const buildWrongAttempts = new Map<string, number>();
+const buildHintShown = new Set<string>();
+const buildVariantQueued = new Set<string>();
+
+function nextBuildWrongAttempt(key: string): number {
+  const n = (buildWrongAttempts.get(key) ?? 0) + 1;
+  buildWrongAttempts.set(key, n);
   return n;
 }
 
@@ -288,6 +303,17 @@ export class AcademyOverlay {
   // quizVariantParentInfo, read back once the variant is finally marked
   // correctly so the decision log reflects the ORIGINAL entry's stats.
   private caseFileVariantParentInfo = new Map<string, { attempts: number; hintUsed: boolean }>();
+
+  // Build-defense (place controls, watch attack) state — same shape as
+  // the case-file state above, generalized from a boolean mark to an
+  // option id pick per slot (see renderBuildDefense()/runAttack()).
+  private buildSlots: BuildSlot[] = [];
+  private buildVariantOf: (string | null)[] = [];
+  private buildPicks: (string | null)[] = [];
+  private buildResolved: boolean[] = [];
+  private buildWrong = new Set<number>();
+  private buildRunOnce = false;
+  private buildVariantParentInfo = new Map<string, { attempts: number; hintUsed: boolean }>();
 
   private badgeEl: HTMLElement;
   private badgeNameEl: HTMLElement;
@@ -396,6 +422,7 @@ export class AcademyOverlay {
     else if (this.currentView === "cardDrillMulti") this.renderCardDrillMulti();
     else if (this.currentView === "dataSieve") this.renderDataSieve();
     else if (this.currentView === "caseFile") this.renderCaseFile();
+    else if (this.currentView === "buildDefense") this.renderBuildDefense();
     else this.renderDiagramQuiz();
   }
 
@@ -442,7 +469,8 @@ export class AcademyOverlay {
       module.type !== "card_drill_multi" &&
       module.type !== "data_sieve" &&
       module.type !== "lesson_diagramquiz" &&
-      module.type !== "case_file"
+      module.type !== "case_file" &&
+      module.type !== "build_defense"
         ? [...module.quiz]
         : [];
     this.quizVariantOf = this.quizQuestions.map(() => null);
@@ -502,6 +530,19 @@ export class AcademyOverlay {
     this.caseFileResolved = this.caseFileEntries.map(() => false);
     this.caseFileWrong = new Set();
     this.caseFileFiledOnce = false;
+    this.render();
+  }
+
+  private goToBuildDefense(moduleId: string) {
+    const module = academy.getModule(moduleId);
+    this.currentModuleId = moduleId;
+    this.currentView = "buildDefense";
+    this.buildSlots = module?.type === "build_defense" ? [...module.slots] : [];
+    this.buildVariantOf = this.buildSlots.map(() => null);
+    this.buildPicks = this.buildSlots.map(() => null);
+    this.buildResolved = this.buildSlots.map(() => false);
+    this.buildWrong = new Set();
+    this.buildRunOnce = false;
     this.render();
   }
 
@@ -728,7 +769,13 @@ export class AcademyOverlay {
 
   private renderLesson() {
     const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
-    if (!module || module.type === "card_drill" || module.type === "card_drill_multi" || module.type === "data_sieve" || module.type === "case_file") {
+    if (
+      !module ||
+      module.type === "card_drill" ||
+      module.type === "card_drill_multi" ||
+      module.type === "data_sieve" ||
+      module.type === "case_file"
+    ) {
       this.goToHub();
       return;
     }
@@ -770,6 +817,7 @@ export class AcademyOverlay {
     );
 
     const isDiagramQuiz = module.type === "lesson_diagramquiz";
+    const isBuildDefense = module.type === "build_defense";
     const navRow = el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-3)" } }, [
       this.lessonPageIndex > 0
         ? el("button", { className: "btn btn--ghost", text: "◂ BACK", on: { click: () => this.goToLessonPage(this.lessonPageIndex - 1) } })
@@ -777,8 +825,14 @@ export class AcademyOverlay {
       isLastPage
         ? el("button", {
             className: "btn btn--gold",
-            text: isDiagramQuiz ? "READ THE DIAGRAM" : "TAKE THE ASSESSMENT",
-            on: { click: () => (isDiagramQuiz ? this.goToDiagramQuiz(module.id) : this.goToQuiz(module.id)) },
+            text: isDiagramQuiz ? "READ THE DIAGRAM" : isBuildDefense ? "BUILD THE DEFENSE" : "TAKE THE ASSESSMENT",
+            on: {
+              click: () => {
+                if (isDiagramQuiz) this.goToDiagramQuiz(module.id);
+                else if (isBuildDefense) this.goToBuildDefense(module.id);
+                else this.goToQuiz(module.id);
+              },
+            },
           })
         : el("button", {
             className: "btn btn--gold",
@@ -992,7 +1046,13 @@ export class AcademyOverlay {
     // answer above is this lineage's real resolution.
   }
 
-  private nextQuizQuestion(module: AcademyLessonModule) {
+  // Widened from AcademyLessonModule to the common base — a build_defense
+  // module's capstone question also finishes through here (see
+  // renderQuiz()'s type guard, which deliberately does NOT exclude
+  // build_defense, and completeBuildDefense() below, which routes into
+  // this same quiz flow for that one question) and this function only
+  // ever touches .id/.track, which every module type carries.
+  private nextQuizQuestion(module: AcademyModuleBase) {
     const isLast = this.quizIndex >= this.quizQuestions.length - 1;
     if (isLast) {
       this.sealTheory(module.id);
@@ -1724,6 +1784,260 @@ export class AcademyOverlay {
   }
 
   private completeCaseFile(module: AcademyCaseFileModule) {
+    this.sealTheory(module.id);
+    this.goToModuleList(module.track);
+  }
+
+  // "Threat Modeling Fundamentals" — BUILD (place controls, watch
+  // attack), Playtest Session 3, P2. Same all-at-once/mastery-model
+  // shell as renderCaseFile() above, generalized from a binary mark to
+  // an N-way control pick per defense point: a wrong assignment shows
+  // the ATTACK's actual outcome against that specific choice before the
+  // dry explanation, stays open for reassignment, gains a HINT on its
+  // 2nd wrong pick, and queues a fresh-scenario variant on its 3rd. Once
+  // every slot (including variants) holds, an optional single
+  // `capstoneQuestion` — the ticket's "at most one multiple-choice item,
+  // placed last" — is answered through the ordinary quiz flow
+  // (renderQuiz()/nextQuizQuestion(), reused rather than duplicated)
+  // before the module seals; with no capstone, it seals directly.
+  private renderBuildDefense() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "build_defense") {
+      this.goToHub();
+      return;
+    }
+
+    const header = el("div", { style: { display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-3)" } }, [
+      el("button", { className: "btn btn--ghost", text: "← BACK", on: { click: () => this.goToModuleList(module.track) } }),
+      el("h2", { text: module.title.toUpperCase(), style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "18px" } }),
+    ]);
+
+    const briefBox = el(
+      "div",
+      { style: { borderLeft: "4px solid var(--accent-gold)", background: "var(--bg-raised)", padding: "8px 12px", borderRadius: "var(--radius-sm)", marginBottom: "var(--space-3)" } },
+      [
+        el("span", {
+          text: "BUILD THE DEFENSE",
+          style: { fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.06em", color: "var(--accent-gold)", fontWeight: "700" },
+        }),
+        el("p", { text: module.brief, style: { fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-primary)", margin: "6px 0 0" } }),
+      ],
+    );
+
+    const rows = el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: "8px" } },
+      this.buildSlots.map((_, i) => this.renderBuildSlotRow(i)),
+    );
+
+    const children: HTMLElement[] = [header, briefBox, rows];
+
+    const allResolved = this.buildResolved.length > 0 && this.buildResolved.every(Boolean);
+    if (allResolved) {
+      children.push(
+        el("button", {
+          className: "btn btn--gold",
+          text: module.capstoneQuestion ? "ONE LAST CHECK" : "COMPLETE",
+          style: { marginTop: "var(--space-3)" },
+          on: { click: () => this.completeBuildDefense(module) },
+        }),
+      );
+    } else {
+      const configuredCount = this.buildPicks.filter((p, i) => this.buildResolved[i] || p !== null).length;
+      const allConfigured = configuredCount === this.buildSlots.length;
+      children.push(
+        el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "var(--space-3)" } }, [
+          el("span", {
+            text: `${configuredCount} of ${this.buildSlots.length} configured`,
+            style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" },
+          }),
+          el("button", {
+            className: "btn btn--gold",
+            text: this.buildRunOnce ? "RUN IT AGAIN" : "RUN THE ATTACK",
+            style: allConfigured ? {} : { opacity: "0.4", pointerEvents: "none" },
+            on: { click: () => this.runAttack() },
+          }),
+        ]),
+      );
+    }
+
+    this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "700px", maxHeight: "640px", overflowY: "auto" } }, children));
+  }
+
+  private renderBuildSlotRow(index: number): HTMLElement {
+    const slot = this.buildSlots[index];
+    const pick = this.buildPicks[index];
+    const resolved = this.buildResolved[index];
+    const isWrong = this.buildWrong.has(index);
+    const isVariant = this.buildVariantOf[index] !== null;
+
+    const style: Partial<CSSStyleDeclaration> = {
+      display: "flex",
+      flexDirection: "column",
+      gap: "6px",
+      padding: "10px 12px",
+      borderRadius: "var(--radius-sm)",
+      border: "2px solid var(--border-strong)",
+      background: "var(--bg-panel)",
+    };
+    if (resolved) style.borderColor = "var(--accent-gold)";
+    else if (isWrong) style.borderColor = "var(--accent-red)";
+
+    const children: HTMLElement[] = [];
+    if (isVariant && !resolved) {
+      children.push(
+        el("span", { text: "REVISIT — FRESH SCENARIO", style: { fontFamily: "var(--font-mono)", fontSize: "10px", letterSpacing: "0.06em", color: "var(--text-muted)" } }),
+      );
+    }
+    children.push(el("p", { text: slot.label, style: { fontFamily: "var(--font-body)", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", margin: "0" } }));
+
+    if (resolved) {
+      const chosen = slot.options.find((o) => o.id === slot.correctOptionId);
+      children.push(el("span", { className: "chip chip--gold", text: `✓ HELD — ${chosen?.label ?? slot.correctOptionId}` }));
+      return el("div", { style }, children);
+    }
+
+    children.push(
+      el(
+        "div",
+        { style: { display: "flex", flexWrap: "wrap", gap: "8px" } },
+        slot.options.map((option) =>
+          el("button", {
+            className: pick === option.id ? "btn btn--gold" : "btn btn--ghost",
+            text: option.label,
+            style: { flex: "1", minWidth: "140px" },
+            on: { click: () => this.markBuildSlot(index, option.id) },
+          }),
+        ),
+      ),
+    );
+
+    if (isWrong && pick) {
+      children.push(
+        el("p", {
+          text: `CONSEQUENCE — ${slot.consequence[pick] ?? ""}`,
+          style: { fontFamily: "var(--font-body)", fontSize: "13px", fontWeight: "600", color: "var(--accent-red)", margin: "4px 0 0" },
+        }),
+        el("p", { text: slot.explain[pick] ?? "", style: { fontFamily: "var(--font-body)", fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0" } }),
+      );
+      const hintKey = slot.id ? `${this.currentModuleId}:${slot.id}` : null;
+      if (slot.hint && hintKey && buildHintShown.has(hintKey)) {
+        children.push(
+          el("div", {
+            text: `HINT — ${slot.hint}`,
+            style: {
+              marginTop: "2px",
+              borderLeft: "4px solid var(--accent-blue)",
+              background: "var(--bg-raised)",
+              padding: "8px",
+              borderRadius: "var(--radius-sm)",
+              fontFamily: "var(--font-body)",
+              fontSize: "12px",
+              color: "var(--text-primary)",
+            },
+          }),
+        );
+      }
+    }
+
+    return el("div", { style }, children);
+  }
+
+  // Picking/changing a control never clears an existing wrong pick's
+  // consequence/explain — same reasoning as markCaseFileEntry(), that
+  // context only gets recomputed by runAttack().
+  private markBuildSlot(index: number, optionId: string) {
+    if (this.buildResolved[index]) return;
+    this.buildPicks[index] = optionId;
+    this.render();
+  }
+
+  private runAttack() {
+    const module = this.currentModuleId ? academy.getModule(this.currentModuleId) : undefined;
+    if (!module || module.type !== "build_defense") return;
+    this.buildRunOnce = true;
+    const stillWrong = new Set<number>();
+    for (let i = 0; i < this.buildSlots.length; i++) {
+      if (this.buildResolved[i]) continue;
+      const slot = this.buildSlots[i];
+      const pick = this.buildPicks[i];
+      if (pick === null) continue;
+      const correct = pick === slot.correctOptionId;
+
+      logDecision("module_build_defense_pick", {
+        module: this.currentModuleId,
+        slot: slot.label,
+        picked: pick,
+        correct,
+        attempt: nextAnswerAttempt(`${this.currentModuleId}:${slot.id ?? slot.label}`),
+      });
+
+      if (correct) this.buildResolved[i] = true;
+      else stillWrong.add(i);
+      this.handleBuildProgressive(slot, i, correct);
+    }
+    this.buildWrong = stillWrong;
+    this.render();
+  }
+
+  // Stages 2-3 of the progressive-hint mechanic, same shape as
+  // handleCaseFileProgressive() — a slot needs an id plus hint/variant
+  // to opt in.
+  private handleBuildProgressive(slot: BuildSlot, index: number, correct: boolean) {
+    if (!slot.id) return;
+    const variantParentId = this.buildVariantOf[index];
+    const trackedKey = `${this.currentModuleId}:${slot.id}`;
+
+    if (!correct) {
+      if (variantParentId) return;
+      const wrongCount = nextBuildWrongAttempt(trackedKey);
+      if (wrongCount === 2 && slot.hint) buildHintShown.add(trackedKey);
+      if (wrongCount === 3 && slot.variant && !buildVariantQueued.has(trackedKey)) {
+        buildVariantQueued.add(trackedKey);
+        this.buildVariantParentInfo.set(slot.id, { attempts: wrongCount, hintUsed: buildHintShown.has(trackedKey) });
+        this.buildSlots.push({ ...slot.variant });
+        this.buildVariantOf.push(slot.id);
+        this.buildPicks.push(null);
+        this.buildResolved.push(false);
+      }
+      return;
+    }
+
+    if (variantParentId) {
+      const info = this.buildVariantParentInfo.get(variantParentId) ?? { attempts: 0, hintUsed: false };
+      logDecision("module_build_defense_progressive", {
+        module: this.currentModuleId,
+        slotId: variantParentId,
+        attempts: info.attempts,
+        hintUsed: info.hintUsed,
+        variantPassed: true,
+      });
+    } else if ((slot.hint || slot.variant) && !buildVariantQueued.has(trackedKey)) {
+      logDecision("module_build_defense_progressive", {
+        module: this.currentModuleId,
+        slotId: slot.id,
+        attempts: buildWrongAttempts.get(trackedKey) ?? 0,
+        hintUsed: buildHintShown.has(trackedKey),
+      });
+    }
+  }
+
+  // All slots hold — if there's a capstone question, route into the
+  // ordinary single-question quiz flow for it (nextQuizQuestion() seals
+  // the module and returns to the module list once it's answered
+  // correctly, same as it does for a lesson module's quiz); otherwise
+  // seal directly, same as completeCaseFile().
+  private completeBuildDefense(module: AcademyBuildModule) {
+    if (module.capstoneQuestion) {
+      this.currentView = "quiz";
+      this.quizQuestions = [module.capstoneQuestion];
+      this.quizVariantOf = [null];
+      this.quizIndex = 0;
+      this.quizRevealedChoice = null;
+      this.quizCorrect = false;
+      this.render();
+      return;
+    }
     this.sealTheory(module.id);
     this.goToModuleList(module.track);
   }
