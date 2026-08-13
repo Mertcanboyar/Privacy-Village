@@ -131,7 +131,25 @@ export function openAlchemistsTrialsOverlay(onClose: (completed: boolean) => voi
 
   const panelEl = el(
     "div",
-    { className: "panel panel--glow ds-root", style: { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: "860px", pointerEvents: "auto" } },
+    {
+      className: "panel panel--glow ds-root",
+      style: {
+        // Fixed px, not vh/vw — #ui-root is a static 1280x720 box, not
+        // scaled to the true browser viewport. Without a height cap the
+        // denser stages (the six-query board, the side-by-side census
+        // tables) push this centered panel's bottom edge past the
+        // canvas — maxHeight + overflowY keeps it on-screen the same way
+        // ui/tableOverlay.ts's centered panel does.
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        transform: "translate(-50%, -50%)",
+        width: "860px",
+        maxHeight: "660px",
+        overflowY: "auto",
+        pointerEvents: "auto",
+      },
+    },
     [
       el("div", { className: "briefing__header" }, [
         trialCounterEl,
