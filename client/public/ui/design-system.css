@@ -96,6 +96,27 @@
   box-shadow: var(--shadow-hard), 0 0 28px rgba(76, 201, 240, 0.22), 0 0 2px rgba(76, 201, 240, 0.35);
 }
 
+/* Gold variant of .panel--glow, for UI that needs to read as important
+ * without borrowing the blue "informational" glow used elsewhere (quiz/
+ * lesson panels) — the quest tracker (see hud.ts) is the first user:
+ * players reported not noticing it sitting quietly in the corner. */
+.panel--glow-gold {
+  border-color: rgba(240, 180, 41, 0.55);
+  box-shadow: var(--shadow-hard), 0 0 28px rgba(240, 180, 41, 0.28), 0 0 2px rgba(240, 180, 41, 0.4);
+}
+
+/* Slow breathing glow so a persistent-but-easy-to-ignore panel keeps
+ * drawing the eye at a glance, without the harsher full-opacity blink
+ * ds-pulse would give a block of text meant to stay readable. */
+@keyframes ds-glow-breathe {
+  0%, 100% { box-shadow: var(--shadow-hard), 0 0 28px rgba(240, 180, 41, 0.28), 0 0 2px rgba(240, 180, 41, 0.4); }
+  50% { box-shadow: var(--shadow-hard), 0 0 44px rgba(240, 180, 41, 0.55), 0 0 5px rgba(240, 180, 41, 0.65); }
+}
+
+.panel--tracker-glow {
+  animation: ds-glow-breathe 2.4s ease-in-out infinite;
+}
+
 /* ---------------------------------------------------------------------
    2. .btn — chunky button. Variants: .btn--gold (primary), .btn--ghost
    (outline), .btn--danger.

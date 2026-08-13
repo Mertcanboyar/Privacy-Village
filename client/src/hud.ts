@@ -308,10 +308,15 @@ export class HUDController {
     }
 
     // --- Quest tracker (top-right, Q toggles) ---
+    // panel--glow-gold + panel--tracker-glow (see design-system.css): a
+    // breathing gold glow so this persistent panel keeps drawing the eye
+    // at a glance — players reported not noticing it sitting quietly in
+    // the corner as a plain .panel. Title/objective text sized up a
+    // notch for the same reason.
     this.trackerTitleEl = el("div", {
-      style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "13px", letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--accent-gold)" },
+      style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "14px", letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--accent-gold)" },
     });
-    this.trackerObjectiveEl = el("div", { style: { fontFamily: "var(--font-body)", fontSize: "14px", color: "var(--text-primary)", marginTop: "6px" } });
+    this.trackerObjectiveEl = el("div", { style: { fontFamily: "var(--font-body)", fontSize: "15px", color: "var(--text-primary)", marginTop: "6px" } });
     this.trackerCounterEl = el("div", {
       style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)", marginTop: "8px", textAlign: "right" },
     });
@@ -321,7 +326,10 @@ export class HUDController {
       // pointerEvents:"auto" — same #ui-root opt-in fix as the top bar
       // above; the evidence button inside this panel was equally
       // unclickable for real users before this.
-      { className: "panel ds-root", style: { position: "absolute", top: "24px", right: "24px", width: "280px", display: "none", pointerEvents: "auto" } },
+      {
+        className: "panel panel--glow-gold panel--tracker-glow ds-root",
+        style: { position: "absolute", top: "24px", right: "24px", width: "290px", display: "none", pointerEvents: "auto" },
+      },
       [this.trackerTitleEl, this.trackerObjectiveEl, this.trackerEvidenceRowEl, this.trackerCounterEl],
     );
     hudRootEl.appendChild(this.trackerEl);
