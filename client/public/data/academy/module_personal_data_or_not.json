@@ -3,7 +3,7 @@
   "track": "privacy_ops",
   "title": "Personal Data or Not?",
   "clearanceRequired": 2,
-  "order": 1,
+  "order": 2,
   "type": "case_file",
   "fieldWork": { "questId": "healers_ledger", "label": "The Healer's Ledger", "room": "tavern" },
   "caseLabel": "Case File #014 — Village Registry",

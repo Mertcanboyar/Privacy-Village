@@ -3,7 +3,7 @@
   "track": "privacy_ops",
   "title": "The Raven's Burden",
   "clearanceRequired": 2,
-  "order": 2,
+  "order": 3,
   "type": "data_sieve",
   "aiGoal": "Predict which patrol will reach an alarm bell fastest, based on records of past alarms.",
   "brief": "A Watch-Bell Responder charm is being trained on six months of alarm records. Sieve out anything it doesn't need — \"data minimisation\" means keeping only what serves the stated purpose.",
