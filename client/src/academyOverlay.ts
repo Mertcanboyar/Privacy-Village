@@ -921,10 +921,48 @@ export class AcademyOverlay {
         },
       });
     }
-    // evidence-image — same full-screen zoomable viewer the Herald's
-    // mission briefings use.
+    // evidence-image — shown inline (same figure/img/figcaption shape as
+    // npc.ts's briefing lineImages) rather than behind a click-through
+    // button, so the evidence is visible on the lesson page itself.
+    // Each image stays clickable into the same full-screen zoomable
+    // viewer the Herald's mission briefings use, for a closer look —
+    // that's a bonus, not a requirement to see the evidence at all.
     return el("div", { style: { margin: "var(--space-2) 0" } }, [
-      el("button", { className: "btn btn--ghost", text: block.buttonLabel, on: { click: () => showImageOverlay(block.images, block.caption) } }),
+      el("div", {
+        text: block.caption,
+        style: { fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.06em", color: "var(--accent-gold)", fontWeight: "700", marginBottom: "8px" },
+      }),
+      el(
+        "div",
+        { style: { display: "flex", gap: "var(--space-2)", flexWrap: "wrap" } },
+        block.images.map((img) =>
+          el(
+            "figure",
+            { style: { flex: "1", minWidth: "180px", margin: "0", cursor: "pointer" }, on: { click: () => showImageOverlay(block.images, block.caption) } },
+            [
+              el("img", {
+                attrs: { src: img.src, alt: img.label ?? "", loading: "lazy" },
+                style: {
+                  width: "100%",
+                  maxHeight: "260px",
+                  display: "block",
+                  borderRadius: "var(--radius-sm)",
+                  border: "2px solid var(--border-strong)",
+                  objectFit: "cover",
+                },
+              }),
+              ...(img.label
+                ? [
+                    el("figcaption", {
+                      text: img.label,
+                      style: { marginTop: "6px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.04em", color: "var(--text-muted)" },
+                    }),
+                  ]
+                : []),
+            ],
+          ),
+        ),
+      ),
     ]);
   }
 

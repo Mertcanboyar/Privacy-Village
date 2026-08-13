@@ -78,7 +78,7 @@ export type LessonBlock =
   | { type: "heading"; text: string }
   | { type: "paragraph"; text: string }
   | { type: "callout"; variant: "gold" | "blue" | "danger"; text: string }
-  | { type: "evidence-image"; images: EvidenceImage[]; caption: string; buttonLabel: string };
+  | { type: "evidence-image"; images: EvidenceImage[]; caption: string };
 
 export interface QuizQuestion {
   /** Stable id, needed to key wrong-attempt/hint-shown state and the
