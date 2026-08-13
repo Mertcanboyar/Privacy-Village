@@ -566,7 +566,7 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questActive: "night_the_wall_fell", flag: "warden_heard" },
           lines: [
-            "Go. That gate isn't wedging itself shut through sheer force of my hoping, and the clock doesn't care how nice the scenery is.",
+            "Go. Quill needs that notice filed, and the clock doesn't care how nice the scenery is.",
           ],
         },
         {
@@ -913,22 +913,13 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
         {
           if: { questActive: "night_the_wall_fell", flag: "notice_filed" },
-          briefing: { caseLabel: "STEP 5", title: "The Record" },
           lines: [
-            "Last duty. Every hour, every choice, every reason — into the Incident Register, including the East Gate probe that touched nothing.",
-          ],
-          choices: [
-            {
-              label: "Record everything.",
-              setFlag: "incident_recorded",
-              response:
-                "Even the breaches that need no notice get a page. When the Authority comes, they ask one thing first: \"show me your records.\"",
-            },
+            "Filed and phased, Agent. The rest is the village's to hear — go make sure they do.",
           ],
         },
         {
           if: { questActive: "night_the_wall_fell" },
-          briefing: { caseLabel: "STEP 3", title: "File While Blind" },
+          briefing: { caseLabel: "STEP 2", title: "File While Blind" },
           ghostChoices: true,
           lines: [
             "Notification is due within the seventy-second hour of first knowing, Agent — no exceptions for incomplete facts. We still can't say how many scrolls were copied. Do we file incomplete now, or hold it for certainty and gamble on the deadline?",

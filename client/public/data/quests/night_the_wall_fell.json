@@ -4,7 +4,7 @@
   "giver": "auto",
   "xp": 200,
   "opener": "AN ALARM RINGS ACROSS THE SQUARE — the West Gate has fallen.",
-  "debrief": "The wall fell, and the village survived it — warned, notified, and recorded.",
+  "debrief": "The wall fell, and the village survived it — the Authority notified, the people warned.",
   "milestone": "night_the_wall_fell",
   "clockDebrief": {
     "clean": "Fifty-some hours from a picked lock to a warned village and a filed notice, half the facts missing. THAT is incident response: speed with honesty, not perfection with delay.",
@@ -16,15 +16,6 @@
       "objective": "Talk to Bram",
       "trigger": { "type": "talk_to", "npc": "bram", "requiresFlag": "warden_heard" },
       "clockCost": 2
-    },
-    {
-      "objective": "Contain the Gate",
-      "trigger": { "type": "reach_zone", "zone": "west_gate_marker" },
-      "clockCost": 4,
-      "reveal": {
-        "text": "You wedge the gate, post two of Bram's men, and seal the annex behind Division wax. Whatever was taken is taken — but nothing more leaves this way."
-      },
-      "toast": "MISSION UPDATED — Contained. The clock runs on."
     },
     {
       "objective": "File While Blind by talking to Quill",
@@ -55,11 +46,6 @@
           }
         ]
       }
-    },
-    {
-      "objective": "The Record — go to the Courthouse desk and talk to Quill",
-      "trigger": { "type": "talk_to", "npc": "quill", "requiresFlag": "incident_recorded" },
-      "clockCost": 2
     }
   ]
 }
