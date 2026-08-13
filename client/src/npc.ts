@@ -666,40 +666,6 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         },
       ],
     },
-    {
-      // Keeper of the Academy's locked cabinet drawer — placed just
-      // outside the Academy door (see village.json's door hotspot at
-      // x:50-120), clear of it and of the courier further down. Reuses
-      // post_villager's robed/cloaked strip (see LORE_NPC_IDS' doc
-      // comment above) rather than a new asset — see NPCDef.tint below,
-      // same reuse-and-tint convention as post_villager/courier sharing
-      // npc-knight-derived textures elsewhere in this file.
-      id: "isolde",
-      name: "Isolde",
-      x: 180,
-      y: 470,
-      texture: "npc-villager",
-      // Downscaled from an original 633px-tall frame to 161px (see
-      // Preload.ts's P0 doc comment) — baseScale recomputed against the
-      // new frame height to keep the same ~75px on-screen size.
-      baseScale: 75 / 161,
-      idleAnim: "npc-villager-idle",
-      tint: 0x8f5ce0,
-      questGiver: "alchemists_trials",
-      dialogue: [
-        {
-          if: { questComplete: "alchemists_trials" },
-          lines: ["The drawer stays open for you now, Agent. Paradox is just a truth that hasn't found its shape yet."],
-        },
-        {
-          if: { questActive: "alchemists_trials" },
-          lines: ["The trials wait exactly where you left them, Agent. Some paradoxes are patient."],
-        },
-        {
-          lines: ["Everyone stops at the common shelves. Sensible people — I've never trusted one in my life."],
-        },
-      ],
-    },
   ],
   tavern: [
     {
@@ -964,6 +930,35 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
           lines: [
             "Sit, if you wish. The bench asks nothing of you but patience.",
           ],
+        },
+      ],
+    },
+    {
+      // Keeper of the Academy's locked cabinet drawer — moved into the
+      // Courthouse archive (was the Village Square, just outside the
+      // Academy door) so the trials feel like they live among the
+      // village's other record-keepers, alongside Quill and Sabine.
+      // Own 4-frame idle strip (see Preload.ts) rather than the tinted
+      // Villager reuse she used to have.
+      id: "isolde",
+      name: "Isolde",
+      x: 650,
+      y: 480,
+      texture: "npc-isolde",
+      baseScale: 75 / 411,
+      idleAnim: "npc-isolde-idle",
+      questGiver: "alchemists_trials",
+      dialogue: [
+        {
+          if: { questComplete: "alchemists_trials" },
+          lines: ["The drawer stays open for you now, Agent. Paradox is just a truth that hasn't found its shape yet."],
+        },
+        {
+          if: { questActive: "alchemists_trials" },
+          lines: ["The trials wait exactly where you left them, Agent. Some paradoxes are patient."],
+        },
+        {
+          lines: ["Everyone stops at the common shelves. Sensible people — I've never trusted one in my life."],
         },
       ],
     },
@@ -1399,7 +1394,7 @@ export class NPCController {
 
   // One-shot flash on Isolde, same technique as pingHerald()/pingBram()/
   // pingMayor()/pingMaren()/pingQuill() — used by the Academy's "IN THE
-  // VILLAGE →" pip for "The Alchemist's Cabinet"'s "The Alchemist's
+  // COURTHOUSE →" pip for "The Alchemist's Cabinet"'s "The Alchemist's
   // Trials" (see academy.ts's AcademyFieldWork.ping).
   pingIsolde(scene: Phaser.Scene) {
     const isolde = this.npcs.find((n) => n.def.id === "isolde");

@@ -110,6 +110,13 @@ export class Preload extends Phaser.Scene {
     // same person twice over.
     this.load.spritesheet("npc-knight-guard", "assets/npc/knight_guard/knight_guard.png", { frameWidth: 360, frameHeight: 328 });
 
+    // Isolde ("The Alchemist's Trials" — see npc.ts) — a 4-frame idle
+    // strip built from a CraftPix "Minotaur Tiny Style" pack (see
+    // CREDITS.md), same union-bbox-crop-across-all-frames treatment as
+    // every other self-built NPC strip. Replaces her original tinted
+    // reuse of the Villager sprite.
+    this.load.spritesheet("npc-isolde", "assets/npc/isolde/isolde.png", { frameWidth: 443, frameHeight: 411 });
+
     // Kenney character sheet — not used by the player anymore, kept
     // loaded for the NPC system (Week 2, see PLAN.md).
     this.load.spritesheet("characters", "assets/sprites/rpg-urban-pack/Tilemap/tilemap.png", {
@@ -226,6 +233,12 @@ export class Preload extends Phaser.Scene {
     this.anims.create({
       key: "npc-knight-guard-idle",
       frames: this.anims.generateFrameNumbers("npc-knight-guard", { start: 0, end: 9 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "npc-isolde-idle",
+      frames: this.anims.generateFrameNumbers("npc-isolde", { start: 0, end: 3 }),
       frameRate: 6,
       repeat: -1,
     });

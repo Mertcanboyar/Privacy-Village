@@ -82,6 +82,20 @@ https://craftpix.net/file-licenses/, not CC0 — **verify licensing
 before any public release.**
 Location: `client/public/assets/npc/knight_guard/knight_guard.png`
 
+## Isolde ("The Alchemist's Trials")
+
+"Minotaur Tiny Style 2D Sprites" (CraftPix.net, free pack) — Isolde's
+4-frame idle strip, the pack's Idle sequence frames 0/3/6/9 (spread
+across the loop rather than the first 4 consecutive frames, since this
+pack's idle cycle reads better sampled that way), cropped to their
+shared union bounding box, same treatment as the Lore NPCs above.
+Replaces her original placeholder (a tinted reuse of the Villager
+sprite). She also moved rooms: Village Square → Courthouse, standing
+alongside Quill and Sabine instead of just outside the Academy door.
+License per https://craftpix.net/file-licenses/, not CC0 — **verify
+licensing before any public release.**
+Location: `client/public/assets/npc/isolde/isolde.png`
+
 ## Quest evidence — "The Breach in the Wall"
 
 Blueprint + 3 character dossiers shown in the full-screen evidence
