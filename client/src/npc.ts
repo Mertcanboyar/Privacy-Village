@@ -457,6 +457,19 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questActive: "breach_in_the_wall", flag: "gate_identified" },
           briefing: { caseLabel: "MISSION 2", title: "Know Thy Enemy" },
+          // Shown inline on the character-sheets page (index 1) so the
+          // portraits are visible without clicking through — the VIEW
+          // THE DOSSIER button below still opens the full-screen zoom
+          // for a closer look, but seeing them at all no longer requires
+          // it.
+          lineImages: {
+            atLine: 1,
+            images: [
+              { src: "/assets/quest/dossier_sorcerer.jpeg", label: "The Dark Sorcerer" },
+              { src: "/assets/quest/dossier_goblin.jpeg", label: "The Goblin Saboteur" },
+              { src: "/assets/quest/dossier_berserker.jpeg", label: "Ironhorn Berserker" },
+            ],
+          },
           evidence: {
             images: [
               { src: "/assets/quest/dossier_sorcerer.jpeg", label: "The Dark Sorcerer" },
@@ -489,6 +502,14 @@ const NPC_SPAWNS: Partial<Record<RoomName, NPCDef[]>> = {
         {
           if: { questActive: "breach_in_the_wall" },
           briefing: { caseLabel: "MISSION 1", title: "The Breach in the Wall" },
+          // Shown inline on the gate-list page (index 1), same reasoning
+          // as Mission 2's dossier portraits above — VIEW THE BLUEPRINT
+          // still opens the full-screen zoom, but isn't required just to
+          // see the map.
+          lineImages: {
+            atLine: 1,
+            images: [{ src: "/assets/quest/village_map_mission1.jpeg", label: "Stronghold Defense Grid" }],
+          },
           evidence: {
             images: [{ src: "/assets/quest/village_map_mission1.jpeg", label: "Stronghold Defense Grid" }],
             caption: "EVIDENCE — STRONGHOLD DEFENSE GRID",
@@ -1706,7 +1727,20 @@ export class NPCController {
             el("figure", { style: { flex: "1", minWidth: "0", margin: "0" } }, [
               el("img", {
                 attrs: { src: img.src, alt: img.label ?? "" },
-                style: { width: "100%", display: "block", borderRadius: "var(--radius-sm)", border: "2px solid var(--border-strong)", objectFit: "cover" },
+                // Capped height (not just width:100%) — a single wide image
+                // (Mission 1's map) would otherwise fill the fixed-height
+                // briefing panel on its own and push the body text/answer
+                // buttons out of view, defeating the no-scroll-required
+                // pagination this panel is built around (see the panel's
+                // own style comment above).
+                style: {
+                  width: "100%",
+                  maxHeight: "220px",
+                  display: "block",
+                  borderRadius: "var(--radius-sm)",
+                  border: "2px solid var(--border-strong)",
+                  objectFit: "cover",
+                },
               }),
               ...(img.label
                 ? [
