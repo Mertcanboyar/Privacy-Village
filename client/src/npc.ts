@@ -1468,6 +1468,22 @@ export class NPCController {
     return this.mode !== "closed";
   }
 
+  // The Academy can be entered several ways that bypass npc.ts entirely
+  // — the HUD's STUDY button, the Village Square door hotspot, and the
+  // quest tracker's clickable "Complete X at the Academy" locked-hint
+  // (see hud.ts/Room.ts) — none of which know an NPC dialogue/briefing
+  // might currently be open. Left alone, that box stays visible and
+  // pointer-capturing underneath the Academy overlay, and Room.ts's
+  // uiOpen (driven by dialogueOpen above) stays permanently true even
+  // after the Academy closes, softlocking movement. Room.ts calls this
+  // on academy.on("opened", ...) to close any leftover box first.
+  // Minigame overlays (mode "minigame") manage their own full-screen
+  // lifecycle and already block these entry points from being clicked
+  // at all, so they're left untouched here.
+  closeIfOpen() {
+    if (this.mode !== "closed" && this.mode !== "minigame") this.closeDialogue();
+  }
+
   update(playerX: number, playerY: number) {
     if (this.mode !== "closed") {
       // Advancing accepts E, Space, or a click anywhere on the box (see

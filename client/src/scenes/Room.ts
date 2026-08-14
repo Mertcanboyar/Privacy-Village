@@ -514,12 +514,21 @@ export class Room extends Phaser.Scene {
     questEngine.on("questCompleted", onQuestCompleted);
     questEngine.on("sceneBeat", onSceneBeat);
 
+    // The Academy can open from several places that bypass npc.ts
+    // entirely (HUD button, door hotspot, tracker locked-hint — see
+    // NPCController.closeIfOpen()'s doc comment) — close any leftover
+    // NPC dialogue/briefing the instant it opens, regardless of which
+    // of those triggered it.
+    const onAcademyOpened = () => this.npcController.closeIfOpen();
+    academy.on("opened", onAcademyOpened);
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       questEngine.off("questUpdated", this.refreshZoneMarker, this);
       questEngine.off("questUpdated", this.checkIncidentTrigger, this);
       questEngine.off("questUpdated", this.refreshObjectiveArrow, this);
       questEngine.off("questCompleted", onQuestCompleted);
       questEngine.off("sceneBeat", onSceneBeat);
+      academy.off("opened", onAcademyOpened);
       this.zoneMarker?.destroy();
       this.objectiveArrow?.destroy();
     });
