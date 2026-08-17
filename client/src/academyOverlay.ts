@@ -2480,8 +2480,17 @@ export class AcademyOverlay {
     countUp(this.badgeXpEl, 0, MODULE_COMPLETE_XP, 900);
   }
 
+  // Closes the whole Academy on dismiss, not just the badge — otherwise
+  // "CLICK TO CONTINUE" dropped the player back into whatever view sat
+  // underneath (the quiz result, the last lesson page, the module
+  // list...), and playtesting found that read as "still inside the
+  // Academy, nothing left to do here" rather than the actual next step,
+  // which is going back to the village for that module's field work or
+  // the next module. academy.close() is the same path the × button and
+  // ESC already use, so this fires the overlay's normal fade-out.
   private hideBadge() {
     this.badgeEl.style.display = "none";
+    academy.close();
   }
 
   private show() {
