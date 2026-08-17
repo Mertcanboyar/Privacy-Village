@@ -490,7 +490,7 @@ export class HUDController {
       if (lockedHint && this.trackerVisible) {
         this.trackerEl.style.display = "block";
         this.trackerTitleEl.textContent = "LOCKED";
-        this.trackerObjectiveEl.textContent = `Complete "${lockedHint.title}" at the Academy →`;
+        this.trackerObjectiveEl.textContent = `Click here to complete "${lockedHint.title}" at the Academy →`;
         // Direct jump — click the objective line to open the Academy
         // straight to that module's theory instead of the hub (same
         // shortcut npc.ts's locked-quest dialogue offers).
