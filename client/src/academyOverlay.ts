@@ -415,6 +415,15 @@ export class AcademyOverlay {
         this.render();
       }
       this.show();
+
+      // A field-work module's completion almost always happens out in
+      // the village (see academy.ts's pendingBadgeModuleIds doc
+      // comment), so replay it here instead of letting it silently pass
+      // unseen. Only the most recent matters if somehow more than one
+      // queued up — showBadge() shows a single badge, not a stack.
+      const pendingBadgeModuleIds = academy.consumePendingBadgeModuleIds();
+      const lastPendingBadgeModuleId = pendingBadgeModuleIds[pendingBadgeModuleIds.length - 1];
+      if (lastPendingBadgeModuleId) this.showBadge(lastPendingBadgeModuleId);
     });
     academy.on("closed", () => this.hide());
     academy.on("progressChanged", () => this.render());

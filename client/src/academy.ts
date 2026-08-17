@@ -557,6 +557,25 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     return id;
   }
 
+  // A field-work module's completing moment is, by construction, almost
+  // never while the Academy is open: the study-first inversion means
+  // theory always finishes first (in the Academy) and unlocks the field
+  // quest, which the player then goes and finishes out in the village —
+  // so tryCompleteModule() fires with the Academy closed, and
+  // academyOverlay.ts's showBadge() (guarded on academy.isOpen) silently
+  // skips the MODULE COMPLETE badge, leaving only the quieter "ACADEMY
+  // RECORD FILED" toast. Queued here and replayed by academyOverlay.ts's
+  // "opened" handler (same pattern as pendingModuleId above) so the
+  // player still sees the badge the next time they open the Academy,
+  // instead of never seeing it at all.
+  private pendingBadgeModuleIds: string[] = [];
+
+  consumePendingBadgeModuleIds(): string[] {
+    const ids = this.pendingBadgeModuleIds;
+    this.pendingBadgeModuleIds = [];
+    return ids;
+  }
+
   open() {
     if (this.open_) return;
     this.open_ = true;
@@ -777,6 +796,9 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     questEngine.addPoints(100);
     this.emit("toast", `ACADEMY RECORD FILED — progress toward ${credential ?? "your credential"}.`);
     this.emit("moduleCompleted", moduleId);
+    // See pendingBadgeModuleIds' doc comment — this is the common case
+    // (completing out in the village), not an edge case.
+    if (!this.open_) this.pendingBadgeModuleIds.push(moduleId);
   }
 }
 
