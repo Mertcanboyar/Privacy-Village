@@ -16,6 +16,7 @@ import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE } fr
 import { isUiLocked } from "../cloud/uiLock";
 import { ChatController } from "../chat";
 import { markSpawn, logOnboardingOrientationShown } from "../instrumentation";
+import { guidedMode } from "../guidedMode";
 import { recordLoadError, logRenderFailure } from "../renderDiagnostics";
 
 const PLAYER_SPEED = 160;
@@ -328,6 +329,11 @@ export class Room extends Phaser.Scene {
       this.roomToUnload = null;
     }
     this.hasEnteredAnyRoom = true;
+    // See guidedMode.ts's primeAfterHydration() doc comment — idempotent,
+    // and this is the first point after Title.ts's hydration (if any)
+    // has reliably settled, same reasoning as this file's own
+    // isFirstSpawn check below.
+    guidedMode.primeAfterHydration();
 
     if (!this.textures.exists(bgKey)) {
       this.showRenderFailure(bgKey);

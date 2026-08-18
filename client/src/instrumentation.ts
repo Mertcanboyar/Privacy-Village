@@ -54,3 +54,16 @@ export function logFirstQuestAccept() {
 export function logLockedQuestBounce(questId: string, moduleId: string) {
   logDecision("locked_quest_bounce", { questId, moduleId });
 }
+
+// Guided Sequence instrumentation (see guidedMode.ts) — same "repeated
+// firing is expected, not a bug" reasoning as logLockedQuestBounce
+// above. Step start/complete are logged from guidedMode.ts itself
+// (the one place that already tracks step transitions), not from every
+// call site that might cause one.
+export function logGuidedStepStarted(stepId: string) {
+  logDecision("guided_step_started", { stepId });
+}
+
+export function logGuidedStepCompleted(stepId: string, seconds: number) {
+  logDecision("guided_step_completed", { stepId, seconds });
+}

@@ -1085,6 +1085,17 @@ export function findNpcRoom(npcId: string): RoomName | undefined {
   return undefined;
 }
 
+// guidedMode.ts's NPC-shaped waypoints resolve through here rather than
+// duplicating spawn coordinates in sequence.json — NPC_SPAWNS is the one
+// place these live, same reasoning as findNpcRoom() above.
+export function getNpcSpawnPosition(npcId: string): { x: number; y: number } | undefined {
+  for (const defs of Object.values(NPC_SPAWNS)) {
+    const def = defs.find((d) => d.id === npcId);
+    if (def) return { x: def.x, y: def.y };
+  }
+  return undefined;
+}
+
 // "minigame" — Maren's two Healer's Ledger mini-games (see open()'s
 // special case): a real DOM overlay owns the interaction start to
 // finish, this mode only exists so dialogueOpen (and therefore Room.ts's

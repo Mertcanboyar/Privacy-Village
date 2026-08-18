@@ -6,6 +6,7 @@ import { QUEST_IDS, questEngine, type QuestDef } from "../questEngine";
 import { ACADEMY_TRACK_IDS, ACADEMY_MODULE_IDS, academy, type AcademyTrack, type AcademyModule } from "../academy";
 import { events, type EventVideo } from "../events";
 import { dossier, type CodexConcept, type TitleDef } from "../dossier";
+import { guidedMode, type SequenceStep } from "../guidedMode";
 import { recordLoadError } from "../renderDiagnostics";
 
 export class Preload extends Phaser.Scene {
@@ -158,6 +159,11 @@ export class Preload extends Phaser.Scene {
     this.load.json("codex", "data/codex.json");
     this.load.json("titles", "data/titles.json");
 
+    // Guided Sequence (see guidedMode.ts) — the hard-gated intended path
+    // for a first-time player, s1 (Threat Modeling Academy module) then
+    // s2 (The Breach in the Wall).
+    this.load.json("sequence", "data/sequence.json");
+
     // Painted-room assets (see CLAUDE.md). Foreground PNGs and room JSON
     // (walkable polygon/doors/lights, authored via /debug) may not exist
     // yet for every room — missing files 404 quietly and Room.ts falls
@@ -189,6 +195,12 @@ export class Preload extends Phaser.Scene {
     events.loadData(this.cache.json.get("events") as EventVideo[]);
 
     dossier.loadData(this.cache.json.get("codex") as CodexConcept[], this.cache.json.get("titles") as TitleDef[]);
+
+    // guidedMode.loadData() reads academy/questEngine's already-loaded
+    // state above to compute the current step, so it must run after
+    // both loadData() calls, not before.
+    const sequence = this.cache.json.get("sequence") as { steps: SequenceStep[] };
+    guidedMode.loadData(sequence.steps);
 
     // Idle loop for each lore NPC — row 0, cols 0-3 (see preload() comment).
     // 6fps per the source pack's suggested speed.
