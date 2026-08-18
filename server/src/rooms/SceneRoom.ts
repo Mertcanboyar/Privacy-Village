@@ -20,6 +20,12 @@ export class PlayerState extends Schema {
   // string means "no active title", not "unset" (see PlayerState defaults
   // — there's no separate null state here, same as name/spriteId above).
   @type("string") activeTitle = "";
+  // §3 "Visible Identity" (see PLAN.md) — "speaker" | "host" | "founding"
+  // | "" (no role), assigned client-side from data/roles.json's
+  // email-keyed allowlist (see client/src/roles.ts) and sent straight
+  // through here, same trust level as spriteId/faction above — no
+  // server-side validation, this is cosmetic-only, not a privilege.
+  @type("string") role = "";
 }
 
 export class SceneState extends Schema {
@@ -33,6 +39,7 @@ interface JoinOptions {
   faction?: string;
   clearance?: number;
   activeTitle?: string;
+  role?: string;
 }
 
 interface MoveMessage {
@@ -65,6 +72,7 @@ interface ChatHistoryEntry {
 
 const CHAT_MAX_LEN = 120;
 const TITLE_MAX_LEN = 60;
+const ROLE_IDS = new Set(["speaker", "host", "founding"]);
 // §1 "The Gathering" (see PLAN.md) — last 50 messages replayed to a
 // joiner so a late arrival isn't dropped into a silent room mid-
 // conversation. Plain array, not schema — chat stays deliberately out
@@ -185,6 +193,8 @@ export class SceneRoom extends Room<SceneState> {
     player.faction = options.faction ?? "fundamentalist";
     player.clearance = options.clearance ?? 1;
     player.activeTitle = (options.activeTitle ?? "").toString().trim().slice(0, TITLE_MAX_LEN);
+    const requestedRole = (options.role ?? "").toString();
+    player.role = ROLE_IDS.has(requestedRole) ? requestedRole : "";
     player.x = SPAWN_X;
     player.y = SPAWN_Y;
     this.state.players.set(client.sessionId, player);

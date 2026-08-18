@@ -51,6 +51,16 @@ export const EMOTE_ICONS: Record<string, string> = {
   celebrate: "\u{1F389}",
 };
 
+// §3 "Visible Identity" — role badge shown above the title/name stack
+// (see the vertical-stack repositioning in update() below). Exported so
+// Room.ts can render the local player's own badge with matching
+// styling, same "one copy, two consumers" pattern as CHAT_BUBBLE_STYLE.
+export const ROLE_BADGES: Record<string, { label: string; color: string }> = {
+  speaker: { label: "\u{1F3A9} SPEAKER", color: "#f0b429" },
+  host: { label: "HOST", color: "#93c5fd" },
+  founding: { label: "FOUNDING VILLAGER", color: "#c4b5fd" },
+};
+
 function depthScaleFor(y: number): number {
   const t = Phaser.Math.Clamp(y / GAME_HEIGHT, 0, 1);
   return SCALE_FAR + (SCALE_NEAR - SCALE_FAR) * t;
@@ -70,6 +80,9 @@ interface RemoteSprite {
   // title on/off mid-session is a text/visibility update rather than a
   // create/destroy (see applySnapshot() and update() below).
   titleTag: Phaser.GameObjects.Text;
+  // §3 "Visible Identity" — same always-created/toggle-visibility shape
+  // as titleTag above, sitting one slot further up the stack.
+  roleTag: Phaser.GameObjects.Text;
   baseScale: number;
   targetX: number;
   targetY: number;
@@ -130,11 +143,26 @@ export class RemotePlayerController {
       .setDepth(100000)
       .setVisible(!!snapshot.activeTitle);
 
+    const roleBadge = ROLE_BADGES[snapshot.role];
+    const roleTag = this.scene.add
+      .text(snapshot.x, snapshot.y - image.displayHeight - 4, roleBadge?.label ?? "", {
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: "11px",
+        fontStyle: "bold",
+        color: roleBadge?.color ?? "#ffffff",
+        stroke: "#000000",
+        strokeThickness: 2,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(100000)
+      .setVisible(!!roleBadge);
+
     this.sprites.set(snapshot.sessionId, {
       image,
       name: snapshot.name,
       nameTag,
       titleTag,
+      roleTag,
       baseScale,
       targetX: snapshot.x,
       targetY: snapshot.y,
@@ -157,6 +185,11 @@ export class RemotePlayerController {
     remote.facing = snapshot.facing;
     remote.name = snapshot.name;
     remote.titleTag.setText(snapshot.activeTitle).setVisible(!!snapshot.activeTitle);
+    const roleBadge = ROLE_BADGES[snapshot.role];
+    remote.roleTag
+      .setText(roleBadge?.label ?? "")
+      .setColor(roleBadge?.color ?? "#ffffff")
+      .setVisible(!!roleBadge);
   }
 
   /** Display name for a still-present remote sprite, e.g. for the chat
@@ -203,6 +236,7 @@ export class RemotePlayerController {
     remote.image.destroy();
     remote.nameTag.destroy();
     remote.titleTag.destroy();
+    remote.roleTag.destroy();
     remote.chatBubble?.destroy();
     remote.emoteBubble?.destroy();
     this.sprites.delete(sessionId);
@@ -227,15 +261,20 @@ export class RemotePlayerController {
       remote.image.setScale(remote.baseScale * depthScaleFor(remote.image.y));
       remote.image.setDepth(remote.image.y);
 
-      // Title (if any) occupies the slot right above the head; the name
-      // shifts up to make room for it. No title = no gap, name tag stays
-      // in its original compact spot.
+      // Stack bottom-to-top: name (always) → title (if any) → role badge
+      // (if any), each occupying the next slot up only when the one
+      // below it is actually visible — same "no title = no gap" rule
+      // extended one level further for the role badge.
       const headY = remote.image.y - remote.image.displayHeight - 4;
+      remote.nameTag.setPosition(remote.image.x, headY);
+      let nextY = headY;
       if (remote.titleTag.visible) {
-        remote.titleTag.setPosition(remote.image.x, headY);
-        remote.nameTag.setPosition(remote.image.x, headY - remote.titleTag.displayHeight - 2);
-      } else {
-        remote.nameTag.setPosition(remote.image.x, headY);
+        nextY -= remote.nameTag.displayHeight + 2;
+        remote.titleTag.setPosition(remote.image.x, nextY);
+      }
+      if (remote.roleTag.visible) {
+        nextY -= (remote.titleTag.visible ? remote.titleTag.displayHeight : remote.nameTag.displayHeight) + 2;
+        remote.roleTag.setPosition(remote.image.x, nextY);
       }
 
       if (remote.chatBubble) {

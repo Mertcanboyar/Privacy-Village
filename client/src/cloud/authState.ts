@@ -15,6 +15,21 @@ export function getCurrentUserId(): string | null {
   return currentUserId;
 }
 
+// §3 "Visible Identity" (see PLAN.md) — the email behind the current
+// session, set alongside currentUserId at the same point Title.ts reads
+// session.user.email. Roles.ts looks this up against data/roles.json's
+// email-keyed allowlist, since a human editing that file by hand next
+// week will have attendees' emails, not their Supabase user ids.
+let currentUserEmail: string | null = null;
+
+export function setCurrentUserEmail(email: string | null) {
+  currentUserEmail = email;
+}
+
+export function getCurrentUserEmail(): string | null {
+  return currentUserEmail;
+}
+
 export function isAuthenticated(): boolean {
   return currentUserId !== null;
 }

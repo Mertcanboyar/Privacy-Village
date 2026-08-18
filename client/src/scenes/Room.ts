@@ -4,6 +4,7 @@ import { attachDebugOverlay } from "../debugOverlay";
 import { NPCController, findNpcRoom } from "../npc";
 import { QuestController } from "../quest";
 import { EventBoardController } from "../eventBoard";
+import { roles } from "../roles";
 import { getAvatarOption, getFactionColor, getSession } from "../session";
 import { questEngine } from "../questEngine";
 import { academy } from "../academy";
@@ -13,7 +14,7 @@ import { events } from "../events";
 import { playSound } from "../audio";
 import type { RoomName } from "../rooms";
 import { net } from "../net/NetClient";
-import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE, STAGE_CHAT_BUBBLE_STYLE, EMOTE_BUBBLE_DURATION_MS, EMOTE_ICONS } from "../net/remotePlayers";
+import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE, STAGE_CHAT_BUBBLE_STYLE, EMOTE_BUBBLE_DURATION_MS, EMOTE_ICONS, ROLE_BADGES } from "../net/remotePlayers";
 import { isUiLocked } from "../cloud/uiLock";
 import { ChatController } from "../chat";
 import { ChatLogController } from "../chatLog";
@@ -131,6 +132,7 @@ export class Room extends Phaser.Scene {
   private player!: Phaser.GameObjects.Image;
   private playerNameText!: Phaser.GameObjects.Text;
   private playerTitleText!: Phaser.GameObjects.Text;
+  private playerRoleText!: Phaser.GameObjects.Text;
   private playerBaseScale = 1;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
@@ -387,6 +389,22 @@ export class Room extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDepth(100000)
       .setVisible(!!dossier.getActiveTitleDef());
+
+    // §3 "Visible Identity" — same always-created/toggle shape as the
+    // title tag above, one slot further up the stack.
+    const myRoleBadge = ROLE_BADGES[roles.getMyRole() ?? ""];
+    this.playerRoleText = this.add
+      .text(spawn[0], spawn[1] - this.player.displayHeight - 4, myRoleBadge?.label ?? "", {
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: "11px",
+        fontStyle: "bold",
+        color: myRoleBadge?.color ?? "#ffffff",
+        stroke: "#000000",
+        strokeThickness: 2,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(100000)
+      .setVisible(!!myRoleBadge);
     this.refreshPlayerNameTagPositions();
 
     const onActiveTitleChanged = () => {
@@ -432,6 +450,7 @@ export class Room extends Phaser.Scene {
       faction: getSession().faction,
       clearance: questEngine.getClearance(),
       activeTitle: dossier.getActiveTitleDef()?.name ?? "",
+      role: roles.getMyRole() ?? "",
     });
 
     // The Academy building's doorway is partly obscured by foreground
@@ -771,17 +790,22 @@ export class Room extends Phaser.Scene {
     this.player.setDepth(y);
   }
 
-  // Mirrors remotePlayers.ts's per-remote-player positioning: the title
-  // (if active) sits right above the head, and the name shifts up to
-  // make room for it. Called on movement and whenever the active title
-  // changes (see the "activeTitleChanged" listener in create()).
+  // Mirrors remotePlayers.ts's per-remote-player positioning: name
+  // (always) → title (if active) → role badge (if any), each stacking
+  // one slot further up only when the one below it is visible. Called
+  // on movement and whenever the active title changes (see the
+  // "activeTitleChanged" listener in create()).
   private refreshPlayerNameTagPositions() {
     const headY = this.player.y - this.player.displayHeight - 4;
+    this.playerNameText.setPosition(this.player.x, headY);
+    let nextY = headY;
     if (this.playerTitleText.visible) {
-      this.playerTitleText.setPosition(this.player.x, headY);
-      this.playerNameText.setPosition(this.player.x, headY - this.playerTitleText.displayHeight - 2);
-    } else {
-      this.playerNameText.setPosition(this.player.x, headY);
+      nextY -= this.playerNameText.displayHeight + 2;
+      this.playerTitleText.setPosition(this.player.x, nextY);
+    }
+    if (this.playerRoleText.visible) {
+      nextY -= (this.playerTitleText.visible ? this.playerTitleText.displayHeight : this.playerNameText.displayHeight) + 2;
+      this.playerRoleText.setPosition(this.player.x, nextY);
     }
   }
 

@@ -1093,7 +1093,17 @@ interface NPCView {
   def: NPCDef;
   image: Phaser.GameObjects.Sprite;
   nameText: Phaser.GameObjects.Text;
+  statusIcon: Phaser.GameObjects.Text;
 }
+
+// §3 "Visible Identity" (see PLAN.md) — quest-giver status icons, quest-
+// givers only (a non-giver NPC's statusIcon is created but stays empty/
+// invisible forever). ❗ available / ❓ in-progress / ✓ complete.
+const STATUS_ICONS: Record<"available" | "active" | "complete", string> = {
+  available: "❗",
+  active: "❓",
+  complete: "✓",
+};
 
 // Which room an NPC id lives in — Room.ts uses this to know whether the
 // current objective NPC (see questEngine.getObjectiveNpcId()) is here
@@ -1203,14 +1213,31 @@ export class NPCController {
         .setOrigin(0.5, 1)
         .setDepth(100000);
 
-      this.npcs.push({ def, image, nameText });
+      // Quest-giver status icon — sits one slot above the name tag, same
+      // always-created/toggle-visibility shape as remotePlayers.ts's
+      // titleTag. Non-givers get one too (simpler than a conditional
+      // field) but it never becomes visible.
+      const statusIcon = scene.add
+        .text(def.x, def.y - image.displayHeight - 4 - nameText.displayHeight - 2, "", {
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: "16px",
+        })
+        .setOrigin(0.5, 1)
+        .setDepth(100000)
+        .setVisible(false);
+
+      this.npcs.push({ def, image, nameText, statusIcon });
     }
 
     // Reactive on every questUpdated (accept/unlock/complete, whatever
     // the source), not just levelUp — the old scheme only re-checked on
     // clearance changes, which missed theory-driven unlocks entirely.
     this.refreshObjectivePulse(scene);
-    const onObjectiveChange = () => this.refreshObjectivePulse(scene);
+    this.refreshStatusIcons();
+    const onObjectiveChange = () => {
+      this.refreshObjectivePulse(scene);
+      this.refreshStatusIcons();
+    };
     questEngine.on("questUpdated", onObjectiveChange);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => questEngine.off("questUpdated", onObjectiveChange));
 
@@ -1381,6 +1408,21 @@ export class NPCController {
     this.objectivePulse = g;
   }
 
+  // §3 "Visible Identity" — same "first available, else first active,
+  // else complete" resolution order open() already uses for multi-quest
+  // NPCs (Bram, Maren), just read-only here instead of driving dialogue.
+  private refreshStatusIcons() {
+    for (const view of this.npcs) {
+      const giverQuestIds = view.def.questGiver ? (Array.isArray(view.def.questGiver) ? view.def.questGiver : [view.def.questGiver]) : [];
+      let status: "available" | "active" | "complete" | null = null;
+      if (giverQuestIds.some((id) => questEngine.isAvailable(id))) status = "available";
+      else if (giverQuestIds.some((id) => questEngine.isActive(id))) status = "active";
+      else if (giverQuestIds.length > 0 && giverQuestIds.every((id) => questEngine.isComplete(id))) status = "complete";
+
+      view.statusIcon.setText(status ? STATUS_ICONS[status] : "").setVisible(!!status);
+    }
+  }
+
   // One-shot bright flash on the Herald, distinct from the steady
   // ambient pulse above — used when the Academy's "IN THE VILLAGE →"
   // pip sends the player back to find him (see academy.ts).
@@ -1468,6 +1510,7 @@ export class NPCController {
         bram.image.setScale(bram.def.baseScale * depthScaleFor(bram.image.y));
         bram.image.setDepth(bram.image.y);
         bram.nameText.setPosition(bram.image.x, bram.image.y - bram.image.displayHeight - 4);
+        bram.statusIcon.setPosition(bram.image.x, bram.image.y - bram.image.displayHeight - 4 - bram.nameText.displayHeight - 2);
       },
     });
   }

@@ -35,6 +35,9 @@ export interface NetSession {
    * Wall") — see dossier.ts's getActiveTitleDef(). Omitted/empty means
    * no title renders on this player's name tag. */
   activeTitle?: string;
+  /** §3 "Visible Identity" — "speaker" | "host" | "founding" | omitted
+   * (see roles.ts's getMyRole()). */
+  role?: string;
 }
 
 export interface RemotePlayerSnapshot {
@@ -48,6 +51,7 @@ export interface RemotePlayerSnapshot {
   moving: boolean;
   clearance: number;
   activeTitle: string;
+  role: string;
 }
 
 type PlayerAddHandler = (player: RemotePlayerSnapshot) => void;
@@ -69,7 +73,7 @@ type StatusChangeHandler = (status: ConnectionStatus, lastError: string | null) 
 
 function snapshotOf(sessionId: string, player: {
   name: string; spriteId: string; faction: string; x: number; y: number;
-  facing: string; moving: boolean; clearance: number; activeTitle: string;
+  facing: string; moving: boolean; clearance: number; activeTitle: string; role: string;
 }): RemotePlayerSnapshot {
   return {
     sessionId,
@@ -82,6 +86,7 @@ function snapshotOf(sessionId: string, player: {
     moving: player.moving,
     clearance: player.clearance,
     activeTitle: player.activeTitle,
+    role: player.role,
   };
 }
 
@@ -187,6 +192,7 @@ export class NetClient {
         faction: session.faction ?? "fundamentalist",
         clearance: session.clearance ?? 1,
         activeTitle: session.activeTitle ?? "",
+        role: session.role ?? "",
       });
       // A newer connect() (or an explicit disconnect()) happened while this
       // one was in flight — drop it rather than wiring up a stale room.
@@ -266,7 +272,8 @@ export class NetClient {
         prev.faction !== snapshot.faction ||
         prev.spriteId !== snapshot.spriteId ||
         prev.clearance !== snapshot.clearance ||
-        prev.activeTitle !== snapshot.activeTitle
+        prev.activeTitle !== snapshot.activeTitle ||
+        prev.role !== snapshot.role
       ) {
         this.knownPlayers.set(sessionId, snapshot);
         this.changeHandler?.(snapshot);

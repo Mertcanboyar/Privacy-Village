@@ -8,6 +8,7 @@ import { events, type EventVideo } from "../events";
 import { dossier, type CodexConcept, type TitleDef } from "../dossier";
 import { guidedMode, type SequenceStep } from "../guidedMode";
 import { gathering, type GatheringEvent } from "../gathering";
+import { roles, type Role } from "../roles";
 import { recordLoadError } from "../renderDiagnostics";
 
 export class Preload extends Phaser.Scene {
@@ -158,6 +159,10 @@ export class Preload extends Phaser.Scene {
     // by the unrelated video panel — see gathering.ts's header comment).
     this.load.json("gathering", "data/gathering.json");
 
+    // §3 "Visible Identity" — the role allowlist (see roles.ts), edited
+    // by hand before the event.
+    this.load.json("roles", "data/roles.json");
+
     // The Agent Dossier (see dossier.ts) — concept trophy catalog and
     // title definitions, each a single flat JSON array rather than
     // per-id files (there's no per-concept content beyond the array
@@ -202,6 +207,9 @@ export class Preload extends Phaser.Scene {
 
     const gatheringData = this.cache.json.get("gathering") as { events: GatheringEvent[] };
     gathering.loadData(gatheringData.events);
+
+    const rolesData = this.cache.json.get("roles") as { roles: Record<string, Role> };
+    roles.loadData(rolesData.roles);
 
     dossier.loadData(this.cache.json.get("codex") as CodexConcept[], this.cache.json.get("titles") as TitleDef[]);
 

@@ -3,7 +3,7 @@ import { addDriftingBackground } from "./drift";
 import { el } from "../ui/dom";
 import { setSession } from "../session";
 import { supabase } from "../cloud/supabaseClient";
-import { setCurrentUserId } from "../cloud/authState";
+import { setCurrentUserId, setCurrentUserEmail } from "../cloud/authState";
 import { fetchProfile, fetchProgress, createProfileAndProgress, type ProfileRow } from "../cloud/profile";
 import { takePendingUpgrade, type PendingUpgradeSnapshot } from "../cloud/pendingUpgrade";
 import { buildEmailCapturePanel } from "../cloud/emailCapturePanel";
@@ -144,6 +144,7 @@ export class Title extends Phaser.Scene {
     }
 
     setCurrentUserId(userId);
+    setCurrentUserEmail(userEmail);
     const profile = await fetchProfile(userId);
 
     if (profile) {
