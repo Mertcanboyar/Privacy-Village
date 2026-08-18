@@ -79,6 +79,7 @@ export class HUDController {
   private menuEl: HTMLElement;
   private menuBtnEl: HTMLElement;
   private menuMusicItemEl: HTMLElement;
+  private menuGuidedNavItemEl: HTMLElement;
   private menuOpen = false;
 
   private academyBtnEl: HTMLElement;
@@ -195,7 +196,20 @@ export class HUDController {
         },
       },
     });
-    const menuItems = [returnToTitleItemEl, this.menuMusicItemEl];
+    // Escape hatch for a returning player who already knows the ropes
+    // (see guidedMode.ts) — flips the manual on/off flag directly, same
+    // idiom as the Music toggle above. guidedMode's own "changed" event
+    // (subscribed below) keeps this label in sync if it's ever toggled
+    // from anywhere else.
+    this.menuGuidedNavItemEl = el("button", {
+      className: "btn btn--ghost",
+      text: guidedMode.isManuallyDisabled() ? "\u{1F9ED} GUIDED NAV: OFF" : "\u{1F9ED} GUIDED NAV: ON",
+      style: { width: "100%", textAlign: "left" },
+      on: {
+        click: () => guidedMode.setManuallyDisabled(!guidedMode.isManuallyDisabled()),
+      },
+    });
+    const menuItems = [returnToTitleItemEl, this.menuMusicItemEl, this.menuGuidedNavItemEl];
     if (supabase && isAuthenticated()) {
       menuItems.push(
         el("button", {
@@ -356,7 +370,13 @@ export class HUDController {
         className: "panel panel--glow-gold panel--tracker-glow ds-root",
         style: {
           position: "absolute",
-          top: "24px",
+          // top:84px, not 24px — the top bar's buttons (STUDY/EVENTS/
+          // PROFILE/MENU, left:24) end around x~530, and this banner's
+          // minWidth/centering puts its own left edge around x~420,
+          // wide enough to sit on top of and swallow clicks on MENU at
+          // the same top:24 row. Sitting just below it clears that
+          // collision without narrowing the banner's readable width.
+          top: "84px",
           left: "50%",
           transform: "translateX(-50%)",
           minWidth: "420px",
@@ -426,7 +446,10 @@ export class HUDController {
     questEngine.on("reveal", (reveal: QuestStepReveal) => this.showReveal(reveal));
     questEngine.on("stepChoice", (choice: QuestStepChoice) => this.showStepChoice(choice));
     academy.on("toast", (message: string) => this.showToast(message));
-    guidedMode.on("changed", () => this.refreshTracker());
+    guidedMode.on("changed", () => {
+      this.refreshTracker();
+      this.menuGuidedNavItemEl.textContent = guidedMode.isManuallyDisabled() ? "\u{1F9ED} GUIDED NAV: OFF" : "\u{1F9ED} GUIDED NAV: ON";
+    });
 
     this.refreshXpBar();
     this.refreshTracker();
