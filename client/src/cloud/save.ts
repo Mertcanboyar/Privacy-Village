@@ -81,6 +81,7 @@ async function flushSaveProgress(userId: string) {
     unlocked_concepts: dossierState.unlockedConcepts,
     unlocked_titles: dossierState.unlockedTitles,
     active_title: dossierState.activeTitle,
+    contact_info: dossierState.contactInfo,
     updated_at: new Date().toISOString(),
   };
   try {

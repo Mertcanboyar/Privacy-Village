@@ -6,8 +6,10 @@ import { events } from "./events";
 import { tutorial } from "./tutorial";
 import { questEngine, QUEST_IDS } from "./questEngine";
 import { getSession, getAvatarOption, factionColorFor } from "./session";
-import { isAuthenticated } from "./cloud/authState";
+import { isAuthenticated, getCurrentUserId } from "./cloud/authState";
 import { isImageOverlayOpen } from "./ui/imageOverlay";
+import { fetchContacts, type ContactRow } from "./cloud/contacts";
+import { saveProgress } from "./cloud/save";
 
 // Full-screen DOM overlay for the Agent Profile (player-facing name —
 // internally still "dossier" throughout the code, since "profile"
@@ -26,7 +28,7 @@ import { isImageOverlayOpen } from "./ui/imageOverlay";
 // family — nothing here actually reaches into the Scene today.
 const FADE_MS = 200;
 
-type DossierTab = "dossier" | "codex" | "journey";
+type DossierTab = "dossier" | "codex" | "journey" | "contacts";
 
 // Rank insignia — Clearance is a narrative ladder (see questEngine.ts's
 // MILESTONE_IDS doc comment), the Dossier just needs a name for each
@@ -89,6 +91,7 @@ export class DossierOverlay {
   private hideTimeout: number | undefined;
 
   private currentTab: DossierTab = "dossier";
+  private contactsCache: ContactRow[] = [];
 
   constructor(_scene: Phaser.Scene) {
     const root = document.getElementById("ui-root")!;
@@ -164,13 +167,27 @@ export class DossierOverlay {
   private render() {
     this.bodyEl.innerHTML = "";
     const tabNav = this.renderTabNav();
-    const content = this.currentTab === "dossier" ? this.renderDossierTab() : this.currentTab === "codex" ? this.renderCodexTab() : this.renderJourneyTab();
+    const content =
+      this.currentTab === "dossier"
+        ? this.renderDossierTab()
+        : this.currentTab === "codex"
+          ? this.renderCodexTab()
+          : this.currentTab === "journey"
+            ? this.renderJourneyTab()
+            : this.renderContactsTab();
     this.bodyEl.appendChild(el("div", { className: "panel panel--glow", style: { width: "760px", maxHeight: "660px", overflowY: "auto" } }, [tabNav, content]));
   }
 
   private goToTab(tab: DossierTab) {
     this.currentTab = tab;
     this.render();
+    if (tab === "contacts") void this.loadContacts();
+  }
+
+  private async loadContacts() {
+    const userId = getCurrentUserId();
+    this.contactsCache = userId ? await fetchContacts(userId) : [];
+    if (this.currentTab === "contacts") this.render();
   }
 
   private renderTabNav(): HTMLElement {
@@ -178,6 +195,7 @@ export class DossierOverlay {
       { id: "dossier", label: "PROFILE" },
       { id: "codex", label: "CODEX" },
       { id: "journey", label: "JOURNEY" },
+      { id: "contacts", label: "CONTACTS" },
     ];
     return el(
       "div",
@@ -507,6 +525,71 @@ export class DossierOverlay {
         stateChip,
       ],
     );
+  }
+
+  // §4 "Contact Exchange" (see PLAN.md) — the editable opt-in contact
+  // string (blank by default, cleared anytime) plus the list of people
+  // it's actually been shared with, via a mutual in-world exchange (see
+  // contactExchange.ts) — never edited from here directly.
+  private renderContactsTab(): HTMLElement {
+    if (!isAuthenticated()) {
+      return el("div", { className: "panel" }, [
+        el("div", {
+          text: "Enlist to exchange contact details — nothing here is available for a guest.",
+          style: { fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)", fontStyle: "italic" },
+        }),
+      ]);
+    }
+
+    const inputEl = el("input", {
+      attrs: { type: "text", placeholder: "e.g. an email or a handle", value: dossier.getContactInfo() },
+      style: { flex: "1", fontFamily: "var(--font-mono)", fontSize: "13px", padding: "8px 10px", background: "var(--bg-raised)", color: "var(--text-primary)", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-sm)" },
+      on: {
+        // See chat.ts's own input for why this is load-bearing — without
+        // it, typing here would also leak into whatever hotkeys Room.ts
+        // listens for underneath this overlay.
+        keydown: (e) => e.stopPropagation(),
+      },
+    }) as HTMLInputElement;
+
+    const saveAndPersist = (value: string) => {
+      dossier.setContactInfo(value);
+      inputEl.value = dossier.getContactInfo();
+      saveProgress();
+    };
+
+    const editorEl = el("div", { className: "panel", style: { display: "flex", gap: "10px", alignItems: "center", marginBottom: "var(--space-3)" } }, [
+      inputEl,
+      el("button", { className: "btn btn--gold", text: "SAVE", on: { click: () => saveAndPersist(inputEl.value) } }),
+      el("button", { className: "btn btn--ghost", text: "CLEAR", on: { click: () => saveAndPersist("") } }),
+    ]);
+
+    const rows =
+      this.contactsCache.length > 0
+        ? this.contactsCache.map((c) =>
+            el("div", { className: "panel", style: { display: "flex", justifyContent: "space-between", marginBottom: "8px" } }, [
+              el("span", { text: c.other_name, style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "13px" } }),
+              el("span", { text: c.other_contact || "(no contact info shared)", style: { fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" } }),
+            ]),
+          )
+        : [
+            el("div", {
+              text: "No exchanges yet — walk up to another agent in the village and press E.",
+              style: { fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-muted)", fontStyle: "italic" },
+            }),
+          ];
+
+    return el("div", {}, [
+      el("div", { className: "panel", style: { marginBottom: "var(--space-3)" } }, [
+        el("h3", { text: "Your Contact Info", style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "15px", margin: "0 0 var(--space-2)" } }),
+        el("div", {
+          text: "Shared only when you and another agent both confirm an exchange in the village. Blank by default — clear it anytime.",
+          style: { fontFamily: "var(--font-body)", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" },
+        }),
+        editorEl,
+      ]),
+      el("div", { className: "panel" }, [el("h3", { text: "Exchanged Contacts", style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "15px", margin: "0 0 var(--space-2)" } }), el("div", {}, rows)]),
+    ]);
   }
 
   private show() {

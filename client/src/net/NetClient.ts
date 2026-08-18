@@ -68,6 +68,33 @@ export interface ChatHistoryEntry {
 type ChatHistoryHandler = (entries: ChatHistoryEntry[]) => void;
 type EmoteHandler = (sessionId: string, emoteId: string) => void;
 
+// §4 "Contact Exchange" (see PLAN.md) — see SceneRoom.ts's matching
+// message interfaces for the full handshake shape; these are just the
+// relayed-to-me payloads, one per step.
+export interface ContactRequestReceived {
+  fromSessionId: string;
+  fromName: string;
+}
+export interface ContactDeclined {
+  fromSessionId: string;
+}
+export interface ContactAcceptedByOther {
+  fromSessionId: string;
+  fromName: string;
+  theirUserId: string | null;
+  theirContact: string;
+}
+export interface ContactFinalized {
+  fromSessionId: string;
+  fromName: string;
+  theirUserId: string | null;
+  theirContact: string;
+}
+type ContactRequestReceivedHandler = (payload: ContactRequestReceived) => void;
+type ContactDeclinedHandler = (payload: ContactDeclined) => void;
+type ContactAcceptedByOtherHandler = (payload: ContactAcceptedByOther) => void;
+type ContactFinalizedHandler = (payload: ContactFinalized) => void;
+
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 type StatusChangeHandler = (status: ConnectionStatus, lastError: string | null) => void;
 
@@ -107,6 +134,10 @@ export class NetClient {
   private chatHandler: ChatHandler | null = null;
   private chatHistoryHandler: ChatHistoryHandler | null = null;
   private emoteHandler: EmoteHandler | null = null;
+  private contactRequestReceivedHandler: ContactRequestReceivedHandler | null = null;
+  private contactDeclinedHandler: ContactDeclinedHandler | null = null;
+  private contactAcceptedByOtherHandler: ContactAcceptedByOtherHandler | null = null;
+  private contactFinalizedHandler: ContactFinalizedHandler | null = null;
   // Unlike the three above, this one's set once by hud.ts (in UIOverlay,
   // constructed before Room.ts's first connect() call and never rebuilt
   // on room transitions) and never needs repointing — it's read by the
@@ -153,6 +184,22 @@ export class NetClient {
 
   onEmote(handler: EmoteHandler) {
     this.emoteHandler = handler;
+  }
+
+  onContactRequestReceived(handler: ContactRequestReceivedHandler) {
+    this.contactRequestReceivedHandler = handler;
+  }
+
+  onContactDeclined(handler: ContactDeclinedHandler) {
+    this.contactDeclinedHandler = handler;
+  }
+
+  onContactAcceptedByOther(handler: ContactAcceptedByOtherHandler) {
+    this.contactAcceptedByOtherHandler = handler;
+  }
+
+  onContactFinalized(handler: ContactFinalizedHandler) {
+    this.contactFinalizedHandler = handler;
   }
 
   onStatusChange(handler: StatusChangeHandler) {
@@ -217,6 +264,18 @@ export class NetClient {
       });
       room.onMessage("emote", (message: { sessionId: string; emoteId: string }) => {
         this.emoteHandler?.(message.sessionId, message.emoteId);
+      });
+      room.onMessage("contactRequestReceived", (message: ContactRequestReceived) => {
+        this.contactRequestReceivedHandler?.(message);
+      });
+      room.onMessage("contactDeclined", (message: ContactDeclined) => {
+        this.contactDeclinedHandler?.(message);
+      });
+      room.onMessage("contactAcceptedByOther", (message: ContactAcceptedByOther) => {
+        this.contactAcceptedByOtherHandler?.(message);
+      });
+      room.onMessage("contactFinalized", (message: ContactFinalized) => {
+        this.contactFinalizedHandler?.(message);
       });
     } catch (err) {
       // A dead/refused WebSocket typically throws a raw ProgressEvent or
@@ -355,6 +414,31 @@ export class NetClient {
   sendEmote(emoteId: string) {
     if (!this.room) return;
     this.room.send("emote", { emoteId });
+  }
+
+  /** §4 "Contact Exchange" — see SceneRoom.ts's matching handlers for
+   * the full 3-round-trip shape. Each of these four is a fire-and-
+   * forget send, same tolerance as sendChat()/sendEmote() above: a
+   * disconnected sender just means the other side never hears about it,
+   * no different from a real player who walked away mid-handshake. */
+  sendContactRequest(targetSessionId: string) {
+    if (!this.room) return;
+    this.room.send("contactRequest", { targetSessionId });
+  }
+
+  sendContactDecline(targetSessionId: string) {
+    if (!this.room) return;
+    this.room.send("contactDecline", { targetSessionId });
+  }
+
+  sendContactAccept(targetSessionId: string, myUserId: string | null, myContact: string) {
+    if (!this.room) return;
+    this.room.send("contactAccept", { targetSessionId, myUserId, myContact });
+  }
+
+  sendContactFinalize(targetSessionId: string, myUserId: string | null, myContact: string) {
+    if (!this.room) return;
+    this.room.send("contactFinalize", { targetSessionId, myUserId, myContact });
   }
 }
 

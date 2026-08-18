@@ -24,6 +24,7 @@ export interface ProgressRow {
   unlocked_concepts: string[];
   unlocked_titles: string[];
   active_title: string | null;
+  contact_info: string | null;
   updated_at: string;
 }
 
@@ -155,6 +156,7 @@ export async function createProfileAndProgress(userId: string, data: InitialProf
           unlocked_concepts: data.dossierState.unlockedConcepts,
           unlocked_titles: data.dossierState.unlockedTitles,
           active_title: data.dossierState.activeTitle,
+          contact_info: data.dossierState.contactInfo,
           updated_at: new Date().toISOString(),
         }),
       ),

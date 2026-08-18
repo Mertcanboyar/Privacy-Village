@@ -62,6 +62,34 @@ interface EmoteMessage {
   emoteId?: string;
 }
 
+// §4 "Contact Exchange" (see PLAN.md) — a straight validate-and-relay
+// handshake, no schema/state changes and no server-side persistence
+// (the client writes its own row to Supabase once finalized — see
+// cloud/contacts.ts). `myUserId`/`myContact` only ever leave a client
+// after that client's own player has personally taken an accept-
+// equivalent action (see net/NetClient.ts's doc comment on the 3-round-
+// trip flow), which is what makes "only shared on explicit mutual
+// confirmation" true, not just labeled that way.
+interface ContactRequestMessage {
+  targetSessionId: string;
+}
+
+interface ContactDeclineMessage {
+  targetSessionId: string;
+}
+
+interface ContactAcceptMessage {
+  targetSessionId: string;
+  myUserId: string | null;
+  myContact: string;
+}
+
+interface ContactFinalizeMessage {
+  targetSessionId: string;
+  myUserId: string | null;
+  myContact: string;
+}
+
 interface ChatHistoryEntry {
   sessionId: string;
   name: string;
@@ -166,6 +194,47 @@ export class SceneRoom extends Room<SceneState> {
       const emoteId = (message?.emoteId ?? "").toString();
       if (!EMOTE_IDS.has(emoteId)) return;
       this.broadcast("emote", { sessionId: client.sessionId, emoteId }, { except: client });
+    });
+
+    // §4 "Contact Exchange" — 3-round-trip handshake, each step a
+    // straight relay to one specific client. See the message interfaces
+    // above for why no contact string ever moves before its owner has
+    // personally acted.
+    this.onMessage("contactRequest", (client, message: ContactRequestMessage) => {
+      const fromPlayer = this.state.players.get(client.sessionId);
+      const target = this.clients.find((c) => c.sessionId === message?.targetSessionId);
+      if (!fromPlayer || !target) return;
+      target.send("contactRequestReceived", { fromSessionId: client.sessionId, fromName: fromPlayer.name });
+    });
+
+    this.onMessage("contactDecline", (client, message: ContactDeclineMessage) => {
+      const target = this.clients.find((c) => c.sessionId === message?.targetSessionId);
+      if (!target) return;
+      target.send("contactDeclined", { fromSessionId: client.sessionId });
+    });
+
+    this.onMessage("contactAccept", (client, message: ContactAcceptMessage) => {
+      const fromPlayer = this.state.players.get(client.sessionId);
+      const target = this.clients.find((c) => c.sessionId === message?.targetSessionId);
+      if (!fromPlayer || !target) return;
+      target.send("contactAcceptedByOther", {
+        fromSessionId: client.sessionId,
+        fromName: fromPlayer.name,
+        theirUserId: message.myUserId ?? null,
+        theirContact: (message.myContact ?? "").toString(),
+      });
+    });
+
+    this.onMessage("contactFinalize", (client, message: ContactFinalizeMessage) => {
+      const fromPlayer = this.state.players.get(client.sessionId);
+      const target = this.clients.find((c) => c.sessionId === message?.targetSessionId);
+      if (!fromPlayer || !target) return;
+      target.send("contactFinalized", {
+        fromSessionId: client.sessionId,
+        fromName: fromPlayer.name,
+        theirUserId: message.myUserId ?? null,
+        theirContact: (message.myContact ?? "").toString(),
+      });
     });
   }
 

@@ -199,6 +199,22 @@ export class RemotePlayerController {
     return this.sprites.get(sessionId)?.name;
   }
 
+  /** §4 "Contact Exchange" — nearest remote sprite within `radius` of
+   * (x, y), or null if none. Room.ts polls this every frame (same shape
+   * as npc.ts's own proximity+[E] loop) to show the exchange prompt. */
+  findNearby(x: number, y: number, radius: number): { sessionId: string; name: string } | null {
+    let closest: { sessionId: string; name: string } | null = null;
+    let closestDist = radius;
+    for (const [sessionId, remote] of this.sprites) {
+      const dist = Phaser.Math.Distance.Between(x, y, remote.image.x, remote.image.y);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = { sessionId, name: remote.name };
+      }
+    }
+    return closest;
+  }
+
   /** A "chat" broadcast arriving for a sessionId this room doesn't (or
    * no longer) have a sprite for — e.g. it left mid-flight — is dropped
    * silently, same "presence is garnish" tolerance as everything else

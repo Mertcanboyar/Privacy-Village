@@ -5,6 +5,7 @@ import { NPCController, findNpcRoom } from "../npc";
 import { QuestController } from "../quest";
 import { EventBoardController } from "../eventBoard";
 import { roles } from "../roles";
+import { ContactExchangeController } from "../contactExchange";
 import { getAvatarOption, getFactionColor, getSession } from "../session";
 import { questEngine } from "../questEngine";
 import { academy } from "../academy";
@@ -152,6 +153,7 @@ export class Room extends Phaser.Scene {
   private npcController!: NPCController;
   private questController!: QuestController;
   private eventBoard!: EventBoardController;
+  private contactExchange!: ContactExchangeController;
   // Cold blue-grey overlay while "The Night the Wall Fell" is active —
   // persists across room changes (see refreshIncidentTint(), called at
   // the end of every create()) and lifts on quest completion.
@@ -429,6 +431,7 @@ export class Room extends Phaser.Scene {
     // fresh RemotePlayerController, whose predecessor was already torn
     // down by normal Phaser scene teardown.
     this.remotePlayers = new RemotePlayerController(this);
+    this.contactExchange = new ContactExchangeController(this, this.remotePlayers);
     net.onPlayerAdd((p) => this.remotePlayers.spawn(p));
     net.onPlayerChange((p) => this.remotePlayers.applySnapshot(p));
     net.onPlayerRemove((sessionId) => this.remotePlayers.remove(sessionId));
@@ -885,6 +888,7 @@ export class Room extends Phaser.Scene {
       this.npcController.dialogueOpen ||
       this.questController.dialogueOpen ||
       this.eventBoard.dialogueOpen ||
+      this.contactExchange.uiOpen ||
       academy.isOpen ||
       events.isOpen ||
       dossier.isOpen ||
@@ -979,6 +983,7 @@ export class Room extends Phaser.Scene {
     this.npcController.update(this.player.x, this.player.y);
     this.questController.update(this.player.x, this.player.y);
     this.eventBoard.update(this.player.x, this.player.y);
+    this.contactExchange.update(this.player.x, this.player.y);
 
     if (!uiOpen) {
       this.checkDoors();

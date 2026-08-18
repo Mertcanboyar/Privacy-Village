@@ -58,6 +58,12 @@ export interface DossierEngineState {
   unlockedConcepts: string[];
   unlockedTitles: string[];
   activeTitle: string | null;
+  /** §4 "Contact Exchange" (see PLAN.md) — free-text contact string the
+   * player opts into sharing, blank by default. Set/cleared from the
+   * Dossier's Contacts tab, only ever sent to another player on
+   * explicit mutual confirmation (see net/NetClient.ts's contact
+   * handshake) — never any other time. */
+  contactInfo: string;
 }
 
 // The six full-screen minigame quests that log a "clean run" stat
@@ -104,6 +110,7 @@ class DossierManager extends Phaser.Events.EventEmitter {
   private unlockedConcepts = new Set<string>();
   private unlockedTitles = new Set<string>();
   private activeTitle: string | null = null;
+  private contactInfo = "";
 
   // Per-quest completion stats — populated live the moment a minigame
   // quest completes (recordQuestStat(), called from npc.ts right next
@@ -177,6 +184,18 @@ class DossierManager extends Phaser.Events.EventEmitter {
     return this.activeTitle ? (this.titleDefs.find((t) => t.id === this.activeTitle) ?? null) : null;
   }
 
+  getContactInfo(): string {
+    return this.contactInfo;
+  }
+
+  /** Editable/clearable anytime from the Contacts tab — `""` clears it.
+   * Capped the same way chat text is (see Room.ts's CHAT_MAX_LEN), just
+   * a generous limit since this is a free-text "how to reach me" line,
+   * not a chat message. */
+  setContactInfo(value: string) {
+    this.contactInfo = value.trim().slice(0, 200);
+  }
+
   getDecisionRows(): DecisionRow[] {
     return this.lastDecisionRows;
   }
@@ -206,6 +225,7 @@ class DossierManager extends Phaser.Events.EventEmitter {
       unlockedConcepts: [...this.unlockedConcepts],
       unlockedTitles: [...this.unlockedTitles],
       activeTitle: this.activeTitle,
+      contactInfo: this.contactInfo,
     };
   }
 
@@ -217,6 +237,7 @@ class DossierManager extends Phaser.Events.EventEmitter {
     this.unlockedConcepts = new Set(saved.unlockedConcepts.filter((id) => this.codex.some((c) => c.id === id)));
     this.unlockedTitles = new Set(saved.unlockedTitles.filter((id) => this.titleDefs.some((t) => t.id === id)));
     this.activeTitle = saved.activeTitle && this.unlockedTitles.has(saved.activeTitle) ? saved.activeTitle : null;
+    this.contactInfo = saved.contactInfo ?? "";
   }
 
   /** Called from npc.ts right next to logDecision() for each of the six

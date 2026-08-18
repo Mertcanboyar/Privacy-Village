@@ -104,3 +104,7 @@ export function logEmoteSent(emoteId: string) {
 export function logEventBoardOpened() {
   logDecision("event_board_opened", {});
 }
+
+export function logContactExchanged() {
+  logDecision("contact_exchanged", {});
+}

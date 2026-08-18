@@ -216,6 +216,7 @@ export class Title extends Phaser.Scene {
         unlockedConcepts: progressRow.unlocked_concepts ?? [],
         unlockedTitles: progressRow.unlocked_titles ?? [],
         activeTitle: progressRow.active_title ?? null,
+        contactInfo: progressRow.contact_info ?? "",
       });
     }
     this.renderPanel(null);
