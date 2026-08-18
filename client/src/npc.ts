@@ -1595,6 +1595,27 @@ export class NPCController {
       return;
     }
 
+    // A quest can be genuinely `available` and still not offerable —
+    // the engine only ever runs one active quest at a time (see
+    // acceptQuest()), and "arrival" (greet Bram, then Odile) is
+    // bootstrapped active the moment the player spawns. A player who
+    // reaches Herald with breach_in_the_wall unlocked but "arrival"
+    // still active would otherwise fall through to generic ambient
+    // dialogue, which looks exactly like nothing happened. Say so in
+    // character instead — this is what actually enforces "greet Bram,
+    // then Odile, then get your first mission" as a real order rather
+    // than a coincidence of where the player happened to wander.
+    if (availableGiverQuestId && questEngine.getActiveQuest()?.id === "arrival") {
+      this.mode = "dialogue";
+      this.dialogueEl.style.display = "block";
+      this.dialogueNameEl.textContent = def.name;
+      this.dialogueBackBtn.style.visibility = "hidden";
+      this.activeSet = { lines: ["Not yet, Agent — the Warden at the gates and the Innkeeper still want a word with you first."] };
+      this.lineIndex = 0;
+      this.showLine();
+      return;
+    }
+
     // Study-first inversion (see PLAN) — a quest-giver whose quest is
     // still `locked` because its paired Academy module's theory isn't
     // sealed yet says so in character, with a direct shortcut into that

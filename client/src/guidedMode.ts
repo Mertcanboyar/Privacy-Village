@@ -130,20 +130,6 @@ class GuidedModeManager extends Phaser.Events.EventEmitter {
     this.lastSeenStepId = currentId;
     this.lastSeenStepStartedAt = performance.now();
     if (currentId) logGuidedStepStarted(currentId);
-
-    // "arrival" (the HQ onboarding quest — greet Bram, then Odile) has
-    // nothing to do with the guided sequence and isn't gated by it, so
-    // a player who beelines straight for the Academy — exactly what
-    // this feature asks them to do — can seal step 1's theory before
-    // ever greeting Bram/Odile. That leaves "arrival" sitting active,
-    // which silently blocks Herald's real offer: the engine only ever
-    // runs one active quest at a time (see npc.ts's open() doc comment
-    // on availableGiverQuestId), so breach_in_the_wall being merely
-    // `available` isn't enough. Clear "arrival" out of the way the
-    // instant a `quest`-typed step becomes current, so the banner's
-    // next instruction is always actually actionable.
-    if (current?.type === "quest") questEngine.completeQuestIfActive("arrival");
-
     this.emit("changed");
   }
 
