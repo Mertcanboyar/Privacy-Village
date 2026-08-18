@@ -4,15 +4,13 @@
       "id": "s1",
       "type": "academy_module",
       "target": "threat_modeling",
-      "label": "Study Threat Modeling Fundamentals at the Academy",
-      "waypoint": { "scene": "village", "x": 85, "y": 425 }
+      "label": "Study Threat Modeling Fundamentals at the Academy"
     },
     {
       "id": "s2",
       "type": "quest",
       "target": "breach_in_the_wall",
-      "label": "Report to the Herald in the square",
-      "waypoint": { "scene": "village", "npc": "herald" }
+      "label": "Report to the Herald in the square"
     }
   ]
 }

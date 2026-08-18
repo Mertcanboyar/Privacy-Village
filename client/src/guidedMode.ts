@@ -1,8 +1,6 @@
 import Phaser from "phaser";
 import { academy } from "./academy";
 import { questEngine } from "./questEngine";
-import { getNpcSpawnPosition } from "./npc";
-import type { RoomName } from "./rooms";
 import { logGuidedStepStarted, logGuidedStepCompleted } from "./instrumentation";
 
 // Guided Sequence (playtest fix: new players wandered without ever
@@ -27,7 +25,6 @@ export interface SequenceStep {
   type: "academy_module" | "quest";
   target: string;
   label: string;
-  waypoint: { scene: RoomName; x: number; y: number } | { scene: RoomName; npc: string };
 }
 
 const DISABLED_STORAGE_KEY = "pv_guided_mode_disabled";
@@ -47,13 +44,6 @@ function writeDisabledToStorage(disabled: boolean) {
   } catch {
     // Nothing to do — worst case the toggle doesn't survive reload.
   }
-}
-
-export interface Waypoint {
-  scene: RoomName;
-  x: number;
-  y: number;
-  label: string;
 }
 
 class GuidedModeManager extends Phaser.Events.EventEmitter {
@@ -127,22 +117,6 @@ class GuidedModeManager extends Phaser.Events.EventEmitter {
     return !this.manuallyDisabled && this.getCurrentStep() !== null;
   }
 
-  /** Resolves the current step's waypoint to a scene + point + label —
-   * null if guided mode isn't active. NPC-shaped waypoints resolve
-   * through npc.ts's NPC_SPAWNS (see getNpcSpawnPosition()) rather than
-   * duplicating coordinates in sequence.json. */
-  getWaypoint(): Waypoint | null {
-    const step = this.getCurrentStep();
-    if (!step || this.manuallyDisabled) return null;
-    const wp = step.waypoint;
-    if ("npc" in wp) {
-      const pos = getNpcSpawnPosition(wp.npc);
-      if (!pos) return null;
-      return { scene: wp.scene, x: pos.x, y: pos.y, label: step.label };
-    }
-    return { scene: wp.scene, x: wp.x, y: wp.y, label: step.label };
-  }
-
   private checkStepTransition() {
     if (!this.primed) return;
     const current = this.getCurrentStep();
@@ -156,6 +130,20 @@ class GuidedModeManager extends Phaser.Events.EventEmitter {
     this.lastSeenStepId = currentId;
     this.lastSeenStepStartedAt = performance.now();
     if (currentId) logGuidedStepStarted(currentId);
+
+    // "arrival" (the HQ onboarding quest — greet Bram, then Odile) has
+    // nothing to do with the guided sequence and isn't gated by it, so
+    // a player who beelines straight for the Academy — exactly what
+    // this feature asks them to do — can seal step 1's theory before
+    // ever greeting Bram/Odile. That leaves "arrival" sitting active,
+    // which silently blocks Herald's real offer: the engine only ever
+    // runs one active quest at a time (see npc.ts's open() doc comment
+    // on availableGiverQuestId), so breach_in_the_wall being merely
+    // `available` isn't enough. Clear "arrival" out of the way the
+    // instant a `quest`-typed step becomes current, so the banner's
+    // next instruction is always actually actionable.
+    if (current?.type === "quest") questEngine.completeQuestIfActive("arrival");
+
     this.emit("changed");
   }
 

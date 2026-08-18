@@ -440,6 +440,18 @@ class QuestManager extends Phaser.Events.EventEmitter {
     // Stays "available" — offered again next time the giver is talked to.
   }
 
+  /** Force-completes `id` if — and only if — it's the currently active
+   * quest; a no-op otherwise (already complete, not yet active,
+   * whatever). See guidedMode.ts's checkStepTransition() for the one
+   * caller: the onboarding "arrival" quest isn't gated by the guided
+   * sequence at all, so a player who beelines for the Academy can seal
+   * a guided step before ever greeting Bram/Odile, leaving "arrival"
+   * active and silently blocking the next NPC's real quest offer (only
+   * one quest is ever active at a time — see acceptQuest()). */
+  completeQuestIfActive(id: string) {
+    if (this.activeQuestId === id) this.completeActiveQuest();
+  }
+
   notifyTalkTo(npcId: string) {
     this.checkStep((trigger) => trigger.type === "talk_to" && trigger.npc === npcId && (!trigger.requiresFlag || this.getFlag(trigger.requiresFlag)));
   }

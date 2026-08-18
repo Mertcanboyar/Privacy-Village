@@ -77,13 +77,6 @@ export function logOffpathAttempt(kind: "quest" | "academy_module", targetId: st
   logDecision("offpath_attempt", { kind, targetId, currentStepId });
 }
 
-// One per tier (30s/90s/150s), each guarded to fire at most once per
-// step by Room.ts's guidedNudgeTiersFired set — logDecision() call
-// itself has no guard, matching the other repeatable events above.
-export function logNudgeShown(tier: "30s" | "90s" | "150s") {
-  logDecision("nudge_shown", { tier });
-}
-
 // One-shot, same shape as logFirstQuestAccept() above — the ticket's
 // "time to first objective action" success metric (<45s), not full
 // completion. Fired from academyOverlay.ts's goToTheory() the first

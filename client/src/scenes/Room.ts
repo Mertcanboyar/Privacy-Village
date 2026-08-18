@@ -15,10 +15,9 @@ import { net } from "../net/NetClient";
 import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE } from "../net/remotePlayers";
 import { isUiLocked } from "../cloud/uiLock";
 import { ChatController } from "../chat";
-import { markSpawn, logOnboardingOrientationShown, logNudgeShown } from "../instrumentation";
-import { guidedMode, type Waypoint } from "../guidedMode";
+import { markSpawn, logOnboardingOrientationShown } from "../instrumentation";
+import { guidedMode } from "../guidedMode";
 import { recordLoadError, logRenderFailure } from "../renderDiagnostics";
-import { el } from "../ui/dom";
 
 const PLAYER_SPEED = 160;
 const SCALE_FAR = 0.75;
@@ -31,24 +30,6 @@ const SCALE_NEAR = 1.0;
 // maybeFireHandlerNudge().
 const HANDLER_NUDGE_DELAY_MS = 20000;
 let handlerNudgeFired = false;
-
-// Guided Sequence idle-nudge escalation (see guidedMode.ts) — a
-// separate, later-firing schedule from the single P0-1 nudge above
-// (that one already covers "objective is NPC-shaped and unresolved,"
-// which for guided mode's s2 fires naturally through the same
-// questEngine.getObjectiveNpcId() path; these three additionally cover
-// s1, where nothing is NPC-shaped yet). Module-level like
-// handlerNudgeFired, for the same reason: it must survive the scene
-// restart every door transition triggers, re-armed each time with
-// whatever time actually remains (see scheduleGuidedNudges()) rather
-// than restarting from zero on every door walked through.
-const GUIDED_NUDGE_TIERS_MS: { ms: number; label: "30s" | "90s" | "150s" }[] = [
-  { ms: 30000, label: "30s" },
-  { ms: 90000, label: "90s" },
-  { ms: 150000, label: "150s" },
-];
-let guidedNudgeIdleStartAt: number | null = null;
-const guidedNudgeTiersFired = new Set<string>();
 
 // Ambient wanderers — village only (see PLAN.md Day 13). Separate from
 // and unrelated to live multiplayer presence (see net/NetClient.ts),
@@ -156,8 +137,6 @@ export class Room extends Phaser.Scene {
   private zones: RoomZone[] = [];
   private zoneMarker: Phaser.GameObjects.Graphics | null = null;
   private objectiveArrow: Phaser.GameObjects.Text | null = null;
-  private guidedBeam: Phaser.GameObjects.Graphics | null = null;
-  private guidedGroundLine: Phaser.GameObjects.Graphics | null = null;
   private transitioning = false;
   // Edge-detected rather than level-triggered: unlike a room door (which
   // warps the player away from the hotspot on trigger), the Academy door
@@ -521,22 +500,6 @@ export class Room extends Phaser.Scene {
     this.refreshObjectiveArrow();
     questEngine.on("questUpdated", this.refreshObjectiveArrow, this);
 
-    // Guided Sequence navigation (see guidedMode.ts) — waypoint beam +
-    // this room's share of the cross-room arrow (refreshObjectiveArrow()
-    // itself now checks guided mode first, see its own doc comment).
-    // "changed" covers both a real step transition and the manual
-    // on/off toggle; either way both markers and the nudge idle clock
-    // need a fresh look.
-    this.refreshGuidedWaypointBeam();
-    const onGuidedChanged = () => {
-      this.refreshGuidedWaypointBeam();
-      this.refreshObjectiveArrow();
-      guidedNudgeIdleStartAt = performance.now();
-      guidedNudgeTiersFired.clear();
-      this.scheduleGuidedNudges();
-    };
-    guidedMode.on("changed", onGuidedChanged);
-    this.scheduleGuidedNudges();
     // Re-checked on every questUpdated (not just at scene creation, see
     // below) so the incident starts the instant the k-anonymity puzzle
     // that unlocks it wraps up — that puzzle's giver (Herald) stands in
@@ -573,11 +536,8 @@ export class Room extends Phaser.Scene {
       questEngine.off("questCompleted", onQuestCompleted);
       questEngine.off("sceneBeat", onSceneBeat);
       academy.off("opened", onAcademyOpened);
-      guidedMode.off("changed", onGuidedChanged);
       this.zoneMarker?.destroy();
       this.objectiveArrow?.destroy();
-      this.guidedBeam?.destroy();
-      this.guidedGroundLine?.destroy();
     });
 
     // Covers the other path: the quest was already unlocked (e.g. the
@@ -700,22 +660,10 @@ export class Room extends Phaser.Scene {
     this.objectiveArrow?.destroy();
     this.objectiveArrow = null;
 
-    // Guided Sequence (see guidedMode.ts) takes priority when active —
-    // its waypoint may not be NPC-shaped at all (s1's Academy door), so
-    // it can't be expressed through questEngine.getObjectiveNpcId().
-    // Once guided mode ends this falls through to the normal quest
-    // objective exactly as before.
-    let targetRoom: RoomName | undefined;
-    if (guidedMode.isActive()) {
-      const wp = guidedMode.getWaypoint();
-      if (!wp || wp.scene === this.roomName) return;
-      targetRoom = wp.scene;
-    } else {
-      const npcId = questEngine.getObjectiveNpcId();
-      if (!npcId) return;
-      targetRoom = findNpcRoom(npcId);
-      if (!targetRoom || targetRoom === this.roomName) return;
-    }
+    const npcId = questEngine.getObjectiveNpcId();
+    if (!npcId) return;
+    const targetRoom = findNpcRoom(npcId);
+    if (!targetRoom || targetRoom === this.roomName) return;
     const door = this.doors.find((d) => d.target === targetRoom) ?? this.doors[0];
     if (!door) return;
 
@@ -745,148 +693,6 @@ export class Room extends Phaser.Scene {
     if (!questEngine.getObjectiveNpcId()) return;
     handlerNudgeFired = true;
     questEngine.toast("HANDLER: The marked contact is waiting, Agent.");
-  }
-
-  // The unmissable half of Guided Sequence (see guidedMode.ts): a
-  // single gently-bobbing beam at the current step's waypoint, visible
-  // only while that waypoint is in THIS room (a different room's
-  // waypoint is handled by refreshObjectiveArrow() instead — see its
-  // own doc comment). Refreshed on create() and on guidedMode's
-  // "changed" event (step transition or the manual on/off toggle).
-  private refreshGuidedWaypointBeam() {
-    this.guidedBeam?.destroy();
-    this.guidedBeam = null;
-    if (!guidedMode.isActive()) return;
-    const wp = guidedMode.getWaypoint();
-    if (!wp || wp.scene !== this.roomName) return;
-
-    const g = this.add.graphics().setDepth(100000);
-    g.fillStyle(0xf0b429, 0.2);
-    g.fillRect(wp.x - 14, wp.y - 220, 28, 220);
-    g.lineStyle(2, 0xf0b429, 0.55);
-    g.strokeRect(wp.x - 14, wp.y - 220, 28, 220);
-    g.fillStyle(0xf0b429, 0.95);
-    g.fillCircle(wp.x, wp.y - 232, 10);
-    g.lineStyle(2, 0x1a1500, 0.85);
-    g.strokeCircle(wp.x, wp.y - 232, 10);
-    this.tweens.add({ targets: g, y: { from: 0, to: -14 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    this.guidedBeam = g;
-  }
-
-  // 3-tier idle nudge escalation (spec: 30s/90s/150s, max once each per
-  // step, reset on real progress). guidedNudgeIdleStartAt/
-  // guidedNudgeTiersFired are module-level (like handlerNudgeFired
-  // above) so they survive the scene restart every door transition
-  // triggers — re-armed here with whatever time is actually left on
-  // each un-fired tier, rather than restarting the clock on every room
-  // change.
-  private scheduleGuidedNudges() {
-    if (!guidedMode.isActive()) return;
-    if (guidedNudgeIdleStartAt === null) guidedNudgeIdleStartAt = performance.now();
-    const startedAt = guidedNudgeIdleStartAt;
-    for (const tier of GUIDED_NUDGE_TIERS_MS) {
-      if (guidedNudgeTiersFired.has(tier.label)) continue;
-      const remaining = Math.max(0, tier.ms - (performance.now() - startedAt));
-      this.time.delayedCall(remaining, () => this.fireGuidedNudgeTier(tier.label));
-    }
-  }
-
-  private fireGuidedNudgeTier(tier: "30s" | "90s" | "150s") {
-    if (guidedNudgeTiersFired.has(tier)) return;
-    if (!guidedMode.isActive()) return;
-    const wp = guidedMode.getWaypoint();
-    if (!wp) return;
-    guidedNudgeTiersFired.add(tier);
-    logNudgeShown(tier);
-
-    if (tier === "30s") {
-      const suffix = wp.scene === this.roomName ? "" : ` — via ${roomDisplayName(wp.scene)}`;
-      questEngine.toast(`HANDLER: ${wp.label}${suffix}`);
-    } else if (tier === "90s") {
-      this.intensifyGuidedWaypoint(wp);
-    } else {
-      this.showGuidedPathPrompt(wp);
-    }
-  }
-
-  // 90s tier: a brief brighten pulse on whichever marker is currently
-  // showing (same-room beam, or the cross-room door arrow), plus — for
-  // the same-room case only — a short fading ground line from the
-  // player straight to the waypoint.
-  private intensifyGuidedWaypoint(wp: Waypoint) {
-    if (wp.scene !== this.roomName) {
-      if (this.objectiveArrow) this.tweens.add({ targets: this.objectiveArrow, scale: { from: 1, to: 1.6 }, duration: 220, yoyo: true, repeat: 3, ease: "Sine.easeInOut" });
-      return;
-    }
-    if (this.guidedBeam) this.tweens.add({ targets: this.guidedBeam, alpha: { from: 1, to: 0.3 }, duration: 180, yoyo: true, repeat: 3, ease: "Sine.easeInOut" });
-
-    this.guidedGroundLine?.destroy();
-    const g = this.add.graphics().setDepth(99999);
-    g.lineStyle(3, 0xf0b429, 0.7);
-    g.beginPath();
-    g.moveTo(this.player.x, this.player.y);
-    g.lineTo(wp.x, wp.y);
-    g.strokePath();
-    this.guidedGroundLine = g;
-    this.tweens.add({
-      targets: g,
-      alpha: { from: 0.7, to: 0 },
-      duration: 1800,
-      onComplete: () => {
-        g.destroy();
-        if (this.guidedGroundLine === g) this.guidedGroundLine = null;
-      },
-    });
-  }
-
-  // 150s tier: "Show me the way?" — same panel/backdrop shell as
-  // hud.ts's showStepChoice() (see that file). Declining just closes;
-  // accepting runs a one-time, tightly-scoped camera pan (confirmed
-  // with the user as a deliberate exception to this game's fixed-camera
-  // convention — see CLAUDE.md).
-  private showGuidedPathPrompt(wp: Waypoint) {
-    const sameRoom = wp.scene === this.roomName;
-    const body = el("p", {
-      className: "briefing__body",
-      text: sameRoom ? `${wp.label}. Show me the way?` : `${wp.label} — via ${roomDisplayName(wp.scene)}. Show me the way?`,
-    });
-    const buttonRow = el("div", { style: { display: "flex", gap: "12px", marginTop: "16px" } }, [
-      el("button", { className: "btn btn--ghost", text: "No", style: { flex: "1" }, on: { click: () => close() } }),
-      el("button", {
-        className: "btn",
-        text: "Show me the way?",
-        style: { flex: "1" },
-        on: {
-          click: () => {
-            close();
-            if (sameRoom) this.panCameraToWaypoint(wp);
-            else this.intensifyGuidedWaypoint(wp);
-          },
-        },
-      }),
-    ]);
-    const panel = el(
-      "div",
-      { className: "panel panel--glow ds-root", style: { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: "480px", pointerEvents: "auto" } },
-      [el("div", { className: "briefing" }, [el("div", { className: "briefing__header" }, [el("span", { className: "briefing__case", text: "HANDLER" })]), el("hr", { className: "briefing__divider" }), body]), buttonRow],
-    );
-    const backdrop = el("div", { className: "ui-backdrop", style: { pointerEvents: "auto" }, on: { click: () => close() } });
-    const wrapper = el("div", { style: { position: "absolute", inset: "0" } }, [backdrop, panel]);
-    document.getElementById("ui-root")!.appendChild(wrapper);
-    function close() {
-      wrapper.remove();
-    }
-  }
-
-  private panCameraToWaypoint(wp: Waypoint) {
-    if (wp.scene !== this.roomName) return;
-    const cam = this.cameras.main;
-    cam.zoomTo(1.4, 500, "Sine.easeInOut");
-    cam.pan(wp.x, wp.y, 600, "Sine.easeInOut");
-    this.time.delayedCall(1400, () => {
-      cam.pan(GAME_WIDTH / 2, GAME_HEIGHT / 2, 600, "Sine.easeInOut");
-      cam.zoomTo(1, 600, "Sine.easeInOut");
-    });
   }
 
   private spawnWanderers() {
