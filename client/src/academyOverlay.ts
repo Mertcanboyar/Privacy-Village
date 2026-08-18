@@ -29,7 +29,7 @@ import { showImageOverlay, isImageOverlayOpen } from "./ui/imageOverlay";
 import { buildDiagram } from "./ui/diagramReader";
 import { logDecision } from "./cloud/save";
 import { guidedMode } from "./guidedMode";
-import { logOffpathAttempt } from "./instrumentation";
+import { logOffpathAttempt, logTimeToFirstObjectiveAction } from "./instrumentation";
 import type { Room } from "./scenes/Room";
 
 const MODULE_COMPLETE_XP = 100;
@@ -481,6 +481,10 @@ export class AcademyOverlay {
   // card-drill intro, or the data-sieve screen depending on the
   // module's content type.
   private goToTheory(moduleId: string) {
+    const guidedStep = guidedMode.getCurrentStep();
+    if (guidedMode.isActive() && guidedStep?.type === "academy_module" && guidedStep.target === moduleId) {
+      logTimeToFirstObjectiveAction();
+    }
     const module = academy.getModule(moduleId);
     if (module?.type === "card_drill") this.goToCardDrillIntro(moduleId);
     else if (module?.type === "card_drill_multi") this.goToCardDrillMultiIntro(moduleId);

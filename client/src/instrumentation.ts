@@ -83,3 +83,16 @@ export function logOffpathAttempt(kind: "quest" | "academy_module", targetId: st
 export function logNudgeShown(tier: "30s" | "90s" | "150s") {
   logDecision("nudge_shown", { tier });
 }
+
+// One-shot, same shape as logFirstQuestAccept() above — the ticket's
+// "time to first objective action" success metric (<45s), not full
+// completion. Fired from academyOverlay.ts's goToTheory() the first
+// time the player opens step 1's target module while guided mode is
+// active, i.e. the first real step taken toward the objective rather
+// than just standing near the marker.
+let firstObjectiveActionLogged = false;
+export function logTimeToFirstObjectiveAction() {
+  if (firstObjectiveActionLogged) return;
+  firstObjectiveActionLogged = true;
+  logDecision("time_to_first_objective_action", { seconds: secondsSinceSpawn() });
+}
