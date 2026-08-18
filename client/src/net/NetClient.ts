@@ -1,5 +1,6 @@
 import { Client, Room } from "colyseus.js";
 import type { Faction } from "../session";
+import { logConcurrentPeak } from "../instrumentation";
 
 // Presence-only network layer — see PLAN.md's multiplayer section.
 //
@@ -157,6 +158,13 @@ export class NetClient {
   private lastSentMoving: boolean | null = null;
 
   private connectToken = 0;
+  private currentSceneId: string | null = null;
+  // §5 "Never Show an Empty Room" — client-side high-water mark per
+  // scene, session-scoped (not "per day" — see PLAN.md's own scoping
+  // note: the server has zero Supabase wiring today, and adding it is
+  // out of scope for this event). Checked from pollPlayers() since that
+  // already runs every frame with the current player count in hand.
+  private peakBySceneId = new Map<string, number>();
 
   onPlayerAdd(handler: PlayerAddHandler) {
     this.addHandler = handler;
@@ -217,9 +225,20 @@ export class NetClient {
     this.statusHandler?.(status, lastError);
   }
 
+  /** §5 "Never Show an Empty Room" (see PLAN.md) — this scene's own
+   * player count (including yourself), the one number a single scene-
+   * partitioned connection can actually see. A genuine cross-scene
+   * total would need a server-side registry — out of scope for ten
+   * people in the Tavern (see PLAN.md's own scoping note). */
+  getPlayerCount(): number {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (this.room?.state as any)?.players?.size ?? 0;
+  }
+
   async connect(sceneId: string, session: NetSession): Promise<void> {
     this.disconnect();
     const token = ++this.connectToken;
+    this.currentSceneId = sceneId;
     this.setStatus("connecting");
     await this.attemptConnect(sceneId, session, token, true);
   }
@@ -312,6 +331,15 @@ export class NetClient {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const players = (this.room.state as any)?.players as Map<string, RemotePlayerSnapshot> | undefined;
     if (!players) return;
+
+    if (this.currentSceneId) {
+      const prevPeak = this.peakBySceneId.get(this.currentSceneId) ?? 0;
+      if (players.size > prevPeak) {
+        this.peakBySceneId.set(this.currentSceneId, players.size);
+        logConcurrentPeak(players.size, this.currentSceneId);
+      }
+    }
+
     const seen = new Set<string>();
 
     players.forEach((player, sessionId) => {

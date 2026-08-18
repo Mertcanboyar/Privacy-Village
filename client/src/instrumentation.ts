@@ -108,3 +108,9 @@ export function logEventBoardOpened() {
 export function logContactExchanged() {
   logDecision("contact_exchanged", {});
 }
+
+// Repeatable, but naturally rate-limited by only firing on a new
+// session high — see net/NetClient.ts's pollPlayers().
+export function logConcurrentPeak(size: number, sceneId: string) {
+  logDecision("concurrent_peak", { size, sceneId });
+}

@@ -80,6 +80,8 @@ export class HUDController {
 
   private netDotEl: HTMLElement;
   private persistDotEl: HTMLElement;
+  private playerCountEl: HTMLElement;
+  private emptySceneLineEl: HTMLElement;
 
   private menuEl: HTMLElement;
   private menuBtnEl: HTMLElement;
@@ -275,20 +277,36 @@ export class HUDController {
     this.netDotEl = el("span", { style: dotStyle() });
     this.persistDotEl = el("span", { style: dotStyle() });
     const statusLabel = (text: string) => el("span", { text, style: { fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.04em" } });
+    // §5 "Never Show an Empty Room" — this scene's own player count
+    // (see NetClient.ts's getPlayerCount() doc comment for why it's
+    // per-scene, not a village-wide total). Refreshed every frame in
+    // update() below, cheap enough not to need its own timer.
+    this.playerCountEl = el("span", { style: { fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.04em" } });
     const statusRowEl = el(
       "div",
       { className: "ds-root", style: { position: "absolute", top: "72px", left: "24px", display: "flex", gap: "14px", alignItems: "center", pointerEvents: "auto" } },
       [
         el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [this.netDotEl, statusLabel("MP")]),
         el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [this.persistDotEl, statusLabel("ACCT")]),
+        this.playerCountEl,
       ],
     );
     hudRootEl.appendChild(statusRowEl);
+
+    // Ambient line for an empty scene — pulls from gathering.ts instead
+    // of showing nothing, so an early arrival still has something to
+    // read while they wait. Toggled alongside playerCountEl in update().
+    this.emptySceneLineEl = el("div", {
+      className: "ds-root",
+      style: { position: "absolute", top: "96px", left: "24px", maxWidth: "280px", fontFamily: "var(--font-body)", fontSize: "11px", fontStyle: "italic", color: "var(--text-muted)", display: "none" },
+    });
+    hudRootEl.appendChild(this.emptySceneLineEl);
 
     net.onStatusChange(() => this.refreshNetDot());
     this.refreshNetDot();
     persistenceStatus.on("changed", () => this.refreshPersistDot());
     this.refreshPersistDot();
+    this.refreshPlayerCount();
 
     // --- XP bar (bottom-left, always visible) ---
     this.levelBadgeEl = el("div", { className: "level-badge", text: "C1" });
@@ -527,6 +545,28 @@ export class HUDController {
     if (Phaser.Input.Keyboard.JustDown(this.qKey) && !guidedMode.isActive()) {
       this.trackerVisible = !this.trackerVisible;
       this.refreshTracker();
+    }
+    this.refreshPlayerCount();
+  }
+
+  // §5 "Never Show an Empty Room" — "{n} here" when others are present;
+  // an ambient line pulled from gathering.ts instead of a blank corner
+  // when the scene is empty (just you, or disconnected).
+  private refreshPlayerCount() {
+    const count = net.getPlayerCount();
+    if (count > 1) {
+      this.playerCountEl.textContent = `${count} HERE`;
+      this.emptySceneLineEl.style.display = "none";
+      return;
+    }
+    this.playerCountEl.textContent = "";
+    const current = gathering.getCurrent();
+    if (current) {
+      const minutes = gathering.getMinutesUntilStart();
+      this.emptySceneLineEl.textContent = minutes !== null && minutes <= 0 ? `The hearth is lit. ${current.title} is on now — the Tavern.` : `The hearth is lit. ${current.title} begins soon.`;
+      this.emptySceneLineEl.style.display = "block";
+    } else {
+      this.emptySceneLineEl.style.display = "none";
     }
   }
 
