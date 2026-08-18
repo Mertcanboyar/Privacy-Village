@@ -53,7 +53,16 @@ export interface RemotePlayerSnapshot {
 type PlayerAddHandler = (player: RemotePlayerSnapshot) => void;
 type PlayerChangeHandler = (player: RemotePlayerSnapshot) => void;
 type PlayerRemoveHandler = (sessionId: string) => void;
-type ChatHandler = (sessionId: string, text: string) => void;
+type ChatHandler = (sessionId: string, text: string, stage: boolean) => void;
+export interface ChatHistoryEntry {
+  sessionId: string;
+  name: string;
+  text: string;
+  stage: boolean;
+  ts: number;
+}
+type ChatHistoryHandler = (entries: ChatHistoryEntry[]) => void;
+type EmoteHandler = (sessionId: string, emoteId: string) => void;
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 type StatusChangeHandler = (status: ConnectionStatus, lastError: string | null) => void;
@@ -91,6 +100,8 @@ export class NetClient {
   private changeHandler: PlayerChangeHandler | null = null;
   private removeHandler: PlayerRemoveHandler | null = null;
   private chatHandler: ChatHandler | null = null;
+  private chatHistoryHandler: ChatHistoryHandler | null = null;
+  private emoteHandler: EmoteHandler | null = null;
   // Unlike the three above, this one's set once by hud.ts (in UIOverlay,
   // constructed before Room.ts's first connect() call and never rebuilt
   // on room transitions) and never needs repointing — it's read by the
@@ -125,6 +136,18 @@ export class NetClient {
 
   onChat(handler: ChatHandler) {
     this.chatHandler = handler;
+  }
+
+  /** Fires once per (re)connect, right after join, with up to the last
+   * 50 messages the server still had buffered (see SceneRoom.ts) — lets
+   * a joiner's chat log show recent conversation instead of starting
+   * blank. Never fires if the room had no history yet. */
+  onChatHistory(handler: ChatHistoryHandler) {
+    this.chatHistoryHandler = handler;
+  }
+
+  onEmote(handler: EmoteHandler) {
+    this.emoteHandler = handler;
   }
 
   onStatusChange(handler: StatusChangeHandler) {
@@ -180,8 +203,14 @@ export class NetClient {
       // getStateCallbacks on room.state), so a normal onMessage listener
       // is fine here. Re-registered on every (re)connect, same as the
       // add/change/remove handlers repointing at a fresh scene below.
-      room.onMessage("chat", (message: { sessionId: string; text: string }) => {
-        this.chatHandler?.(message.sessionId, message.text);
+      room.onMessage("chat", (message: { sessionId: string; text: string; stage?: boolean }) => {
+        this.chatHandler?.(message.sessionId, message.text, !!message.stage);
+      });
+      room.onMessage("chatHistory", (entries: ChatHistoryEntry[]) => {
+        this.chatHistoryHandler?.(entries ?? []);
+      });
+      room.onMessage("emote", (message: { sessionId: string; emoteId: string }) => {
+        this.emoteHandler?.(message.sessionId, message.emoteId);
       });
     } catch (err) {
       // A dead/refused WebSocket typically throws a raw ProgressEvent or
@@ -303,12 +332,22 @@ export class NetClient {
    * reaches the server (disconnected, or the send throws) still shows
    * above the sender's own head, since Room.ts renders that bubble
    * itself rather than waiting for this to round-trip (see
-   * ChatController's onSend callback). */
-  sendChat(text: string) {
+   * ChatController's onSend callback). `stage` — was the sender
+   * standing in the Tavern's stage zone when they sent this? (see
+   * Room.ts's isOnStage()) — purely cosmetic (bigger/gold rendering),
+   * not re-validated server-side. */
+  sendChat(text: string, stage = false) {
     if (!this.room) return;
     const trimmed = text.trim().slice(0, CHAT_MAX_LEN);
     if (!trimmed) return;
-    this.room.send("chat", { text: trimmed });
+    this.room.send("chat", { text: trimmed, stage });
+  }
+
+  /** Fire-and-forget hotkey emote (see Room.ts's 1-4 handling) — no
+   * text, just an id the server validates against a fixed allowlist. */
+  sendEmote(emoteId: string) {
+    if (!this.room) return;
+    this.room.send("emote", { emoteId });
   }
 }
 

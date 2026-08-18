@@ -12,10 +12,11 @@ import { events } from "../events";
 import { playSound } from "../audio";
 import type { RoomName } from "../rooms";
 import { net } from "../net/NetClient";
-import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE } from "../net/remotePlayers";
+import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE, EMOTE_BUBBLE_DURATION_MS, EMOTE_ICONS } from "../net/remotePlayers";
 import { isUiLocked } from "../cloud/uiLock";
 import { ChatController } from "../chat";
-import { markSpawn, logOnboardingOrientationShown } from "../instrumentation";
+import { ChatLogController } from "../chatLog";
+import { markSpawn, logOnboardingOrientationShown, logChatMessageSent, logEmoteSent } from "../instrumentation";
 import { guidedMode } from "../guidedMode";
 import { recordLoadError, logRenderFailure } from "../renderDiagnostics";
 
@@ -154,8 +155,12 @@ export class Room extends Phaser.Scene {
   private pendingCourthouseDoorPing = false;
   private remotePlayers!: RemotePlayerController;
   private chatController!: ChatController;
+  private chatLog!: ChatLogController;
   private localChatBubble: Phaser.GameObjects.Text | null = null;
   private localChatBubbleExpiresAt = 0;
+  private localEmoteBubble: Phaser.GameObjects.Text | null = null;
+  private localEmoteBubbleExpiresAt = 0;
+  private emoteKeys!: { ONE: Phaser.Input.Keyboard.Key; TWO: Phaser.Input.Keyboard.Key; THREE: Phaser.Input.Keyboard.Key; FOUR: Phaser.Input.Keyboard.Key };
   // Playtest Session 3, P0 (texture diagnostics + cleanup) — see init(),
   // preload(), create() below.
   private hasEnteredAnyRoom = false;
@@ -410,7 +415,15 @@ export class Room extends Phaser.Scene {
     // Local room chat — "local" for free, since a door transition already
     // disconnects from this scene's SceneRoom and joins the next one (see
     // the comment above); a chat message never crosses that boundary.
-    net.onChat((sessionId, text) => this.remotePlayers.showBubble(sessionId, text));
+    this.chatLog = new ChatLogController(this);
+    net.onChat((sessionId, text, stage) => {
+      if (this.chatLog.isMuted(sessionId)) return;
+      this.remotePlayers.showBubble(sessionId, text, stage);
+      const name = this.remotePlayers.getName(sessionId) ?? "?";
+      this.chatLog.addMessage({ sessionId, name, text, stage, ts: Date.now() });
+    });
+    net.onChatHistory((entries) => this.chatLog.loadHistory(entries));
+    net.onEmote((sessionId, emoteId) => this.remotePlayers.emote(sessionId, emoteId));
     net.connect(this.roomName, {
       name: getSession().name,
       spriteId: avatar.id,
@@ -461,6 +474,7 @@ export class Room extends Phaser.Scene {
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys("W,A,S,D") as typeof this.wasd;
+    this.emoteKeys = this.input.keyboard!.addKeys("ONE,TWO,THREE,FOUR") as typeof this.emoteKeys;
 
     attachDebugOverlay(this, this.roomName, this.walkable);
 
@@ -780,6 +794,17 @@ export class Room extends Phaser.Scene {
   }
 
   private sendChatMessage(text: string) {
+    // "/mute <name>" fallback (see PLAN.md) — a slash command never
+    // reaches the server at all, same as any other client-only command
+    // would; only the click-a-name-in-the-log path is the "real" UI.
+    const muteMatch = text.match(/^\/mute\s+(.+)$/i);
+    if (muteMatch) {
+      const muted = this.chatLog.muteByName(muteMatch[1]);
+      questEngine.toast(muted ? `Muted ${muteMatch[1]}.` : `No one named "${muteMatch[1]}" in this room.`);
+      return;
+    }
+
+    logChatMessageSent();
     net.sendChat(text);
     // Rendered locally regardless of whether the send above actually
     // reached the server — chat is garnish on top of garnish, same
@@ -792,6 +817,20 @@ export class Room extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDepth(100001);
     this.localChatBubbleExpiresAt = this.time.now + CHAT_BUBBLE_DURATION_MS;
+    this.chatLog.addMessage({ sessionId: "local", name: getSession().name, text, stage: false, ts: Date.now() });
+  }
+
+  private sendLocalEmote(emoteId: string) {
+    logEmoteSent(emoteId);
+    net.sendEmote(emoteId);
+    const icon = EMOTE_ICONS[emoteId];
+    if (!icon) return;
+    this.localEmoteBubble?.destroy();
+    this.localEmoteBubble = this.add
+      .text(this.player.x, this.player.y - this.player.displayHeight - 24, icon, { fontSize: "28px" })
+      .setOrigin(0.5, 1)
+      .setDepth(100001);
+    this.localEmoteBubbleExpiresAt = this.time.now + EMOTE_BUBBLE_DURATION_MS;
   }
 
   update(time: number) {
@@ -805,7 +844,27 @@ export class Room extends Phaser.Scene {
     const otherUiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen || dossier.isOpen || tutorial.isOpen || isUiLocked();
     this.chatController.update(otherUiOpen);
     const uiOpen = otherUiOpen || this.chatController.isOpen;
+    this.chatLog.update();
     let localMoving = false;
+
+    // §1 "The Gathering" emote hotkeys — gated by !uiOpen same as WASD,
+    // so a chat message that happens to start with a digit (typed while
+    // the input has focus) never fires one; the input's own keydown
+    // stopPropagation (see chat.ts) already prevents Phaser from seeing
+    // the keystroke at all in that case, this guard covers every other
+    // overlay the same way movement is already covered.
+    if (!uiOpen) {
+      const emoteId = Phaser.Input.Keyboard.JustDown(this.emoteKeys.ONE)
+        ? "wave"
+        : Phaser.Input.Keyboard.JustDown(this.emoteKeys.TWO)
+          ? "question"
+          : Phaser.Input.Keyboard.JustDown(this.emoteKeys.THREE)
+            ? "agree"
+            : Phaser.Input.Keyboard.JustDown(this.emoteKeys.FOUR)
+              ? "celebrate"
+              : null;
+      if (emoteId) this.sendLocalEmote(emoteId);
+    }
 
     if (!uiOpen) {
       const left = this.cursors.left.isDown || this.wasd.A.isDown;
@@ -856,6 +915,15 @@ export class Room extends Phaser.Scene {
         this.localChatBubble = null;
       } else {
         this.localChatBubble.setPosition(this.player.x, this.player.y - this.player.displayHeight - 24);
+      }
+    }
+
+    if (this.localEmoteBubble) {
+      if (time > this.localEmoteBubbleExpiresAt) {
+        this.localEmoteBubble.destroy();
+        this.localEmoteBubble = null;
+      } else {
+        this.localEmoteBubble.setPosition(this.player.x, this.player.y - this.player.displayHeight - 24);
       }
     }
 

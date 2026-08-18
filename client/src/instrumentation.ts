@@ -89,3 +89,14 @@ export function logTimeToFirstObjectiveAction() {
   firstObjectiveActionLogged = true;
   logDecision("time_to_first_objective_action", { seconds: secondsSinceSpawn() });
 }
+
+// "The Gathering" (see PLAN.md's live-event build) — repeatable, same
+// shape as logLockedQuestBounce()/logGuidedStepStarted() above; these
+// are the metrics answering "is the social-hub thesis real."
+export function logChatMessageSent() {
+  logDecision("chat_message_sent", {});
+}
+
+export function logEmoteSent(emoteId: string) {
+  logDecision("emote_sent", { emoteId });
+}

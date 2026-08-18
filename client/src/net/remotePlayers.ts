@@ -27,6 +27,29 @@ export const CHAT_BUBBLE_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
   wordWrap: { width: 220 },
   align: "center",
 };
+// §2 "The Gathering" stage mechanic — a message sent while standing in
+// the Tavern's stage zone (see Room.ts's isOnStage()) renders bigger
+// and gold, visible the same scene-wide way every chat message already
+// is (no separate distribution/permission system — see PLAN.md). Same
+// shape as CHAT_BUBBLE_STYLE otherwise, reused by both the local
+// player's own bubble (Room.ts) and remote ones (showBubble() below).
+export const STAGE_CHAT_BUBBLE_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
+  fontFamily: '"JetBrains Mono", monospace',
+  fontSize: "18px",
+  fontStyle: "bold",
+  color: "#f0b429",
+  backgroundColor: "rgba(20, 22, 31, 0.9)",
+  padding: { x: 10, y: 6 },
+  wordWrap: { width: 260 },
+  align: "center",
+};
+export const EMOTE_BUBBLE_DURATION_MS = 2000;
+export const EMOTE_ICONS: Record<string, string> = {
+  wave: "\u{1F44B}",
+  question: "❓",
+  agree: "✅",
+  celebrate: "\u{1F389}",
+};
 
 function depthScaleFor(y: number): number {
   const t = Phaser.Math.Clamp(y / GAME_HEIGHT, 0, 1);
@@ -40,6 +63,7 @@ function textureFor(spriteId: string): { texture: string; baseScale: number } {
 
 interface RemoteSprite {
   image: Phaser.GameObjects.Image;
+  name: string;
   nameTag: Phaser.GameObjects.Text;
   // Public Agent Dossier title (see dossier.ts) — always created, just
   // left empty/invisible when the player has none active, so toggling a
@@ -52,6 +76,8 @@ interface RemoteSprite {
   facing: string;
   chatBubble: Phaser.GameObjects.Text | null;
   chatBubbleExpiresAt: number;
+  emoteBubble: Phaser.GameObjects.Text | null;
+  emoteBubbleExpiresAt: number;
 }
 
 // Scene-scoped by design: instantiated fresh in Room.create() (same
@@ -106,6 +132,7 @@ export class RemotePlayerController {
 
     this.sprites.set(snapshot.sessionId, {
       image,
+      name: snapshot.name,
       nameTag,
       titleTag,
       baseScale,
@@ -114,6 +141,8 @@ export class RemotePlayerController {
       facing: snapshot.facing,
       chatBubble: null,
       chatBubbleExpiresAt: 0,
+      emoteBubble: null,
+      emoteBubbleExpiresAt: 0,
     });
   }
 
@@ -126,22 +155,46 @@ export class RemotePlayerController {
     remote.targetX = snapshot.x;
     remote.targetY = snapshot.y;
     remote.facing = snapshot.facing;
+    remote.name = snapshot.name;
     remote.titleTag.setText(snapshot.activeTitle).setVisible(!!snapshot.activeTitle);
+  }
+
+  /** Display name for a still-present remote sprite, e.g. for the chat
+   * log (see chatLog.ts) which only gets a sessionId off the wire.
+   * `undefined` if they've already left. */
+  getName(sessionId: string): string | undefined {
+    return this.sprites.get(sessionId)?.name;
   }
 
   /** A "chat" broadcast arriving for a sessionId this room doesn't (or
    * no longer) have a sprite for — e.g. it left mid-flight — is dropped
    * silently, same "presence is garnish" tolerance as everything else
-   * in this file. */
-  showBubble(sessionId: string, text: string) {
+   * in this file. `stage` (see PLAN.md's Gathering) swaps in the
+   * bigger/gold style — same bubble mechanism otherwise. */
+  showBubble(sessionId: string, text: string, stage = false) {
     const remote = this.sprites.get(sessionId);
     if (!remote) return;
     remote.chatBubble?.destroy();
     remote.chatBubble = this.scene.add
-      .text(remote.image.x, remote.image.y - remote.image.displayHeight - 24, text, CHAT_BUBBLE_STYLE)
+      .text(remote.image.x, remote.image.y - remote.image.displayHeight - 24, text, stage ? STAGE_CHAT_BUBBLE_STYLE : CHAT_BUBBLE_STYLE)
       .setOrigin(0.5, 1)
       .setDepth(100001);
     remote.chatBubbleExpiresAt = this.scene.time.now + CHAT_BUBBLE_DURATION_MS;
+  }
+
+  /** Hotkey emote (see Room.ts) — a short-lived emoji bubble, separate
+   * slot from the chat bubble so an emote never cuts off an in-progress
+   * chat message (or vice versa) landing at the same moment. */
+  emote(sessionId: string, emoteId: string) {
+    const remote = this.sprites.get(sessionId);
+    const icon = EMOTE_ICONS[emoteId];
+    if (!remote || !icon) return;
+    remote.emoteBubble?.destroy();
+    remote.emoteBubble = this.scene.add
+      .text(remote.image.x, remote.image.y - remote.image.displayHeight - 24, icon, { fontSize: "28px" })
+      .setOrigin(0.5, 1)
+      .setDepth(100001);
+    remote.emoteBubbleExpiresAt = this.scene.time.now + EMOTE_BUBBLE_DURATION_MS;
   }
 
   remove(sessionId: string) {
@@ -151,6 +204,7 @@ export class RemotePlayerController {
     remote.nameTag.destroy();
     remote.titleTag.destroy();
     remote.chatBubble?.destroy();
+    remote.emoteBubble?.destroy();
     this.sprites.delete(sessionId);
   }
 
@@ -190,6 +244,15 @@ export class RemotePlayerController {
           remote.chatBubble = null;
         } else {
           remote.chatBubble.setPosition(remote.image.x, remote.image.y - remote.image.displayHeight - 24);
+        }
+      }
+
+      if (remote.emoteBubble) {
+        if (this.scene.time.now > remote.emoteBubbleExpiresAt) {
+          remote.emoteBubble.destroy();
+          remote.emoteBubble = null;
+        } else {
+          remote.emoteBubble.setPosition(remote.image.x, remote.image.y - remote.image.displayHeight - 24);
         }
       }
     }
