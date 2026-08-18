@@ -7,6 +7,7 @@ import { ACADEMY_TRACK_IDS, ACADEMY_MODULE_IDS, academy, type AcademyTrack, type
 import { events, type EventVideo } from "../events";
 import { dossier, type CodexConcept, type TitleDef } from "../dossier";
 import { guidedMode, type SequenceStep } from "../guidedMode";
+import { gathering, type GatheringEvent } from "../gathering";
 import { recordLoadError } from "../renderDiagnostics";
 
 export class Preload extends Phaser.Scene {
@@ -152,6 +153,11 @@ export class Preload extends Phaser.Scene {
     // Privacy Village YouTube channel, youtube.com/@PrivacyQuest.
     this.load.json("events", "data/events.json");
 
+    // §2 "The Gathering" (see PLAN.md) — the live event's schedule, a
+    // different file from "events" above (that name was already taken
+    // by the unrelated video panel — see gathering.ts's header comment).
+    this.load.json("gathering", "data/gathering.json");
+
     // The Agent Dossier (see dossier.ts) — concept trophy catalog and
     // title definitions, each a single flat JSON array rather than
     // per-id files (there's no per-concept content beyond the array
@@ -193,6 +199,9 @@ export class Preload extends Phaser.Scene {
     academy.loadData(academyTracks, academyModules);
 
     events.loadData(this.cache.json.get("events") as EventVideo[]);
+
+    const gatheringData = this.cache.json.get("gathering") as { events: GatheringEvent[] };
+    gathering.loadData(gatheringData.events);
 
     dossier.loadData(this.cache.json.get("codex") as CodexConcept[], this.cache.json.get("titles") as TitleDef[]);
 

@@ -3,6 +3,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from "../config";
 import { attachDebugOverlay } from "../debugOverlay";
 import { NPCController, findNpcRoom } from "../npc";
 import { QuestController } from "../quest";
+import { EventBoardController } from "../eventBoard";
 import { getAvatarOption, getFactionColor, getSession } from "../session";
 import { questEngine } from "../questEngine";
 import { academy } from "../academy";
@@ -12,7 +13,7 @@ import { events } from "../events";
 import { playSound } from "../audio";
 import type { RoomName } from "../rooms";
 import { net } from "../net/NetClient";
-import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE, EMOTE_BUBBLE_DURATION_MS, EMOTE_ICONS } from "../net/remotePlayers";
+import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE, STAGE_CHAT_BUBBLE_STYLE, EMOTE_BUBBLE_DURATION_MS, EMOTE_ICONS } from "../net/remotePlayers";
 import { isUiLocked } from "../cloud/uiLock";
 import { ChatController } from "../chat";
 import { ChatLogController } from "../chatLog";
@@ -148,6 +149,7 @@ export class Room extends Phaser.Scene {
   private wanderers: Wanderer[] = [];
   private npcController!: NPCController;
   private questController!: QuestController;
+  private eventBoard!: EventBoardController;
   // Cold blue-grey overlay while "The Night the Wall Fell" is active —
   // persists across room changes (see refreshIncidentTint(), called at
   // the end of every create()) and lifts on quest completion.
@@ -503,6 +505,7 @@ export class Room extends Phaser.Scene {
 
     this.npcController = new NPCController(this, this.roomName);
     this.questController = new QuestController(this, this.roomName);
+    this.eventBoard = new EventBoardController(this, this.roomName);
     this.chatController = new ChatController(
       this,
       (text) => this.sendChatMessage(text),
@@ -804,8 +807,15 @@ export class Room extends Phaser.Scene {
       return;
     }
 
+    // §2 "The Gathering" — standing in the Tavern's stage zone renders
+    // bigger/gold, scene-wide (the existing scene-scoped broadcast IS
+    // "scene-wide" here, see PLAN.md's proximity-chat scope note). A
+    // cosmetic flag only, same trust level as "move" — not a privilege
+    // boundary, so it rides straight through to the server untouched.
+    const isOnStage = this.isPlayerOnZone("stage");
+
     logChatMessageSent();
-    net.sendChat(text);
+    net.sendChat(text, isOnStage);
     // Rendered locally regardless of whether the send above actually
     // reached the server — chat is garnish on top of garnish, same
     // "never a dependency" rule multiplayer already follows (see
@@ -813,11 +823,17 @@ export class Room extends Phaser.Scene {
     // appear above your own head, solo or not.
     this.localChatBubble?.destroy();
     this.localChatBubble = this.add
-      .text(this.player.x, this.player.y - this.player.displayHeight - 24, text, CHAT_BUBBLE_STYLE)
+      .text(this.player.x, this.player.y - this.player.displayHeight - 24, text, isOnStage ? STAGE_CHAT_BUBBLE_STYLE : CHAT_BUBBLE_STYLE)
       .setOrigin(0.5, 1)
       .setDepth(100001);
     this.localChatBubbleExpiresAt = this.time.now + CHAT_BUBBLE_DURATION_MS;
-    this.chatLog.addMessage({ sessionId: "local", name: getSession().name, text, stage: false, ts: Date.now() });
+    this.chatLog.addMessage({ sessionId: "local", name: getSession().name, text, stage: isOnStage, ts: Date.now() });
+  }
+
+  private isPlayerOnZone(zoneId: string): boolean {
+    const zone = this.zones.find((z) => z.id === zoneId);
+    if (!zone) return false;
+    return Phaser.Math.Distance.Between(this.player.x, this.player.y, zone.x, zone.y) < zone.radius;
   }
 
   private sendLocalEmote(emoteId: string) {
@@ -841,7 +857,15 @@ export class Room extends Phaser.Scene {
     // the player or a wanderer warp straight through several waypoints.
     const dt = Math.min(this.game.loop.delta, 50) / 1000;
 
-    const otherUiOpen = this.npcController.dialogueOpen || this.questController.dialogueOpen || academy.isOpen || events.isOpen || dossier.isOpen || tutorial.isOpen || isUiLocked();
+    const otherUiOpen =
+      this.npcController.dialogueOpen ||
+      this.questController.dialogueOpen ||
+      this.eventBoard.dialogueOpen ||
+      academy.isOpen ||
+      events.isOpen ||
+      dossier.isOpen ||
+      tutorial.isOpen ||
+      isUiLocked();
     this.chatController.update(otherUiOpen);
     const uiOpen = otherUiOpen || this.chatController.isOpen;
     this.chatLog.update();
@@ -930,6 +954,7 @@ export class Room extends Phaser.Scene {
     this.updateWanderers(time, dt);
     this.npcController.update(this.player.x, this.player.y);
     this.questController.update(this.player.x, this.player.y);
+    this.eventBoard.update(this.player.x, this.player.y);
 
     if (!uiOpen) {
       this.checkDoors();

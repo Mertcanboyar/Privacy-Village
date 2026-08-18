@@ -100,3 +100,7 @@ export function logChatMessageSent() {
 export function logEmoteSent(emoteId: string) {
   logDecision("emote_sent", { emoteId });
 }
+
+export function logEventBoardOpened() {
+  logDecision("event_board_opened", {});
+}

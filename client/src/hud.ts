@@ -16,6 +16,8 @@ import { persistenceStatus, type PersistenceStatus } from "./cloud/persistenceSt
 import { lockUi, unlockUi } from "./cloud/uiLock";
 import { isMusicMuted, toggleMusic } from "./audio";
 import { guidedMode } from "./guidedMode";
+import { gathering } from "./gathering";
+import type { RoomName } from "./rooms";
 
 // Persistent HUD (see PLAN.md Phase 2, Day 3) — .xp-bar, quest tracker,
 // and toast stack from design-system.css, wired to questEngine's events
@@ -66,6 +68,9 @@ export class HUDController {
 
   private guidedBannerEl: HTMLElement;
   private guidedBannerLabelEl: HTMLElement;
+
+  private countdownBannerEl: HTMLElement;
+  private countdownBannerTextEl: HTMLElement;
 
   private clockEl: HTMLElement;
   private clockValueEl: HTMLElement;
@@ -397,6 +402,45 @@ export class HUDController {
     );
     hudRootEl.appendChild(this.guidedBannerEl);
 
+    // --- §2 "The Gathering" countdown banner (top-center, all scenes,
+    // see PLAN.md) --- top:168px, not 84px like the guided banner above
+    // — that banner's own padding/text puts its bottom edge around
+    // y~150 when shown, and the two CAN coexist (unlike the guided
+    // banner vs. the Decision Clock), so this sits below it rather than
+    // reusing its slot. Verified live against both that banner and the
+    // top bar, same discipline as the guided banner's own comment.
+    this.countdownBannerTextEl = el("div", {
+      style: { fontFamily: "var(--font-body)", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" },
+    });
+    this.countdownBannerEl = el(
+      "div",
+      {
+        className: "panel panel--glow-gold ds-root",
+        style: {
+          position: "absolute",
+          top: "168px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          padding: "8px 20px",
+          display: "none",
+          pointerEvents: "auto",
+          textAlign: "center",
+          cursor: "pointer",
+        },
+        on: {
+          click: () => {
+            net.disconnect();
+            scene.scene.get("Room").scene.restart({ room: "tavern" as RoomName });
+          },
+        },
+      },
+      [this.countdownBannerTextEl],
+    );
+    hudRootEl.appendChild(this.countdownBannerEl);
+
+    scene.time.addEvent({ delay: 30000, loop: true, callback: () => this.refreshCountdownBanner() });
+    this.refreshCountdownBanner();
+
     // --- Decision Clock (top-center, only while "The Night the Wall
     // Fell" is active) ---
     this.clockValueEl = el("span", { text: "⏱ HOUR 0 OF 72" });
@@ -525,6 +569,27 @@ export class HUDController {
           ? "guest — sign up to save progress"
           : `signed in, but saving is failing${lastError ? ` — ${lastError}` : ""}`;
     this.persistDotEl.title = `Account: ${detail}`;
+  }
+
+  // §2 "The Gathering" — shown from 60 minutes before start through the
+  // event's own duration, then hidden again; polled every 30s (see the
+  // constructor's scene.time.addEvent) rather than every frame, since a
+  // countdown that's only ever accurate to the minute doesn't need to.
+  private refreshCountdownBanner() {
+    const current = gathering.getCurrent();
+    const minutes = gathering.getMinutesUntilStart();
+    if (!current || minutes === null || minutes > 60) {
+      this.countdownBannerEl.style.display = "none";
+      return;
+    }
+    const endsAt = new Date(current.startsAt).getTime() + current.durationMin * 60000;
+    if (Date.now() >= endsAt) {
+      this.countdownBannerEl.style.display = "none";
+      return;
+    }
+    this.countdownBannerTextEl.textContent =
+      minutes > 0 ? `The Gathering begins in ${minutes} minute${minutes === 1 ? "" : "s"} — the Tavern.` : "The Gathering has begun — the Tavern.";
+    this.countdownBannerEl.style.display = "block";
   }
 
   private refreshTracker() {

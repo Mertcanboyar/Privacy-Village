@@ -57,5 +57,8 @@
     }
   ],
   "npcSpawns": [],
-  "zones": [{ "id": "portrait", "x": 790, "y": 450, "radius": 60 }]
+  "zones": [
+    { "id": "portrait", "x": 790, "y": 450, "radius": 60 },
+    { "id": "stage", "x": 650, "y": 480, "radius": 70 }
+  ]
 }
