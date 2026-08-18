@@ -15,6 +15,7 @@ import { net } from "./net/NetClient";
 import { persistenceStatus, type PersistenceStatus } from "./cloud/persistenceStatus";
 import { lockUi, unlockUi } from "./cloud/uiLock";
 import { isMusicMuted, toggleMusic } from "./audio";
+import { guidedMode } from "./guidedMode";
 
 // Persistent HUD (see PLAN.md Phase 2, Day 3) — .xp-bar, quest tracker,
 // and toast stack from design-system.css, wired to questEngine's events
@@ -62,6 +63,9 @@ export class HUDController {
   private trackerCounterEl: HTMLElement;
   private trackerEvidenceRowEl: HTMLElement;
   private trackerVisible = true;
+
+  private guidedBannerEl: HTMLElement;
+  private guidedBannerLabelEl: HTMLElement;
 
   private clockEl: HTMLElement;
   private clockValueEl: HTMLElement;
@@ -334,6 +338,45 @@ export class HUDController {
     );
     hudRootEl.appendChild(this.trackerEl);
 
+    // --- Guided Sequence objective banner (top-center, see
+    // guidedMode.ts) --- Unmissable and non-dismissible (update()'s Q
+    // handling ignores it entirely) on purpose — the playtest finding
+    // this exists for was players never noticing the ordinary corner
+    // tracker at all. refreshTracker() hides the corner tracker
+    // whenever this banner is showing, so the two never compete for
+    // attention; the Decision Clock (also top-center) never actually
+    // coexists with it in practice since "The Night the Wall Fell" is
+    // always locked during guided mode's 2-step sequence.
+    this.guidedBannerLabelEl = el("div", {
+      style: { fontFamily: "var(--font-body)", fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" },
+    });
+    this.guidedBannerEl = el(
+      "div",
+      {
+        className: "panel panel--glow-gold panel--tracker-glow ds-root",
+        style: {
+          position: "absolute",
+          top: "24px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          minWidth: "420px",
+          maxWidth: "640px",
+          textAlign: "center",
+          padding: "10px 24px",
+          display: "none",
+          pointerEvents: "auto",
+        },
+      },
+      [
+        el("div", {
+          text: "OBJECTIVE",
+          style: { fontFamily: "var(--font-display)", fontWeight: "700", fontSize: "11px", letterSpacing: "0.08em", color: "var(--accent-gold)" },
+        }),
+        this.guidedBannerLabelEl,
+      ],
+    );
+    hudRootEl.appendChild(this.guidedBannerEl);
+
     // --- Decision Clock (top-center, only while "The Night the Wall
     // Fell" is active) ---
     this.clockValueEl = el("span", { text: "⏱ HOUR 0 OF 72" });
@@ -383,6 +426,7 @@ export class HUDController {
     questEngine.on("reveal", (reveal: QuestStepReveal) => this.showReveal(reveal));
     questEngine.on("stepChoice", (choice: QuestStepChoice) => this.showStepChoice(choice));
     academy.on("toast", (message: string) => this.showToast(message));
+    guidedMode.on("changed", () => this.refreshTracker());
 
     this.refreshXpBar();
     this.refreshTracker();
@@ -409,7 +453,11 @@ export class HUDController {
   }
 
   update() {
-    if (Phaser.Input.Keyboard.JustDown(this.qKey)) {
+    // The guided banner isn't the dismissible tracker — Q is ignored
+    // entirely while it's showing (see refreshTracker()'s guided-mode
+    // branch), so there's no way to accidentally hide the one thing
+    // this whole feature exists to keep visible.
+    if (Phaser.Input.Keyboard.JustDown(this.qKey) && !guidedMode.isActive()) {
       this.trackerVisible = !this.trackerVisible;
       this.refreshTracker();
     }
@@ -457,6 +505,20 @@ export class HUDController {
   }
 
   private refreshTracker() {
+    // Guided Sequence (see guidedMode.ts) takes over the whole role this
+    // method normally plays — the corner tracker stays fully hidden
+    // while it's active, so the two never compete for the player's
+    // attention (and there's nothing here for Q to toggle either, see
+    // update()).
+    const guidedStep = guidedMode.getCurrentStep();
+    if (guidedMode.isActive() && guidedStep) {
+      this.trackerEl.style.display = "none";
+      this.guidedBannerLabelEl.textContent = guidedStep.label;
+      this.guidedBannerEl.style.display = "block";
+      return;
+    }
+    this.guidedBannerEl.style.display = "none";
+
     // Reset every render — only the LOCKED branch below re-enables this,
     // so a stale click target never lingers into an unrelated state
     // (the objective line is otherwise plain text, never clickable).

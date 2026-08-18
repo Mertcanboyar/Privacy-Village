@@ -76,3 +76,10 @@ export function logGuidedStepCompleted(stepId: string, seconds: number) {
 export function logOffpathAttempt(kind: "quest" | "academy_module", targetId: string, currentStepId: string | null) {
   logDecision("offpath_attempt", { kind, targetId, currentStepId });
 }
+
+// One per tier (30s/90s/150s), each guarded to fire at most once per
+// step by Room.ts's guidedNudgeTiersFired set — logDecision() call
+// itself has no guard, matching the other repeatable events above.
+export function logNudgeShown(tier: "30s" | "90s" | "150s") {
+  logDecision("nudge_shown", { tier });
+}
