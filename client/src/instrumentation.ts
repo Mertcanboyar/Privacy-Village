@@ -67,3 +67,12 @@ export function logGuidedStepStarted(stepId: string) {
 export function logGuidedStepCompleted(stepId: string, seconds: number) {
   logDecision("guided_step_completed", { stepId, seconds });
 }
+
+// Fired every time a player tries to start something outside the
+// current guided-mode step (an off-path NPC's quest offer, a locked
+// Academy module card) — repeated firing here is the actual signal the
+// spec asks for ("if this fires a lot, the navigation is still
+// failing — gating alone is not success"), not a bug to guard against.
+export function logOffpathAttempt(kind: "quest" | "academy_module", targetId: string, currentStepId: string | null) {
+  logDecision("offpath_attempt", { kind, targetId, currentStepId });
+}

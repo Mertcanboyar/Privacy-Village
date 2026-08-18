@@ -28,6 +28,8 @@ import { getSession } from "./session";
 import { showImageOverlay, isImageOverlayOpen } from "./ui/imageOverlay";
 import { buildDiagram } from "./ui/diagramReader";
 import { logDecision } from "./cloud/save";
+import { guidedMode } from "./guidedMode";
+import { logOffpathAttempt } from "./instrumentation";
 import type { Room } from "./scenes/Room";
 
 const MODULE_COMPLETE_XP = 100;
@@ -765,6 +767,44 @@ export class AcademyOverlay {
     // just the underlying progress data, so a real FIELD WORK ✓ never
     // hides behind a sequence-lock card.
     const hasRealProgress = progress.theoryDone || (progress.fieldDone && !!module?.fieldWork);
+
+    // Guided Sequence hard gate (see guidedMode.ts) — takes priority
+    // over the normal within-track isTheoryUnlocked() sequencing below,
+    // since that alone doesn't stop a player from jumping to a
+    // DIFFERENT track's first module (every track's order:1 module has
+    // no prerequisite) and unlocking that track's field quest ahead of
+    // the intended first step — the exact playtest bug this fixes. Same
+    // "do not revoke anything" exemption as the isTheoryUnlocked card
+    // below: a module the player already has real progress on is never
+    // hidden behind this lock, guided mode or not.
+    const guidedStep = guidedMode.getCurrentStep();
+    const isGuidedTarget = guidedStep?.type === "academy_module" && guidedStep.target === summary.id;
+    if (module && guidedMode.isActive() && !isGuidedTarget && !hasRealProgress) {
+      const label = guidedStep?.label ?? "the current objective";
+      const clickable = guidedStep?.type === "academy_module";
+      const onClick = clickable
+        ? () => {
+            logOffpathAttempt("academy_module", summary.id, guidedStep!.id);
+            // openToModule() calls academy.open(), a no-op guard since
+            // the overlay is already open here (we're mid-render of its
+            // module list) — jump the view directly instead of relying
+            // on the "opened" event to fire again.
+            academy.openToModule(guidedStep!.target);
+            this.currentTrackId = academy.getModule(guidedStep!.target)?.track ?? this.currentTrackId;
+            this.goToTheory(guidedStep!.target);
+          }
+        : undefined;
+      return el(
+        "div",
+        { className: "quest-card", style: { opacity: "0.5", cursor: clickable ? "pointer" : "default" }, on: onClick ? { click: onClick } : {} },
+        [
+          el("div", { className: "quest-card__icon" }),
+          el("div", { className: "quest-card__info" }, [el("div", { className: "quest-card__title", text: summary.title })]),
+          el("div", { className: "quest-card__meta" }, [el("span", { className: "chip", text: `Finish: ${label}` })]),
+        ],
+      );
+    }
+
     if (module && !hasRealProgress && !academy.isTheoryUnlocked(module.track, summary.order)) {
       const prior = academy.getPriorModule(module.track, summary.order);
       return el("div", { className: "quest-card", style: { opacity: "0.5" } }, [

@@ -24,7 +24,8 @@ import { postRoadBuilderState } from "./postRoadBuilderState";
 import { sealedLetterState } from "./sealedLetterState";
 import { treasuryKeysState } from "./treasuryKeysState";
 import { marenWinterReportState } from "./marenWinterReportState";
-import { logFirstQuestAccept, logLockedQuestBounce } from "./instrumentation";
+import { logFirstQuestAccept, logLockedQuestBounce, logOffpathAttempt } from "./instrumentation";
+import { guidedMode } from "./guidedMode";
 import { archivistsDeskState } from "./archivistsDeskState";
 import { alchemistsTrialsState } from "./alchemistsTrialsState";
 
@@ -208,6 +209,28 @@ const LOCKED_QUEST_LINES: Record<string, string> = {
   innkeepers_shards: 'Complete "De-identification: Masks & Chains" at the Academy first, Agent — those shards won\'t un-shatter themselves.',
   treasury_two_keys: 'Complete "Measures that Interlock" at the Academy first, Agent — coin buys a heavier lock, not a smarter one.',
   alchemists_trials: 'Complete "The Alchemist\'s Cabinet" at the Academy first, Agent. The locked drawer stays locked until you know what\'s in it.',
+};
+
+// Guided Sequence (see guidedMode.ts) — takes priority over BOTH the
+// availableGiverQuestId and LOCKED_QUEST_LINES branches below while
+// guided mode is active, for any quest-giver whose quest isn't the
+// current step's target. Distinct from LOCKED_QUEST_LINES on purpose:
+// that map always points to a quest's OWN paired module, which during
+// guided mode may not be the actual current objective at all (a player
+// approaching Odile mid-step-1 needs to hear "go study at the Academy,"
+// not "go complete De-identification" — her own prerequisite, but not
+// what's marked right now). Each opener is a short in-character deflect
+// (per the playtest spec's own Odile example); the current step's
+// label is appended so the line always names where to go, without
+// hand-authoring a variant per step.
+const GUIDED_MODE_REDIRECT_OPENERS: Record<string, string> = {
+  herald: "Not yet, Ranger.",
+  bram: "Later, Agent.",
+  odile: "Later, Agent — the Herald's business comes first.",
+  maren: "Not now, Agent.",
+  quill: "The ledger can wait, Agent.",
+  isolde: "The drawer stays shut a while longer, Agent.",
+  mayor: "Not yet, Agent. The Council's patience isn't the issue here.",
 };
 
 // First matching `if` wins; a set with no `if` is the fallback and
@@ -1545,6 +1568,35 @@ export class NPCController {
     // doc comment) — offer whichever one of them is actually available
     // right now.
     const giverQuestIds = def.questGiver ? (Array.isArray(def.questGiver) ? def.questGiver : [def.questGiver]) : [];
+
+    // Guided Sequence hard gate (see GUIDED_MODE_REDIRECT_OPENERS'
+    // comment above) — checked before availableGiverQuestId/
+    // LOCKED_QUEST_LINES below, for any quest-giver whose quest(s)
+    // aren't the current step's target. Same `!getActiveQuest()` scope
+    // as those branches: an NPC hosting an already-active quest's
+    // ongoing content is never gated, only a fresh offer attempt.
+    const guidedStep = guidedMode.getCurrentStep();
+    const isGuidedTarget = guidedStep?.type === "quest" && giverQuestIds.includes(guidedStep.target);
+    if (giverQuestIds.length > 0 && guidedMode.isActive() && !isGuidedTarget && !questEngine.getActiveQuest()) {
+      logOffpathAttempt("quest", giverQuestIds[0], guidedStep?.id ?? null);
+      const opener = GUIDED_MODE_REDIRECT_OPENERS[def.id] ?? "Not yet, Agent.";
+      const line = guidedStep ? `${opener} ${guidedStep.label}.` : opener;
+      // Routed through the normal single-line activeSet/showLine() path
+      // (like pickChoice()'s response), not a bare typewriter() call —
+      // advance()'s click-to-close only works when activeSet is set;
+      // LOCKED_QUEST_LINES gets away with activeSet: null only because
+      // its buttons call closeDialogue() directly instead of relying on
+      // click-anywhere-to-advance, which this line doesn't have.
+      this.mode = "dialogue";
+      this.dialogueEl.style.display = "block";
+      this.dialogueNameEl.textContent = def.name;
+      this.dialogueBackBtn.style.visibility = "hidden";
+      this.activeSet = { lines: [line] };
+      this.lineIndex = 0;
+      this.showLine();
+      return;
+    }
+
     const availableGiverQuestId = giverQuestIds.find((id) => questEngine.isAvailable(id));
     if (availableGiverQuestId && !questEngine.getActiveQuest()) {
       this.mode = "offer";
