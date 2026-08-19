@@ -504,6 +504,23 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     return this.open_;
   }
 
+  // Set the moment a module completes (see tryCompleteModule() below),
+  // cleared when the player dismisses the MODULE COMPLETE badge — Room.ts
+  // folds this into its own uiOpen check so movement locks while the
+  // badge is up, same as every other full-screen modal, regardless of
+  // whether the Academy overlay itself happens to be open at the time.
+  private celebrating = false;
+
+  get isCelebrating(): boolean {
+    return this.celebrating;
+  }
+
+  /** Called by academyOverlay.ts's hideBadge() once the player dismisses
+   * the badge — not a general-purpose setter, just the one dismiss path. */
+  dismissCelebration() {
+    this.celebrating = false;
+  }
+
   /** Drives hud.ts's persistent "Study" button pulse (see PLAN's
    * onboarding signposting: "pulses until first opened") — true once
    * this browser has ever opened the Academy, OR (the stronger signal,
@@ -555,25 +572,6 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     const id = this.pendingModuleId;
     this.pendingModuleId = null;
     return id;
-  }
-
-  // A field-work module's completing moment is, by construction, almost
-  // never while the Academy is open: the study-first inversion means
-  // theory always finishes first (in the Academy) and unlocks the field
-  // quest, which the player then goes and finishes out in the village —
-  // so tryCompleteModule() fires with the Academy closed, and
-  // academyOverlay.ts's showBadge() (guarded on academy.isOpen) silently
-  // skips the MODULE COMPLETE badge, leaving only the quieter "ACADEMY
-  // RECORD FILED" toast. Queued here and replayed by academyOverlay.ts's
-  // "opened" handler (same pattern as pendingModuleId above) so the
-  // player still sees the badge the next time they open the Academy,
-  // instead of never seeing it at all.
-  private pendingBadgeModuleIds: string[] = [];
-
-  consumePendingBadgeModuleIds(): string[] {
-    const ids = this.pendingBadgeModuleIds;
-    this.pendingBadgeModuleIds = [];
-    return ids;
   }
 
   open() {
@@ -795,10 +793,17 @@ class AcademyManager extends Phaser.Events.EventEmitter {
     const credential = module ? this.tracks.get(module.track)?.credential : undefined;
     questEngine.addPoints(100);
     this.emit("toast", `ACADEMY RECORD FILED — progress toward ${credential ?? "your credential"}.`);
+    // Shows the MODULE COMPLETE badge immediately, wherever the player
+    // is — a field-work module's completing moment is, by construction,
+    // almost always out in the village (theory always finishes first,
+    // in the Academy, and unlocks the field quest the player then goes
+    // and finishes elsewhere), so this can't wait for the Academy
+    // overlay to be open. academyOverlay.ts's badge is its own
+    // independent DOM layer for exactly this reason — see its own doc
+    // comment. Room.ts folds isCelebrating into uiOpen so movement
+    // locks while it's up, same as any other modal.
+    this.celebrating = true;
     this.emit("moduleCompleted", moduleId);
-    // See pendingBadgeModuleIds' doc comment — this is the common case
-    // (completing out in the village), not an edge case.
-    if (!this.open_) this.pendingBadgeModuleIds.push(moduleId);
   }
 }
 

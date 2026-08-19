@@ -890,6 +890,7 @@ export class Room extends Phaser.Scene {
       this.eventBoard.dialogueOpen ||
       this.contactExchange.uiOpen ||
       academy.isOpen ||
+      academy.isCelebrating ||
       events.isOpen ||
       dossier.isOpen ||
       tutorial.isOpen ||

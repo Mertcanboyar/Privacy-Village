@@ -345,6 +345,7 @@ export class AcademyOverlay {
   private adviseVariantOf: (string | null)[] = [];
   private adviseVariantParentInfo = new Map<string, { attempts: number; hintUsed: boolean }>();
 
+  private badgeWrapperEl: HTMLElement;
   private badgeEl: HTMLElement;
   private badgeNameEl: HTMLElement;
   private badgeXpEl: HTMLElement;
@@ -378,14 +379,19 @@ export class AcademyOverlay {
       [this.bodyEl],
     );
 
-    // --- Module-complete badge popup — floats above whichever view is
-    // showing (module list, typically) rather than living inside bodyEl,
-    // since render() rebuilds bodyEl from scratch and would wipe it. ---
+    // --- Module-complete badge popup — its own top-level DOM layer,
+    // NOT nested inside rootEl, since rootEl's display is tied to
+    // academy.isOpen and a field-work module's completing moment is, by
+    // construction, almost always out in the village with the Academy
+    // closed (theory always finishes first, in the Academy, and unlocks
+    // the field quest the player then goes and finishes elsewhere). Own
+    // backdrop too, so it reads as a real interrupt over the village
+    // scene, not just a borrowed corner of the Academy's. ---
     this.badgeNameEl = el("div", { className: "badge-popup__name" });
     this.badgeXpEl = el("span", { text: "0" });
     this.badgeEl = el(
       "div",
-      { className: "badge-popup ds-root", style: { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", pointerEvents: "auto", display: "none", zIndex: "10" } },
+      { className: "badge-popup ds-root", style: { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)" } },
       [
         el("div", { className: "badge-popup__icon" }, [this.badgeIconSvg()]),
         el("div", { className: "badge-popup__label", text: "MODULE COMPLETE" }),
@@ -394,8 +400,14 @@ export class AcademyOverlay {
         el("div", { className: "chip", text: "CLICK TO CONTINUE", style: { marginTop: "20px", cursor: "pointer" }, on: { click: () => this.hideBadge() } }),
       ],
     );
+    this.badgeWrapperEl = el(
+      "div",
+      { className: "ds-root", style: { position: "absolute", inset: "0", display: "none", pointerEvents: "auto", zIndex: "10" } },
+      [el("div", { style: { position: "absolute", inset: "0", background: "rgba(10, 10, 15, 0.6)" } }), this.badgeEl],
+    );
+    root.appendChild(this.badgeWrapperEl);
 
-    this.rootEl = el("div", { className: "ds-root", style: { position: "absolute", inset: "0", display: "none", pointerEvents: "auto" } }, [this.backdropEl, this.stageEl, closeBtn, this.badgeEl]);
+    this.rootEl = el("div", { className: "ds-root", style: { position: "absolute", inset: "0", display: "none", pointerEvents: "auto" } }, [this.backdropEl, this.stageEl, closeBtn]);
     root.appendChild(this.rootEl);
 
     this.render();
@@ -417,15 +429,6 @@ export class AcademyOverlay {
         this.render();
       }
       this.show();
-
-      // A field-work module's completion almost always happens out in
-      // the village (see academy.ts's pendingBadgeModuleIds doc
-      // comment), so replay it here instead of letting it silently pass
-      // unseen. Only the most recent matters if somehow more than one
-      // queued up — showBadge() shows a single badge, not a stack.
-      const pendingBadgeModuleIds = academy.consumePendingBadgeModuleIds();
-      const lastPendingBadgeModuleId = pendingBadgeModuleIds[pendingBadgeModuleIds.length - 1];
-      if (lastPendingBadgeModuleId) this.showBadge(lastPendingBadgeModuleId);
     });
     academy.on("closed", () => this.hide());
     academy.on("progressChanged", () => this.render());
@@ -2524,25 +2527,27 @@ export class AcademyOverlay {
   // player isn't looking at the Academy at all), the toast academy.ts
   // already fires is the only notification; there's no modal for the
   // player to see it land on.
+  // No academy.isOpen guard — see the badgeWrapperEl construction
+  // comment. Shows immediately wherever the player is, village or
+  // Academy alike.
   private showBadge(moduleId: string) {
-    if (!academy.isOpen) return;
     const module = academy.getModule(moduleId);
     if (!module) return;
     this.badgeNameEl.textContent = module.title;
-    this.badgeEl.style.display = "block";
+    this.badgeWrapperEl.style.display = "block";
     countUp(this.badgeXpEl, 0, MODULE_COMPLETE_XP, 900);
   }
 
-  // Closes the whole Academy on dismiss, not just the badge — otherwise
+  // Also closes the Academy if it happens to be open — otherwise
   // "CLICK TO CONTINUE" dropped the player back into whatever view sat
   // underneath (the quiz result, the last lesson page, the module
   // list...), and playtesting found that read as "still inside the
-  // Academy, nothing left to do here" rather than the actual next step,
-  // which is going back to the village for that module's field work or
-  // the next module. academy.close() is the same path the × button and
-  // ESC already use, so this fires the overlay's normal fade-out.
+  // Academy, nothing left to do here" rather than the actual next step.
+  // academy.close() is a no-op if it's already closed (the common case
+  // now — see showBadge()), so this is safe to call unconditionally.
   private hideBadge() {
-    this.badgeEl.style.display = "none";
+    this.badgeWrapperEl.style.display = "none";
+    academy.dismissCelebration();
     academy.close();
   }
 
