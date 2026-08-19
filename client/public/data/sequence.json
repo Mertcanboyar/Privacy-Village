@@ -2,12 +2,18 @@
   "steps": [
     {
       "id": "s1",
+      "type": "quest",
+      "target": "arrival",
+      "label": "Meet Bram at the gates, then find Odile at Griffin's Drink in the Tavern"
+    },
+    {
+      "id": "s2",
       "type": "academy_module",
       "target": "threat_modeling",
       "label": "Study Threat Modeling Fundamentals at the Academy"
     },
     {
-      "id": "s2",
+      "id": "s3",
       "type": "quest",
       "target": "breach_in_the_wall",
       "label": "Report to the Herald in the square"
