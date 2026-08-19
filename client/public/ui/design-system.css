@@ -248,6 +248,14 @@
   flex-direction: column;
   align-items: flex-end;
   gap: var(--space-1);
+  /* Caps how wide a long dynamic chip (e.g. the locked-module "Finish:
+     <guided step label>" text) can grow — without this, .quest-card__meta
+     has no width limit of its own, so a long chip just grows to fit its
+     text on one line and steals space from .quest-card__info's
+     flex:1/min-width:0, squeezing .quest-card__title into a near-zero
+     column and wrapping it one word per line instead. */
+  max-width: 45%;
+  text-align: right;
 }
 
 .quest-card__xp {
