@@ -453,6 +453,14 @@ export class AcademyOverlay {
   };
 
   private render() {
+    // Every view appends exactly one top-level panel to bodyEl, and marking
+    // an answer (e.g. renderCaseFile()'s TRUE/FALSE stamps) re-renders that
+    // whole panel from scratch — a fresh DOM node whose scrollTop always
+    // starts at 0. Without carrying the old scroll position forward, every
+    // click on a scrolled-down case file snapped the player back to the top
+    // of the list. Restoring it here (rather than in each render*()) covers
+    // every scrollable panel at once.
+    const prevScrollTop = this.bodyEl.firstElementChild?.scrollTop ?? 0;
     this.bodyEl.innerHTML = "";
     if (this.currentView === "hub") this.renderHub();
     else if (this.currentView === "moduleList") this.renderModuleList();
@@ -467,6 +475,7 @@ export class AcademyOverlay {
     else if (this.currentView === "buildDefense") this.renderBuildDefense();
     else if (this.currentView === "adviseClient") this.renderAdviseClient();
     else this.renderDiagramQuiz();
+    if (this.bodyEl.firstElementChild) this.bodyEl.firstElementChild.scrollTop = prevScrollTop;
   }
 
   private goToHub() {
