@@ -9,14 +9,110 @@
     {
       "id": "s2",
       "type": "academy_module",
-      "target": "threat_modeling",
-      "label": "Study Threat Modeling Fundamentals at the Academy"
+      "target": "data_flow_mapping",
+      "label": "Study Mapping the Flow at the Academy"
     },
     {
       "id": "s3",
       "type": "quest",
+      "target": "post_road_blueprint",
+      "label": "Talk to Bram in the village square"
+    },
+    {
+      "id": "s4",
+      "type": "academy_module",
+      "target": "secure_channels",
+      "label": "Study Secure Channels at the Academy"
+    },
+    {
+      "id": "s5",
+      "type": "quest",
+      "target": "sealed_letter",
+      "label": "Talk to Bram in the village square"
+    },
+    {
+      "id": "s6",
+      "type": "academy_module",
+      "target": "deidentification_masks_and_chains",
+      "label": "Study De-identification: Masks & Chains at the Academy"
+    },
+    {
+      "id": "s7",
+      "type": "quest",
+      "target": "innkeepers_shards",
+      "label": "Talk to Odile at Griffin's Drink in the Tavern"
+    },
+    {
+      "id": "s8",
+      "type": "academy_module",
+      "target": "threat_modeling",
+      "label": "Study Threat Modeling Fundamentals at the Academy"
+    },
+    {
+      "id": "s9",
+      "type": "quest",
       "target": "breach_in_the_wall",
       "label": "Report to the Herald in the square"
+    },
+    {
+      "id": "s10",
+      "type": "academy_module",
+      "target": "personal_data_or_not",
+      "label": "Study Personal Data or Not? at the Academy"
+    },
+    {
+      "id": "s11",
+      "type": "quest",
+      "target": "healers_ledger",
+      "label": "Talk to Maren at Griffin's Drink in the Tavern"
+    },
+    {
+      "id": "s12",
+      "type": "academy_module",
+      "target": "aggregation",
+      "label": "Study Shaping the Data at the Academy"
+    },
+    {
+      "id": "s13",
+      "type": "quest",
+      "target": "maren_winter_report",
+      "label": "Talk to Maren at Griffin's Drink in the Tavern"
+    },
+    {
+      "id": "s14",
+      "type": "academy_module",
+      "target": "purpose_limitation",
+      "label": "Study The Purpose Test at the Academy"
+    },
+    {
+      "id": "s15",
+      "type": "quest",
+      "target": "archivists_desk",
+      "label": "Talk to Quill in the Courthouse"
+    },
+    {
+      "id": "s16",
+      "type": "academy_module",
+      "target": "pets",
+      "label": "Study The Alchemist's Cabinet at the Academy"
+    },
+    {
+      "id": "s17",
+      "type": "quest",
+      "target": "alchemists_trials",
+      "label": "Talk to Isolde in the Courthouse"
+    },
+    {
+      "id": "s18",
+      "type": "academy_module",
+      "target": "seventy_two_hour_clock",
+      "label": "Study The 72-Hour Clock at the Academy"
+    },
+    {
+      "id": "s19",
+      "type": "quest",
+      "target": "night_the_wall_fell",
+      "label": "Return to the village square"
     }
   ]
 }
