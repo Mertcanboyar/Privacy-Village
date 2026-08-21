@@ -641,7 +641,24 @@ export class HUDController {
     const guidedStep = guidedMode.getCurrentStep();
     if (guidedMode.isActive() && guidedStep) {
       this.trackerEl.style.display = "none";
-      this.guidedBannerLabelEl.textContent = guidedStep.label;
+      // An academy_module step is a click away — same "Click here to..."
+      // shortcut and openToModule() jump the corner tracker's LOCKED hint
+      // already offers once guided mode ends (see the nextLockedQuestHint
+      // branch below) — no reason the very first study step should read
+      // as inert plain text while later ones (once guided mode ends) get
+      // a clickable shortcut. A quest step has no equivalent single
+      // destination to jump to (the player has to go find the NPC in the
+      // village), so it keeps its plain label.
+      if (guidedStep.type === "academy_module") {
+        const module = academy.getModule(guidedStep.target);
+        this.guidedBannerLabelEl.textContent = module ? `Click here to study "${module.title}" at the Academy →` : guidedStep.label;
+        this.guidedBannerLabelEl.style.cursor = "pointer";
+        this.guidedBannerLabelEl.onclick = () => academy.openToModule(guidedStep.target);
+      } else {
+        this.guidedBannerLabelEl.textContent = guidedStep.label;
+        this.guidedBannerLabelEl.style.cursor = "";
+        this.guidedBannerLabelEl.onclick = null;
+      }
       this.guidedBannerEl.style.display = "block";
       return;
     }
