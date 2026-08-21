@@ -153,7 +153,7 @@ export function openBlueprintOverlay(onClose: (completed: boolean) => void) {
   const arrowsLayerEl = el("div", { style: { position: "absolute", inset: "0", pointerEvents: "none" } });
   const nodesLayerEl = el("div", { style: { position: "absolute", inset: "0", pointerEvents: "none" } });
   const packetsLayerEl = el("div", { style: { position: "absolute", inset: "0", pointerEvents: "none" } });
-  const canvasEl = el("div", { style: { position: "relative", flex: "1", height: "560px", background: "rgba(0,0,0,0.15)", borderRadius: "var(--radius)", border: "1px solid var(--border-strong)" } }, [
+  const canvasEl = el("div", { style: { position: "relative", flex: "1", height: "530px", background: "rgba(0,0,0,0.15)", borderRadius: "var(--radius)", border: "1px solid var(--border-strong)" } }, [
     slotsLayerEl,
     arrowsLayerEl,
     nodesLayerEl,
@@ -164,7 +164,23 @@ export function openBlueprintOverlay(onClose: (completed: boolean) => void) {
     "div",
     {
       className: "panel panel--glow ds-root",
-      style: { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: "1180px", pointerEvents: "auto" },
+      style: {
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        transform: "translate(-50%, -50%)",
+        width: "1180px",
+        // The fixed 560px-tall canvas plus header/divider/instructions used
+        // to add up to ~742px — 22px taller than the 720px game canvas, so
+        // this panel (unlike every other full-screen overlay in this
+        // codebase) clipped its own top and bottom edges off-screen. The
+        // canvasEl height above is trimmed to compensate; this maxHeight/
+        // overflowY is the same defensive net academyOverlay.ts's panels
+        // already use, in case a stage's content ever runs long again.
+        maxHeight: "700px",
+        overflowY: "auto",
+        pointerEvents: "auto",
+      },
     },
     [
       el("div", { className: "briefing__header" }, [
@@ -172,7 +188,7 @@ export function openBlueprintOverlay(onClose: (completed: boolean) => void) {
         el("h2", { className: "briefing__title", text: "The Blueprint of the Post Road" }),
       ]),
       el("hr", { className: "briefing__divider" }),
-      el("div", { style: { display: "flex", gap: "16px", marginTop: "var(--space-2)" } }, [paletteEl, canvasEl]),
+      el("div", { style: { display: "flex", gap: "16px", marginTop: "var(--space-1)" } }, [paletteEl, canvasEl]),
       instructionsEl,
     ],
   );
