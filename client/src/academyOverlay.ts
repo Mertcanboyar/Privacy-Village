@@ -669,12 +669,32 @@ export class AcademyOverlay {
   // assignment is now open...") already fires from inside
   // markTheoryDone() itself; this adds the visual half, pinging the
   // quest-giver NPC if the player happens to already be standing where
-  // they'd need to go (see pingFieldWorkNpc()'s doc comment). Skipped
-  // once field work is already done (nothing to hand off to).
+  // they'd need to go (see pingFieldWorkNpc()'s doc comment), and
+  // decides where the player lands next.
+  //
+  // When field work is still outstanding, this closes the overlay
+  // entirely instead of leaving the module list open — playtesting
+  // found players read "theory sealed, module list still showing" as
+  // "go start the next module," not "go finish this one's field work
+  // in the village," and got stuck bouncing between Academy modules
+  // without ever leaving to do the quest. Sending them back to the
+  // village (where the FIELD WORK step is now the only thing in front
+  // of them) fixes that. The MODULE COMPLETE badge still only fires
+  // once field work actually finishes — see academy.ts's
+  // tryCompleteModule() — this only changes what the player sees
+  // immediately after sealing theory, not when the module truly
+  // completes.
   private sealTheory(moduleId: string) {
     academy.markTheoryDone(moduleId);
     const module = academy.getModule(moduleId);
-    if (module?.fieldWork && !academy.getProgress(moduleId).fieldDone) this.pingFieldWorkNpc(module.fieldWork);
+    if (!module) return;
+    const fieldPending = !!module.fieldWork && !academy.getProgress(moduleId).fieldDone;
+    if (fieldPending) {
+      this.pingFieldWorkNpc(module.fieldWork!);
+      academy.close();
+    } else {
+      this.goToModuleList(module.track);
+    }
   }
 
   private renderHub() {
@@ -1203,7 +1223,6 @@ export class AcademyOverlay {
     const isLast = this.quizIndex >= this.quizQuestions.length - 1;
     if (isLast) {
       this.sealTheory(module.id);
-      this.goToModuleList(module.track);
       return;
     }
     this.quizIndex++;
@@ -1360,7 +1379,6 @@ export class AcademyOverlay {
     if (this.drillDeck.length === 0) {
       if (module) {
         this.sealTheory(module.id);
-        this.goToModuleList(module.track);
       } else {
         this.goToHub();
       }
@@ -1560,7 +1578,6 @@ export class AcademyOverlay {
     if (this.drillMultiDeck.length === 0) {
       if (module) {
         this.sealTheory(module.id);
-        this.goToModuleList(module.track);
       } else {
         this.goToHub();
       }
@@ -1682,7 +1699,6 @@ export class AcademyOverlay {
 
   private completeDataSieve(module: AcademyDataSieveModule) {
     this.sealTheory(module.id);
-    this.goToModuleList(module.track);
   }
 
   // "Personal Data or Not?" — CASE FILE (registry markup), Playtest
@@ -1932,7 +1948,6 @@ export class AcademyOverlay {
 
   private completeCaseFile(module: AcademyCaseFileModule) {
     this.sealTheory(module.id);
-    this.goToModuleList(module.track);
   }
 
   // "Threat Modeling Fundamentals" — BUILD (place controls, watch
@@ -2186,7 +2201,6 @@ export class AcademyOverlay {
       return;
     }
     this.sealTheory(module.id);
-    this.goToModuleList(module.track);
   }
 
   // "The Purpose Test" — ADVISE THE CLIENT (verdict + consequence
@@ -2362,7 +2376,6 @@ export class AcademyOverlay {
     const isLast = this.adviseIndex >= this.adviseCases.length - 1;
     if (isLast) {
       this.sealTheory(module.id);
-      this.goToModuleList(module.track);
       return;
     }
     this.adviseIndex++;
@@ -2513,7 +2526,6 @@ export class AcademyOverlay {
     const isLast = this.diagramQuizIndex >= module.questions.length - 1;
     if (isLast) {
       this.sealTheory(module.id);
-      this.goToModuleList(module.track);
       return;
     }
     this.diagramQuizIndex++;
