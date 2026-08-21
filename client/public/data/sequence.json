@@ -16,7 +16,7 @@
       "id": "s3",
       "type": "quest",
       "target": "post_road_blueprint",
-      "label": "Talk to Bram in the village square"
+      "label": "Talk to Bram, then the villager and the courier, in the village square"
     },
     {
       "id": "s4",
@@ -40,7 +40,7 @@
       "id": "s7",
       "type": "quest",
       "target": "innkeepers_shards",
-      "label": "Talk to Odile at Griffin's Drink in the Tavern"
+      "label": "Talk to Odile at Griffin's Drink in the Tavern, then the Herald in the village square"
     },
     {
       "id": "s8",
