@@ -16,6 +16,8 @@ import { playSound } from "../audio";
 import type { RoomName } from "../rooms";
 import { net } from "../net/NetClient";
 import { RemotePlayerController, CHAT_BUBBLE_DURATION_MS, CHAT_BUBBLE_STYLE, STAGE_CHAT_BUBBLE_STYLE, EMOTE_BUBBLE_DURATION_MS, EMOTE_ICONS, ROLE_BADGES } from "../net/remotePlayers";
+import { VoiceSpatialController } from "../net/voiceSpatial";
+import { voice } from "../voice";
 import { isUiLocked } from "../cloud/uiLock";
 import { ChatController } from "../chat";
 import { ChatLogController } from "../chatLog";
@@ -160,6 +162,7 @@ export class Room extends Phaser.Scene {
   private incidentTint: Phaser.GameObjects.Rectangle | null = null;
   private pendingCourthouseDoorPing = false;
   private remotePlayers!: RemotePlayerController;
+  private voiceSpatial!: VoiceSpatialController;
   private chatController!: ChatController;
   private chatLog!: ChatLogController;
   private localChatBubble: Phaser.GameObjects.Text | null = null;
@@ -431,6 +434,7 @@ export class Room extends Phaser.Scene {
     // fresh RemotePlayerController, whose predecessor was already torn
     // down by normal Phaser scene teardown.
     this.remotePlayers = new RemotePlayerController(this);
+    this.voiceSpatial = new VoiceSpatialController(this, this.roomName);
     this.contactExchange = new ContactExchangeController(this, this.remotePlayers);
     net.onPlayerAdd((p) => this.remotePlayers.spawn(p));
     net.onPlayerChange((p) => this.remotePlayers.applySnapshot(p));
@@ -577,6 +581,7 @@ export class Room extends Phaser.Scene {
       academy.off("opened", onAcademyOpened);
       this.zoneMarker?.destroy();
       this.objectiveArrow?.destroy();
+      this.voiceSpatial.destroy();
     });
 
     // Covers the other path: the quest was already unlocked (e.g. the
@@ -961,6 +966,7 @@ export class Room extends Phaser.Scene {
     net.sendMove(this.player.x, this.player.y, this.player.flipX ? "left" : "right", localMoving);
     net.pollPlayers();
     this.remotePlayers.update();
+    this.voiceSpatial.update(this.player.x, this.player.y, uiOpen);
 
     if (this.localChatBubble) {
       if (time > this.localChatBubbleExpiresAt) {
@@ -1012,6 +1018,7 @@ export class Room extends Phaser.Scene {
       if (inside) {
         this.transitioning = true;
         net.disconnect();
+        void voice.disconnectFromScene();
         this.scene.restart({ room: door.target as RoomName });
         return;
       }
