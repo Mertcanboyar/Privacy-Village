@@ -18,6 +18,7 @@ import { isMusicMuted, toggleMusic } from "./audio";
 import { guidedMode } from "./guidedMode";
 import { gathering } from "./gathering";
 import { voice } from "./voice";
+import { VoiceSettingsPanel } from "./voiceSettingsPanel";
 import type { Room } from "./scenes/Room";
 import type { RoomName } from "./rooms";
 
@@ -88,6 +89,7 @@ export class HUDController {
 
   private micBtnEl: HTMLElement;
   private micHintEl: HTMLElement;
+  private voiceSettingsPanel: VoiceSettingsPanel;
 
   private menuEl: HTMLElement;
   private menuBtnEl: HTMLElement;
@@ -111,6 +113,13 @@ export class HUDController {
     // overlayEl/SHUTDOWN pattern.
     const hudRootEl = el("div", { className: "ds-root", style: { position: "absolute", inset: "0", pointerEvents: "none" } });
     root.appendChild(hudRootEl);
+
+    // Constructed early (before the MENU item below that opens it) —
+    // session-scoped UI, same lifecycle reasoning as voice.ts's own
+    // singleton doc comment. Appended into hudRootEl so it's cleaned up
+    // for free by that element's own SHUTDOWN removal below, no second
+    // listener needed.
+    this.voiceSettingsPanel = new VoiceSettingsPanel(hudRootEl);
 
     // --- Top bar: Academy + Events + Menu buttons (top-left, always
     // visible) ---
@@ -256,7 +265,18 @@ export class HUDController {
         click: () => guidedMode.setManuallyDisabled(!guidedMode.isManuallyDisabled()),
       },
     });
-    const menuItems = [returnToTitleItemEl, this.menuMusicItemEl, this.menuGuidedNavItemEl];
+    const voiceSettingsItemEl = el("button", {
+      className: "btn btn--ghost",
+      text: "\u{1F3A4} VOICE SETTINGS",
+      style: { width: "100%", textAlign: "left" },
+      on: {
+        click: () => {
+          this.closeMenu();
+          this.voiceSettingsPanel.open();
+        },
+      },
+    });
+    const menuItems = [returnToTitleItemEl, this.menuMusicItemEl, this.menuGuidedNavItemEl, voiceSettingsItemEl];
     if (supabase && isAuthenticated()) {
       menuItems.push(
         el("button", {

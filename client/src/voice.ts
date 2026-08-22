@@ -40,6 +40,7 @@ class VoiceManager extends Phaser.Events.EventEmitter {
   private connectionState_: VoiceConnectionState = "disconnected";
 
   private outputVolumeMultiplier_ = 1;
+  private selectedInputDeviceId_: string | null = null;
 
   // Set the instant transmission actually starts (unmute), cleared and
   // flushed to logVoiceMinutes() the instant it stops — see
@@ -81,6 +82,36 @@ class VoiceManager extends Phaser.Events.EventEmitter {
 
   get outputVolumeMultiplier(): number {
     return this.outputVolumeMultiplier_;
+  }
+
+  /** Master volume for other players' voices — voiceSpatial.ts's 10Hz
+   * tick reads outputVolumeMultiplier directly on every recompute, so
+   * this takes effect on the very next tick with no event needed. */
+  setOutputVolume(v: number) {
+    this.outputVolumeMultiplier_ = Math.min(1, Math.max(0, v));
+  }
+
+  get selectedInputDeviceId(): string | null {
+    return this.selectedInputDeviceId_;
+  }
+
+  /** voiceSettingsPanel.ts's device <select> onchange — no-ops quietly
+   * if there's no active room yet (same "garnish, never a dependency"
+   * tolerance as everything else here); the choice is still remembered
+   * for whenever a room does connect. */
+  async setInputDevice(deviceId: string): Promise<void> {
+    this.selectedInputDeviceId_ = deviceId;
+    if (this.room) await this.room.switchActiveDevice("audioinput", deviceId);
+  }
+
+  /** The local mic's raw track, if one has been published this session
+   * — voiceSettingsPanel.ts's level meter taps an independent
+   * AnalyserNode off this (reading a track never modifies or consumes
+   * it, so this has zero effect on what's actually being transmitted).
+   * null before permission is ever granted. */
+  getLocalMicTrack(): MediaStreamTrack | null {
+    const pub = this.room?.localParticipant.getTrackPublication(Track.Source.Microphone);
+    return pub?.track?.mediaStreamTrack ?? null;
   }
 
   getRoom(): LKRoom | null {
