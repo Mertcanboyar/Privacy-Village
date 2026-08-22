@@ -183,7 +183,7 @@ export class VoiceSpatialController {
     // V/M sit alongside them, not above (no reason a chat box or the
     // Academy should let voice hotkeys leak through either).
     if (!uiOpen) {
-      if (Phaser.Input.Keyboard.JustDown(this.muteToggleKey)) this.handleMuteToggle();
+      if (Phaser.Input.Keyboard.JustDown(this.muteToggleKey)) this.toggleMode();
       if (Phaser.Input.Keyboard.JustDown(this.pushToTalkKey)) this.handlePushToTalkDown();
     }
 
@@ -360,7 +360,13 @@ export class VoiceSpatialController {
     this.audioGraphs.delete(sessionId);
   }
 
-  private handleMuteToggle() {
+  /** M's key handler, and also the HUD mic button's click handler (see
+   * hud.ts — it reaches this scene's VoiceSpatialController via
+   * scene.scene.manager.getScene("Room"), same pattern
+   * academyOverlay.ts's pingFieldWorkNpc() already uses) — both need the
+   * exact same permission-gated toggle, so this is public rather than
+   * duplicating the logic. */
+  toggleMode() {
     if (voice.permissionState === "unasked") {
       this.showPermissionPrompt("mute-toggle");
       return;

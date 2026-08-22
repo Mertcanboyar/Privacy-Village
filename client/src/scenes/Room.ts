@@ -187,6 +187,14 @@ export class Room extends Phaser.Scene {
     return this.roomName;
   }
 
+  /** hud.ts's mic button reaches this via scene.scene.manager.getScene(
+   * "Room") — same "small public wrapper, keep the real controller
+   * private" shape as pingHerald()/pingBram() below, since voiceSpatial
+   * itself has no reason to be reachable for anything else. */
+  toggleVoiceMode() {
+    this.voiceSpatial.toggleMode();
+  }
+
   pingHerald() {
     this.npcController.pingHerald(this);
   }

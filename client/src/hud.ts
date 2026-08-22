@@ -17,6 +17,8 @@ import { lockUi, unlockUi } from "./cloud/uiLock";
 import { isMusicMuted, toggleMusic } from "./audio";
 import { guidedMode } from "./guidedMode";
 import { gathering } from "./gathering";
+import { voice } from "./voice";
+import type { Room } from "./scenes/Room";
 import type { RoomName } from "./rooms";
 
 // Persistent HUD (see PLAN.md Phase 2, Day 3) — .xp-bar, quest tracker,
@@ -80,8 +82,12 @@ export class HUDController {
 
   private netDotEl: HTMLElement;
   private persistDotEl: HTMLElement;
+  private voiceDotEl: HTMLElement;
   private playerCountEl: HTMLElement;
   private emptySceneLineEl: HTMLElement;
+
+  private micBtnEl: HTMLElement;
+  private micHintEl: HTMLElement;
 
   private menuEl: HTMLElement;
   private menuBtnEl: HTMLElement;
@@ -166,12 +172,46 @@ export class HUDController {
       text: "☰ MENU",
       on: { click: () => this.toggleMenu() },
     });
+    // Spatial voice chat's mic button — mouse-equivalent of the M
+    // hotkey, so it goes through Room.ts's toggleVoiceMode() (which just
+    // forwards to VoiceSpatialController.toggleMode(), same permission-
+    // gated logic the keyboard path uses) rather than duplicating that
+    // logic here. Reached via scene.scene.manager.getScene("Room") since
+    // Room.ts (not this persistent UIOverlay scene) is what owns the
+    // per-scene VoiceSpatialController instance — same pattern
+    // academyOverlay.ts's pingFieldWorkNpc() already uses to reach into
+    // Room.ts. Label/state is refreshed by refreshMicButton() below,
+    // driven by voice.ts's own "micStateChanged"/"connectionStateChanged"
+    // events.
+    this.micBtnEl = el("button", {
+      className: "btn btn--ghost",
+      text: "\u{1F507} MUTED",
+      on: {
+        click: () => {
+          const roomScene = scene.scene.manager.getScene("Room") as Room | null;
+          roomScene?.toggleVoiceMode();
+        },
+      },
+    });
     const topBarEl = el(
       "div",
       { className: "ds-root", style: { position: "absolute", top: "24px", left: "24px", display: "flex", gap: "12px", pointerEvents: "auto" } },
-      [this.academyBtnEl, eventsBtnEl, dossierBtnEl, this.menuBtnEl],
+      [this.academyBtnEl, eventsBtnEl, dossierBtnEl, this.menuBtnEl, this.micBtnEl],
     );
     hudRootEl.appendChild(topBarEl);
+    // Always-visible keyboard hint, directly under the top bar — voice
+    // is the one HUD control this codebase doesn't already teach via an
+    // in-world tutorial step, so the hint stays on screen rather than a
+    // one-time toast (matches emptySceneLineEl's italic-muted treatment
+    // below, same "ambient, non-blocking" register). Pushes the status
+    // row/empty-scene line/MENU dropdown down by the same ~18px this
+    // adds — see their own top: values below, all shifted together.
+    this.micHintEl = el("div", {
+      className: "ds-root",
+      text: "[V] hold to talk · [M] toggle mic",
+      style: { position: "absolute", top: "72px", left: "24px", fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.02em" },
+    });
+    hudRootEl.appendChild(this.micHintEl);
 
     // --- User menu dropdown (below the top bar) — Return to Title,
     // Music toggle, and (guests excluded) Sign Out. Same JS-driven
@@ -239,7 +279,7 @@ export class HUDController {
       "div",
       {
         className: "panel ds-root",
-        style: { position: "absolute", top: "112px", left: "24px", width: "240px", display: "none", pointerEvents: "auto", flexDirection: "column", gap: "8px" },
+        style: { position: "absolute", top: "130px", left: "24px", width: "240px", display: "none", pointerEvents: "auto", flexDirection: "column", gap: "8px" },
       },
       menuItems,
     );
@@ -282,12 +322,17 @@ export class HUDController {
     // per-scene, not a village-wide total). Refreshed every frame in
     // update() below, cheap enough not to need its own timer.
     this.playerCountEl = el("span", { style: { fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.04em" } });
+    // Spatial voice chat's connection-status dot — same dotStyle()/hover-
+    // title convention as netDotEl/persistDotEl above, refreshed by
+    // refreshVoiceDot() off voice.ts's "connectionStateChanged" event.
+    this.voiceDotEl = el("span", { style: dotStyle() });
     const statusRowEl = el(
       "div",
-      { className: "ds-root", style: { position: "absolute", top: "72px", left: "24px", display: "flex", gap: "14px", alignItems: "center", pointerEvents: "auto" } },
+      { className: "ds-root", style: { position: "absolute", top: "90px", left: "24px", display: "flex", gap: "14px", alignItems: "center", pointerEvents: "auto" } },
       [
         el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [this.netDotEl, statusLabel("MP")]),
         el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [this.persistDotEl, statusLabel("ACCT")]),
+        el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [this.voiceDotEl, statusLabel("VOICE")]),
         this.playerCountEl,
       ],
     );
@@ -298,7 +343,7 @@ export class HUDController {
     // read while they wait. Toggled alongside playerCountEl in update().
     this.emptySceneLineEl = el("div", {
       className: "ds-root",
-      style: { position: "absolute", top: "96px", left: "24px", maxWidth: "280px", fontFamily: "var(--font-body)", fontSize: "11px", fontStyle: "italic", color: "var(--text-muted)", display: "none" },
+      style: { position: "absolute", top: "114px", left: "24px", maxWidth: "280px", fontFamily: "var(--font-body)", fontSize: "11px", fontStyle: "italic", color: "var(--text-muted)", display: "none" },
     });
     hudRootEl.appendChild(this.emptySceneLineEl);
 
@@ -307,6 +352,11 @@ export class HUDController {
     persistenceStatus.on("changed", () => this.refreshPersistDot());
     this.refreshPersistDot();
     this.refreshPlayerCount();
+    voice.on("connectionStateChanged", () => this.refreshVoiceDot());
+    this.refreshVoiceDot();
+    voice.on("micStateChanged", () => this.refreshMicButton());
+    this.refreshMicButton();
+    voice.on("toast", (message: string) => this.showToast(message));
 
     // --- XP bar (bottom-left, always visible) ---
     this.levelBadgeEl = el("div", { className: "level-badge", text: "C1" });
@@ -609,6 +659,39 @@ export class HUDController {
           ? "guest — sign up to save progress"
           : `signed in, but saving is failing${lastError ? ` — ${lastError}` : ""}`;
     this.persistDotEl.title = `Account: ${detail}`;
+  }
+
+  private refreshVoiceDot() {
+    const state = voice.connectionState;
+    const color =
+      state === "connected" ? "var(--accent-green)" : state === "connecting" ? "var(--accent-amber)" : state === "error" ? "var(--accent-red)" : "var(--text-muted)";
+    this.voiceDotEl.style.background = color;
+    this.voiceDotEl.style.boxShadow = `0 0 4px ${color}`;
+    const detail = state === "connected" ? "connected" : state === "connecting" ? "connecting…" : state === "error" ? "connection failed" : "not connected";
+    this.voiceDotEl.title = `Voice: ${detail}`;
+  }
+
+  /** Label/style for the mic button's 3 display states plus the denied/
+   * unsupported "voice unavailable" state (§7 of the ticket — visible,
+   * never hidden, never blocks anything else). */
+  private refreshMicButton() {
+    const permission = voice.permissionState;
+    if (permission === "denied" || permission === "unsupported") {
+      this.micBtnEl.textContent = "\u{1F507} VOICE UNAVAILABLE";
+      (this.micBtnEl as HTMLButtonElement).disabled = true;
+      this.micBtnEl.style.opacity = "0.5";
+      this.micBtnEl.title =
+        permission === "denied"
+          ? "Microphone access was denied — re-enable it via your browser's site permissions for this page if you'd like to talk."
+          : "Voice chat isn't supported in this browser — text chat still works normally.";
+      return;
+    }
+    (this.micBtnEl as HTMLButtonElement).disabled = false;
+    this.micBtnEl.style.opacity = "1";
+    this.micBtnEl.title = "";
+    const displayState = voice.displayState;
+    this.micBtnEl.textContent =
+      displayState === "push-to-talk-held" ? "\u{1F534} TALKING" : displayState === "open-mic" ? "\u{1F3A4} OPEN MIC" : "\u{1F507} MUTED";
   }
 
   // §2 "The Gathering" — shown from 60 minutes before start through the
