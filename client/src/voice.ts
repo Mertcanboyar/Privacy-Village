@@ -1,6 +1,7 @@
 import Phaser from "phaser";
-import { Room as LKRoom, RoomEvent, Track, type Participant } from "livekit-client";
+import { Room as LKRoom, RoomEvent, Track, isBrowserSupported, type LocalTrackPublication, type Participant } from "livekit-client";
 import type { RoomName } from "./rooms";
+import { logVoicePermissionGranted, logVoicePermissionDenied, logVoiceMinutes } from "./instrumentation";
 
 // Framework-free module singleton for spatial voice chat's persistent
 // half (see PLAN — Spatial Voice Chat) — same style as academy.ts/
@@ -39,6 +40,13 @@ class VoiceManager extends Phaser.Events.EventEmitter {
   private connectionState_: VoiceConnectionState = "disconnected";
 
   private outputVolumeMultiplier_ = 1;
+
+  // Set the instant transmission actually starts (unmute), cleared and
+  // flushed to logVoiceMinutes() the instant it stops — see
+  // applyTransmitState(). A session's own start/stop boundaries are
+  // already the aggregation windows that matter, so this needs no
+  // separate periodic timer.
+  private transmitStartedAt: number | null = null;
 
   // Bumped on every connectToScene() call and captured by that call's
   // own closure — an in-flight connect racing a subsequent
@@ -85,6 +93,105 @@ class VoiceManager extends Phaser.Events.EventEmitter {
   getAudioContext(): AudioContext {
     if (!this.audioContext) this.audioContext = new AudioContext();
     return this.audioContext;
+  }
+
+  /** Resolves the browser's own mic permission prompt — called once,
+   * the first time the player presses V or M with permissionState
+   * "unasked" (see voiceSpatial.ts's showPermissionExplanation flow;
+   * this method itself does NOT show any UI, it's the "Got it" button's
+   * confirm action). Publishes the local mic track via LiveKit (which
+   * internally triggers getUserMedia) then immediately mutes it back
+   * down — resting state after grant is always "published but muted,"
+   * never actively transmitting, matching "join muted, no exceptions."
+   * Returns whether the caller should proceed with the action that
+   * triggered this (setMode()/beginPushToTalk()). */
+  async requestMicPermission(): Promise<boolean> {
+    if (this.permissionState_ === "granted") return true;
+    if (this.permissionState_ === "denied" || this.permissionState_ === "unsupported") return false;
+
+    if (!isBrowserSupported()) {
+      this.permissionState_ = "unsupported";
+      this.emit("micStateChanged");
+      return false;
+    }
+
+    if (!this.room) {
+      // Extremely unlikely in practice (connectToScene() fires within a
+      // second or two of scene load, well before a player could react
+      // and press V/M) but handled rather than silently swallowed — see
+      // this.room's own doc comment for why voice never blocks the game
+      // either way. Deliberately leaves permissionState at "unasked"
+      // (nothing about mic permission itself was decided) so the player
+      // can just try again in a moment.
+      this.emit("toast", "Voice isn't connected yet — try again in a moment.");
+      return false;
+    }
+
+    try {
+      const pub = await this.room.localParticipant.setMicrophoneEnabled(true);
+      await pub?.mute();
+      this.permissionState_ = "granted";
+      logVoicePermissionGranted();
+      this.emit("micStateChanged");
+      return true;
+    } catch (err) {
+      console.warn("[voice] mic permission denied or failed:", err);
+      this.permissionState_ = "denied";
+      logVoicePermissionDenied();
+      this.emit("toast", "Microphone access was denied — you can still use text chat.");
+      this.emit("micStateChanged");
+      return false;
+    }
+  }
+
+  /** Two persistent states, toggled by M — see beginPushToTalk()/
+   * endPushToTalk() for the third, transient, V-held state. No-ops
+   * (returns without changing anything) unless permission is already
+   * granted — voiceSpatial.ts is responsible for calling
+   * requestMicPermission() first and only calling this once that
+   * resolves true. */
+  setMode(mode: VoiceMode) {
+    if (this.permissionState_ !== "granted") return;
+    this.mode_ = mode;
+    this.applyTransmitState();
+    this.emit("micStateChanged");
+  }
+
+  beginPushToTalk() {
+    if (this.permissionState_ !== "granted") return;
+    this.pushToTalkHeld_ = true;
+    this.applyTransmitState();
+    this.emit("micStateChanged");
+  }
+
+  endPushToTalk() {
+    this.pushToTalkHeld_ = false;
+    this.applyTransmitState();
+    this.emit("micStateChanged");
+  }
+
+  /** The single place that reconciles mode_/pushToTalkHeld_ with the
+   * actual LiveKit track mute state — called after every state change
+   * above, so the local mic publication's mute state is always exactly
+   * "shouldTransmit ? unmuted : muted," never drifts. */
+  private applyTransmitState() {
+    const pub = this.room?.localParticipant.getTrackPublication(Track.Source.Microphone) as LocalTrackPublication | undefined;
+    if (!pub) return;
+    const shouldTransmit = this.pushToTalkHeld_ || this.mode_ === "open-mic";
+    if (shouldTransmit && pub.isMuted) {
+      void pub.unmute();
+      this.transmitStartedAt = Date.now();
+    } else if (!shouldTransmit && !pub.isMuted) {
+      void pub.mute();
+      this.flushVoiceMinutes();
+    }
+  }
+
+  private flushVoiceMinutes() {
+    if (this.transmitStartedAt === null) return;
+    const seconds = Math.round((Date.now() - this.transmitStartedAt) / 1000);
+    this.transmitStartedAt = null;
+    if (seconds > 0) logVoiceMinutes(seconds);
   }
 
   /** Called once per scene, from Room.ts's multiplayer wiring block,
@@ -146,6 +253,7 @@ class VoiceManager extends Phaser.Events.EventEmitter {
    * transition is harmless). */
   async disconnectFromScene(): Promise<void> {
     this.connectToken++;
+    this.flushVoiceMinutes();
     const room = this.room;
     this.room = null;
     if (this.connectionState_ !== "disconnected") {
@@ -181,6 +289,7 @@ class VoiceManager extends Phaser.Events.EventEmitter {
     });
     room.on(RoomEvent.Disconnected, () => {
       if (this.room !== room) return; // already superseded, ignore stale event
+      this.flushVoiceMinutes();
       this.room = null;
       this.connectionState_ = "disconnected";
       this.emit("connectionStateChanged", this.connectionState_);

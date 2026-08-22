@@ -114,3 +114,28 @@ export function logContactExchanged() {
 export function logConcurrentPeak(size: number, sceneId: string) {
   logDecision("concurrent_peak", { size, sceneId });
 }
+
+// Spatial voice chat (see voice.ts) — one-shot per session, same shape
+// as logFirstQuestAccept() above: the first V/M press resolves the
+// browser's mic permission prompt exactly once, so there's only ever
+// one of these two events per session.
+let voicePermissionResultLogged = false;
+export function logVoicePermissionGranted() {
+  if (voicePermissionResultLogged) return;
+  voicePermissionResultLogged = true;
+  logDecision("voice_permission_granted", {});
+}
+export function logVoicePermissionDenied() {
+  if (voicePermissionResultLogged) return;
+  voicePermissionResultLogged = true;
+  logDecision("voice_permission_denied", {});
+}
+
+// Repeatable — one entry per contiguous stretch of actually transmitting
+// (push-to-talk held, or open-mic on), flushed by voice.ts each time
+// transmission stops (mute, mode change, or scene disconnect) rather
+// than on a timer, since a session's own start/stop boundaries are
+// already exactly the aggregation windows that matter.
+export function logVoiceMinutes(seconds: number) {
+  logDecision("voice_minutes", { seconds });
+}

@@ -899,6 +899,7 @@ export class Room extends Phaser.Scene {
       events.isOpen ||
       dossier.isOpen ||
       tutorial.isOpen ||
+      this.voiceSpatial.isShowingPermissionPrompt ||
       isUiLocked();
     this.chatController.update(otherUiOpen);
     const uiOpen = otherUiOpen || this.chatController.isOpen;
