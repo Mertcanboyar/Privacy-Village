@@ -4,9 +4,20 @@ import { voice } from "../voice";
 import { net } from "./NetClient";
 import { getSession } from "../session";
 import { el } from "../ui/dom";
+import { logStageSpeakerStarted, logStageSpeakerEnded } from "../instrumentation";
 import type { RoomName } from "../rooms";
 import type { RemotePlayerController } from "./remotePlayers";
 import type { ChatLogController } from "../chatLog";
+
+export interface StageZone {
+  x: number;
+  y: number;
+  radius: number;
+}
+
+// Max simultaneous stage broadcasters — see the class doc comment below
+// for the tie-break rule this enforces.
+const MAX_STAGE_SPEAKERS = 2;
 
 // Hearing radius (§3 of the ticket) — full volume within FULL_VOLUME_PX,
 // linear fade to silence at SILENT_PX, 0 beyond that.
@@ -43,9 +54,10 @@ interface VoiceAudioGraph {
 // ContactExchangeController, torn down on the scene's SHUTDOWN event.
 // Owns everything that's genuinely per-scene: triggering the LiveKit
 // connect once Colyseus has a sessionId, the V/M hotkeys and the one-
-// time permission-explanation prompt, and (in later commits) the Web
-// Audio spatial graph and stage-occupancy/selective-subscription logic.
-// Permission/mode/device/volume state lives in voice.ts instead, since
+// time permission-explanation prompt, the Web Audio spatial graph and
+// stage-occupancy logic, and (in a later commit) selective-subscription
+// bandwidth management. Permission/mode/device/volume state lives in
+// voice.ts instead, since
 // those are session-scoped preferences that must survive a
 // scene.restart(), not per-room state.
 export class VoiceSpatialController {
@@ -71,15 +83,36 @@ export class VoiceSpatialController {
   private audioGraphs = new Map<string, VoiceAudioGraph>();
   private lastTickAt = 0;
 
+  // §4 "Stage broadcast mode" — the tavern's existing "stage" zone (see
+  // Room.ts's own isPlayerOnZone(), already used for stage-styled chat)
+  // also broadcasts voice: full volume, centre pan, heard scene-wide,
+  // for up to MAX_STAGE_SPEAKERS occupants. null in every room without
+  // one (isPositionOnZone() below reads null as "never on stage").
+  private stageZone: StageZone | null;
+  private stageSpeakers: string[] = [];
+  // Rising-edge guard for the "stage is full" toast — reset the moment
+  // the local player leaves the zone, so stepping off and back on can
+  // show it again (it's genuinely still full), but standing there
+  // doesn't spam it every tick.
+  private stageFullToastShown = false;
+  private localStageSpeakerStartedAt: number | null = null;
+
   // Bound once so voice.off() in destroy() can actually remove the same
   // function reference these were registered with.
   private onTrackSubscribed = (sessionId: string, track: RemoteTrack) => this.buildAudioGraph(sessionId, track);
   private onTrackUnsubscribed = (sessionId: string) => this.teardownAudioGraph(sessionId);
 
-  constructor(scene: Phaser.Scene, sceneName: RoomName, remotePlayers: RemotePlayerController, chatLog: ChatLogController) {
+  constructor(
+    scene: Phaser.Scene,
+    sceneName: RoomName,
+    remotePlayers: RemotePlayerController,
+    chatLog: ChatLogController,
+    stageZone: StageZone | null,
+  ) {
     this.sceneName = sceneName;
     this.remotePlayers = remotePlayers;
     this.chatLog = chatLog;
+    this.stageZone = stageZone;
     this.pushToTalkKey = scene.input.keyboard!.addKey("V");
     this.muteToggleKey = scene.input.keyboard!.addKey("M");
 
@@ -150,32 +183,94 @@ export class VoiceSpatialController {
     }
   }
 
-  /** The 10Hz tick — recomputes every subscribed remote participant's
-   * gain/pan from their current position relative to the local player.
-   * Stage-broadcast override (full volume, centre pan, regardless of
-   * distance) lands here in a later commit; for now this is pure
-   * distance-based falloff. */
+  private isPositionOnZone(zone: StageZone | null, x: number, y: number): boolean {
+    if (!zone) return false;
+    return Phaser.Math.Distance.Between(x, y, zone.x, zone.y) < zone.radius;
+  }
+
+  /** True while the local player is one of the (at most
+   * MAX_STAGE_SPEAKERS) current stage broadcasters — Room.ts reads this
+   * every frame to toggle the local player's own stage ring. */
+  get localIsStageSpeaker(): boolean {
+    const sessionId = net.getSessionId();
+    return !!sessionId && this.stageSpeakers.includes(sessionId);
+  }
+
+  /** The 10Hz tick — recomputes stage occupancy (independent of whether
+   * anyone's audio is actually subscribed yet — the toast/instrumentation
+   * below care about zone occupancy on their own) and every subscribed
+   * remote participant's gain/pan, stage speakers overridden to full
+   * volume/centre pan regardless of distance. */
   private recomputeSpatialAudio(playerX: number, playerY: number) {
-    if (this.audioGraphs.size === 0) return;
     const positions = new Map(this.remotePlayers.getAllPositions().map((p) => [p.sessionId, p]));
+    this.updateStageOccupancy(playerX, playerY, positions);
+
+    if (this.audioGraphs.size === 0) return;
     const audioContext = voice.getAudioContext();
 
     for (const [sessionId, graph] of this.audioGraphs) {
       const pos = positions.get(sessionId);
       if (!pos) continue; // they've left this scene's RemotePlayerController but haven't unsubscribed yet
 
+      const isStageSpeaker = this.stageSpeakers.includes(sessionId);
       const dx = pos.x - playerX;
       const dy = pos.y - playerY;
       const distance = Math.hypot(dx, dy);
 
-      let targetGain =
-        distance <= FULL_VOLUME_PX ? 1 : distance >= SILENT_PX ? 0 : 1 - (distance - FULL_VOLUME_PX) / (SILENT_PX - FULL_VOLUME_PX);
+      let targetGain = isStageSpeaker
+        ? 1
+        : distance <= FULL_VOLUME_PX
+          ? 1
+          : distance >= SILENT_PX
+            ? 0
+            : 1 - (distance - FULL_VOLUME_PX) / (SILENT_PX - FULL_VOLUME_PX);
       targetGain *= voice.outputVolumeMultiplier;
       if (this.chatLog.isMuted(sessionId)) targetGain = 0;
-      const targetPan = clamp(dx / PAN_CLAMP_PX, -1, 1);
+      const targetPan = isStageSpeaker ? 0 : clamp(dx / PAN_CLAMP_PX, -1, 1);
 
       graph.gainNode.gain.setTargetAtTime(targetGain, audioContext.currentTime, RAMP_TIME_CONSTANT);
       graph.pannerNode.pan.setTargetAtTime(targetPan, audioContext.currentTime, RAMP_TIME_CONSTANT);
+    }
+  }
+
+  /** Determines the current (at most MAX_STAGE_SPEAKERS) stage speakers
+   * — every occupant of the zone (local + remote), sorted by sessionId
+   * so every client's computation agrees, first N win. This is a
+   * lexicographic tie-break, not first-come-first-served: a new arrival
+   * whose sessionId happens to sort earlier can displace an existing
+   * speaker rather than being the one turned away. Acceptable, documented
+   * trade-off for a demo-scale (~10-20 person) live event — matches the
+   * existing precedent that stage-chat's own "stage" flag
+   * (SceneRoom.ts) is already client-computed and server-trusted, not
+   * enforced. A real fix, if this ever needs it, is a small server-side
+   * reservation list — not built now. */
+  private updateStageOccupancy(playerX: number, playerY: number, positions: Map<string, { x: number; y: number }>) {
+    const localSessionId = net.getSessionId();
+    const localOnStage = this.isPositionOnZone(this.stageZone, playerX, playerY);
+
+    const occupants: string[] = [];
+    if (localOnStage && localSessionId) occupants.push(localSessionId);
+    for (const [sessionId, pos] of positions) {
+      if (this.isPositionOnZone(this.stageZone, pos.x, pos.y)) occupants.push(sessionId);
+    }
+    occupants.sort();
+    this.stageSpeakers = occupants.slice(0, MAX_STAGE_SPEAKERS);
+    this.remotePlayers.setStageSpeakers(this.stageSpeakers);
+
+    if (!localOnStage) {
+      this.stageFullToastShown = false;
+    } else if (!this.localIsStageSpeaker && !this.stageFullToastShown) {
+      this.stageFullToastShown = true;
+      voice.emit("toast", "The stage is full.");
+    }
+
+    if (this.localIsStageSpeaker && this.localStageSpeakerStartedAt === null) {
+      this.localStageSpeakerStartedAt = Date.now();
+      logStageSpeakerStarted(this.sceneName);
+    } else if (!this.localIsStageSpeaker && this.localStageSpeakerStartedAt !== null) {
+      const seconds = Math.round((Date.now() - this.localStageSpeakerStartedAt) / 1000);
+      this.localStageSpeakerStartedAt = null;
+      logStageSpeakerEnded(this.sceneName, seconds);
     }
   }
 

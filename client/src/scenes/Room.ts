@@ -136,6 +136,7 @@ export class Room extends Phaser.Scene {
   private playerNameText!: Phaser.GameObjects.Text;
   private playerTitleText!: Phaser.GameObjects.Text;
   private playerRoleText!: Phaser.GameObjects.Text;
+  private playerStageRing!: Phaser.GameObjects.Ellipse;
   private playerBaseScale = 1;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
@@ -410,6 +411,15 @@ export class Room extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDepth(100000)
       .setVisible(!!myRoleBadge);
+    // Spatial voice chat's stage-broadcast glow (see net/voiceSpatial.ts)
+    // — same always-created/toggle-visible ellipse remotePlayers.ts uses
+    // for everyone else's; visibility toggled in update() right after
+    // voiceSpatial.update() recomputes localIsStageSpeaker.
+    this.playerStageRing = this.add
+      .ellipse(spawn[0], spawn[1], 96, 36, 0xf0b429, 0.16)
+      .setStrokeStyle(3, 0xf0b429, 0.95)
+      .setDepth(spawn[1] - 1)
+      .setVisible(false);
     this.refreshPlayerNameTagPositions();
 
     const onActiveTitleChanged = () => {
@@ -440,7 +450,13 @@ export class Room extends Phaser.Scene {
     // Constructed before VoiceSpatialController since that reuses this
     // same per-player mute list for voice (see voiceSpatial.ts).
     this.chatLog = new ChatLogController(this);
-    this.voiceSpatial = new VoiceSpatialController(this, this.roomName, this.remotePlayers, this.chatLog);
+    this.voiceSpatial = new VoiceSpatialController(
+      this,
+      this.roomName,
+      this.remotePlayers,
+      this.chatLog,
+      this.zones.find((z) => z.id === "stage") ?? null,
+    );
     this.contactExchange = new ContactExchangeController(this, this.remotePlayers);
     net.onPlayerAdd((p) => this.remotePlayers.spawn(p));
     net.onPlayerChange((p) => this.remotePlayers.applySnapshot(p));
@@ -806,6 +822,7 @@ export class Room extends Phaser.Scene {
   // on movement and whenever the active title changes (see the
   // "activeTitleChanged" listener in create()).
   private refreshPlayerNameTagPositions() {
+    this.playerStageRing.setPosition(this.player.x, this.player.y).setDepth(this.player.y - 1);
     const headY = this.player.y - this.player.displayHeight - 4;
     this.playerNameText.setPosition(this.player.x, headY);
     let nextY = headY;
@@ -970,6 +987,7 @@ export class Room extends Phaser.Scene {
     net.pollPlayers();
     this.remotePlayers.update();
     this.voiceSpatial.update(this.player.x, this.player.y, uiOpen);
+    this.playerStageRing.setVisible(this.voiceSpatial.localIsStageSpeaker);
 
     if (this.localChatBubble) {
       if (time > this.localChatBubbleExpiresAt) {

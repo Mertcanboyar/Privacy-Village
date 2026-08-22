@@ -139,3 +139,14 @@ export function logVoicePermissionDenied() {
 export function logVoiceMinutes(seconds: number) {
   logDecision("voice_minutes", { seconds });
 }
+
+// Repeatable paired start/end — mirrors logGuidedStepStarted/Completed's
+// shape. Fired from VoiceSpatialController's stage-occupancy tick,
+// edge-triggered on the local player entering/leaving the computed
+// top-2 stage-speaker set (see voiceSpatial.ts).
+export function logStageSpeakerStarted(sceneId: string) {
+  logDecision("stage_speaker_started", { sceneId });
+}
+export function logStageSpeakerEnded(sceneId: string, seconds: number) {
+  logDecision("stage_speaker_ended", { sceneId, seconds });
+}

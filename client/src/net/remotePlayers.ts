@@ -91,7 +91,14 @@ interface RemoteSprite {
   chatBubbleExpiresAt: number;
   emoteBubble: Phaser.GameObjects.Text | null;
   emoteBubbleExpiresAt: number;
+  // Spatial voice chat's stage-broadcast glow (see net/voiceSpatial.ts)
+  // — always created, toggled visible/invisible, same pattern as
+  // titleTag/roleTag above rather than create/destroy on every stage
+  // entry/exit.
+  stageRing: Phaser.GameObjects.Ellipse;
 }
+
+const STAGE_RING_COLOR = 0xf0b429; // matches STAGE_CHAT_BUBBLE_STYLE's gold
 
 // Scene-scoped by design: instantiated fresh in Room.create() (same
 // lifecycle as NPCController/QuestController), so a scene.restart() on a
@@ -157,6 +164,12 @@ export class RemotePlayerController {
       .setDepth(100000)
       .setVisible(!!roleBadge);
 
+    const stageRing = this.scene.add
+      .ellipse(snapshot.x, snapshot.y, 96, 36, STAGE_RING_COLOR, 0.16)
+      .setStrokeStyle(3, STAGE_RING_COLOR, 0.95)
+      .setDepth(snapshot.y - 1)
+      .setVisible(false);
+
     this.sprites.set(snapshot.sessionId, {
       image,
       name: snapshot.name,
@@ -171,6 +184,7 @@ export class RemotePlayerController {
       chatBubbleExpiresAt: 0,
       emoteBubble: null,
       emoteBubbleExpiresAt: 0,
+      stageRing,
     });
   }
 
@@ -270,7 +284,21 @@ export class RemotePlayerController {
     remote.roleTag.destroy();
     remote.chatBubble?.destroy();
     remote.emoteBubble?.destroy();
+    remote.stageRing.destroy();
     this.sprites.delete(sessionId);
+  }
+
+  /** Spatial voice chat (see net/voiceSpatial.ts) — toggles the stage
+   * glow for exactly the given sessionIds (the current, at most 2,
+   * stage broadcasters), invisible for everyone else. Silently ignores
+   * any id with no sprite in this scene (e.g. the local player's own
+   * id, which never has one — Room.ts handles the local player's own
+   * ring separately). */
+  setStageSpeakers(sessionIds: string[]) {
+    const speakerSet = new Set(sessionIds);
+    for (const [sessionId, remote] of this.sprites) {
+      remote.stageRing.setVisible(speakerSet.has(sessionId));
+    }
   }
 
   update() {
@@ -291,6 +319,7 @@ export class RemotePlayerController {
 
       remote.image.setScale(remote.baseScale * depthScaleFor(remote.image.y));
       remote.image.setDepth(remote.image.y);
+      remote.stageRing.setPosition(remote.image.x, remote.image.y).setDepth(remote.image.y - 1);
 
       // Stack bottom-to-top: name (always) → title (if any) → role badge
       // (if any), each occupying the next slot up only when the one
