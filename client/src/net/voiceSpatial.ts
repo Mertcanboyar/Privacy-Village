@@ -1,10 +1,10 @@
 import Phaser from "phaser";
-import type { RemoteTrack } from "livekit-client";
+import { Track, type RemoteTrack, type RemoteTrackPublication } from "livekit-client";
 import { voice } from "../voice";
 import { net } from "./NetClient";
 import { getSession } from "../session";
 import { el } from "../ui/dom";
-import { logStageSpeakerStarted, logStageSpeakerEnded } from "../instrumentation";
+import { logStageSpeakerStarted, logStageSpeakerEnded, logConcurrentVoicePeak } from "../instrumentation";
 import type { RoomName } from "../rooms";
 import type { RemotePlayerController } from "./remotePlayers";
 import type { ChatLogController } from "../chatLog";
@@ -25,6 +25,14 @@ const FULL_VOLUME_PX = 150;
 const SILENT_PX = 450;
 // Pan clamps to [-1, 1] at this many px of x-offset either side.
 const PAN_CLAMP_PX = 300;
+// §5 "Performance & bandwidth" — only subscribe to (and thus build a
+// Web Audio graph for) participants within this radius, or on stage
+// regardless of distance. Comfortably past SILENT_PX so a track is
+// already subscribed before it's audible, never the reverse.
+const SUBSCRIBE_RADIUS_PX = 500;
+// Console-warn once a room's participant count crosses this — a soft
+// signal for "this scene is bigger than tested," not a hard limit.
+const PARTICIPANT_WARNING_THRESHOLD = 25;
 // setTargetAtTime's timeConstant — ~3x this closes ~95% of the gap to a
 // newly-set target, which is the point a listener perceives the
 // transition as "done." Solving 3τ ≈ 120ms (the ticket's ramp target)
@@ -96,6 +104,9 @@ export class VoiceSpatialController {
   // doesn't spam it every tick.
   private stageFullToastShown = false;
   private localStageSpeakerStartedAt: number | null = null;
+  // Edge-guard for the >25-participant console warning — logs once per
+  // crossing, not every tick while it stays high.
+  private participantWarningLogged = false;
 
   // Bound once so voice.off() in destroy() can actually remove the same
   // function reference these were registered with.
@@ -204,6 +215,7 @@ export class VoiceSpatialController {
   private recomputeSpatialAudio(playerX: number, playerY: number) {
     const positions = new Map(this.remotePlayers.getAllPositions().map((p) => [p.sessionId, p]));
     this.updateStageOccupancy(playerX, playerY, positions);
+    this.updateSelectiveSubscription(playerX, playerY, positions);
 
     if (this.audioGraphs.size === 0) return;
     const audioContext = voice.getAudioContext();
@@ -271,6 +283,43 @@ export class VoiceSpatialController {
       const seconds = Math.round((Date.now() - this.localStageSpeakerStartedAt) / 1000);
       this.localStageSpeakerStartedAt = null;
       logStageSpeakerEnded(this.sceneName, seconds);
+    }
+  }
+
+  /** §5 "Performance & bandwidth" — subscribe only to participants within
+   * SUBSCRIBE_RADIUS_PX (comfortably past the point they'd even be
+   * audible, so a track is never audibly late) or currently a stage
+   * speaker; unsubscribe everyone else. Reads voice.getRoom() directly
+   * (the one exception to voiceSpatial normally only reacting to voice's
+   * own forwarded events) since this needs the live set of
+   * RemoteTrackPublications, not just the ones already subscribed. Also
+   * where the >25-participant warning lives, since it's iterating the
+   * same room.remoteParticipants map already. */
+  private updateSelectiveSubscription(playerX: number, playerY: number, positions: Map<string, { x: number; y: number }>) {
+    const room = voice.getRoom();
+    if (!room) return;
+
+    for (const [sessionId, participant] of room.remoteParticipants) {
+      const pub = participant.getTrackPublication(Track.Source.Microphone) as RemoteTrackPublication | undefined;
+      if (!pub) continue;
+
+      const isStageSpeaker = this.stageSpeakers.includes(sessionId);
+      const pos = positions.get(sessionId);
+      const distance = pos ? Math.hypot(pos.x - playerX, pos.y - playerY) : Infinity;
+      const hearable = isStageSpeaker || distance <= SUBSCRIBE_RADIUS_PX;
+
+      if (pub.isSubscribed !== hearable) pub.setSubscribed(hearable);
+    }
+
+    const totalParticipants = room.remoteParticipants.size + 1; // +1 for the local participant
+    logConcurrentVoicePeak(totalParticipants, this.sceneName);
+    if (totalParticipants > PARTICIPANT_WARNING_THRESHOLD) {
+      if (!this.participantWarningLogged) {
+        this.participantWarningLogged = true;
+        console.warn(`[voice] ${totalParticipants} participants in "${this.sceneName}" — beyond the ~25 this was tuned for.`);
+      }
+    } else {
+      this.participantWarningLogged = false;
     }
   }
 

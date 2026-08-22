@@ -150,3 +150,15 @@ export function logStageSpeakerStarted(sceneId: string) {
 export function logStageSpeakerEnded(sceneId: string, seconds: number) {
   logDecision("stage_speaker_ended", { sceneId, seconds });
 }
+
+// Repeatable-on-new-high — mirrors logConcurrentPeak's shape exactly,
+// own per-scene high-water-mark map (voice-connected participant count,
+// not total Colyseus players — a scene can have players present without
+// voice, e.g. mic denied/unsupported).
+const voicePeakBySceneId = new Map<string, number>();
+export function logConcurrentVoicePeak(size: number, sceneId: string) {
+  const prev = voicePeakBySceneId.get(sceneId) ?? 0;
+  if (size <= prev) return;
+  voicePeakBySceneId.set(sceneId, size);
+  logDecision("concurrent_voice_peak", { size, sceneId });
+}
