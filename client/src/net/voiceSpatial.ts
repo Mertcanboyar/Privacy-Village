@@ -108,10 +108,21 @@ export class VoiceSpatialController {
   // crossing, not every tick while it stays high.
   private participantWarningLogged = false;
 
+  // Whether the local player is currently one of LiveKit's own active
+  // speakers (distinct from stage-speaker status) — Room.ts reads this
+  // every frame to toggle the local player's own speaking ring, same
+  // shape as localIsStageSpeaker below.
+  private localActiveSpeaker = false;
+
   // Bound once so voice.off() in destroy() can actually remove the same
   // function reference these were registered with.
   private onTrackSubscribed = (sessionId: string, track: RemoteTrack) => this.buildAudioGraph(sessionId, track);
   private onTrackUnsubscribed = (sessionId: string) => this.teardownAudioGraph(sessionId);
+  private onActiveSpeakersChanged = (sessionIds: string[]) => {
+    this.localActiveSpeaker = !!net.getSessionId() && sessionIds.includes(net.getSessionId()!);
+    this.remotePlayers.setActiveSpeakers(sessionIds);
+  };
+  private onParticipantMicStateChanged = (sessionId: string, muted: boolean | null) => this.remotePlayers.setMutedGlyph(sessionId, muted);
 
   constructor(
     scene: Phaser.Scene,
@@ -129,6 +140,8 @@ export class VoiceSpatialController {
 
     voice.on("trackSubscribed", this.onTrackSubscribed);
     voice.on("trackUnsubscribed", this.onTrackUnsubscribed);
+    voice.on("activeSpeakersChanged", this.onActiveSpeakersChanged);
+    voice.on("participantMicStateChanged", this.onParticipantMicStateChanged);
 
     this.promptEl = el(
       "div",
@@ -205,6 +218,13 @@ export class VoiceSpatialController {
   get localIsStageSpeaker(): boolean {
     const sessionId = net.getSessionId();
     return !!sessionId && this.stageSpeakers.includes(sessionId);
+  }
+
+  /** True while the local player is one of LiveKit's own current active
+   * speakers (distinct from stage-speaker status) — Room.ts reads this
+   * every frame to toggle the local player's own speaking ring. */
+  get localIsActiveSpeaker(): boolean {
+    return this.localActiveSpeaker;
   }
 
   /** The 10Hz tick — recomputes stage occupancy (independent of whether
@@ -421,6 +441,8 @@ export class VoiceSpatialController {
   destroy() {
     voice.off("trackSubscribed", this.onTrackSubscribed);
     voice.off("trackUnsubscribed", this.onTrackUnsubscribed);
+    voice.off("activeSpeakersChanged", this.onActiveSpeakersChanged);
+    voice.off("participantMicStateChanged", this.onParticipantMicStateChanged);
     for (const sessionId of [...this.audioGraphs.keys()]) this.teardownAudioGraph(sessionId);
   }
 }

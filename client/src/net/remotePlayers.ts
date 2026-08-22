@@ -96,9 +96,21 @@ interface RemoteSprite {
   // titleTag/roleTag above rather than create/destroy on every stage
   // entry/exit.
   stageRing: Phaser.GameObjects.Ellipse;
+  // Active-speaker indicator (LiveKit's own ActiveSpeakersChanged, not
+  // the stage mechanic) — deliberately a different shape/color/position
+  // from stageRing so a speaker who's also on stage still shows both at
+  // once distinguishably (thin ring around the torso vs. stageRing's
+  // solid glow at the feet).
+  speakingRing: Phaser.GameObjects.Arc;
+  // Small mic-off glyph — visible only while this participant HAS a
+  // voice track (granted mic access at some point this session) AND
+  // it's currently muted; hidden for both "never granted" and
+  // "unmuted, actively could transmit." See setMutedGlyph() below.
+  mutedGlyph: Phaser.GameObjects.Text;
 }
 
 const STAGE_RING_COLOR = 0xf0b429; // matches STAGE_CHAT_BUBBLE_STYLE's gold
+const SPEAKING_RING_COLOR = 0x4ade80; // green — distinct from the gold stage ring
 
 // Scene-scoped by design: instantiated fresh in Room.create() (same
 // lifecycle as NPCController/QuestController), so a scene.restart() on a
@@ -170,6 +182,18 @@ export class RemotePlayerController {
       .setDepth(snapshot.y - 1)
       .setVisible(false);
 
+    const speakingRing = this.scene.add
+      .circle(snapshot.x, snapshot.y - image.displayHeight / 2, 26, undefined, 0)
+      .setStrokeStyle(2, SPEAKING_RING_COLOR, 0.9)
+      .setDepth(100000)
+      .setVisible(false);
+
+    const mutedGlyph = this.scene.add
+      .text(snapshot.x, snapshot.y - image.displayHeight - 4, "\u{1F507}", { fontSize: "14px" })
+      .setOrigin(0.5, 1)
+      .setDepth(100001)
+      .setVisible(false);
+
     this.sprites.set(snapshot.sessionId, {
       image,
       name: snapshot.name,
@@ -185,6 +209,8 @@ export class RemotePlayerController {
       emoteBubble: null,
       emoteBubbleExpiresAt: 0,
       stageRing,
+      speakingRing,
+      mutedGlyph,
     });
   }
 
@@ -285,6 +311,8 @@ export class RemotePlayerController {
     remote.chatBubble?.destroy();
     remote.emoteBubble?.destroy();
     remote.stageRing.destroy();
+    remote.speakingRing.destroy();
+    remote.mutedGlyph.destroy();
     this.sprites.delete(sessionId);
   }
 
@@ -299,6 +327,28 @@ export class RemotePlayerController {
     for (const [sessionId, remote] of this.sprites) {
       remote.stageRing.setVisible(speakerSet.has(sessionId));
     }
+  }
+
+  /** LiveKit's own ActiveSpeakersChanged (see voice.ts's forwarding) —
+   * same ignore-unknown-ids shape as setStageSpeakers() above. */
+  setActiveSpeakers(sessionIds: string[]) {
+    const speakingSet = new Set(sessionIds);
+    for (const [sessionId, remote] of this.sprites) {
+      remote.speakingRing.setVisible(speakingSet.has(sessionId));
+    }
+  }
+
+  /** `muted === null` means "no mic track at all" (never granted, or
+   * unpublished) — hidden either way, same as an unmuted track; only
+   * `true` (granted, published, currently muted) shows the glyph. See
+   * voice.ts's TrackMuted/TrackUnmuted/TrackPublished/TrackUnpublished
+   * forwarding for exactly when each value fires. Silently no-ops for
+   * an unknown sessionId (already left, or the event raced ahead of
+   * spawn() — same tolerance as showBubble()/emote() above). */
+  setMutedGlyph(sessionId: string, muted: boolean | null) {
+    const remote = this.sprites.get(sessionId);
+    if (!remote) return;
+    remote.mutedGlyph.setVisible(muted === true);
   }
 
   update() {
@@ -320,6 +370,7 @@ export class RemotePlayerController {
       remote.image.setScale(remote.baseScale * depthScaleFor(remote.image.y));
       remote.image.setDepth(remote.image.y);
       remote.stageRing.setPosition(remote.image.x, remote.image.y).setDepth(remote.image.y - 1);
+      remote.speakingRing.setPosition(remote.image.x, remote.image.y - remote.image.displayHeight / 2);
 
       // Stack bottom-to-top: name (always) → title (if any) → role badge
       // (if any), each occupying the next slot up only when the one
@@ -327,6 +378,11 @@ export class RemotePlayerController {
       // extended one level further for the role badge.
       const headY = remote.image.y - remote.image.displayHeight - 4;
       remote.nameTag.setPosition(remote.image.x, headY);
+      // Muted glyph sits to the right of the name tag rather than
+      // joining the vertical stack above it — a 4th stacked slot would
+      // need every title/role visibility branch below to account for
+      // it too, for a glyph that's usually not showing at all.
+      remote.mutedGlyph.setPosition(remote.image.x + remote.nameTag.displayWidth / 2 + 14, headY);
       let nextY = headY;
       if (remote.titleTag.visible) {
         nextY -= remote.nameTag.displayHeight + 2;

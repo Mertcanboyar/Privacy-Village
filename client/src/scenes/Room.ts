@@ -137,6 +137,7 @@ export class Room extends Phaser.Scene {
   private playerTitleText!: Phaser.GameObjects.Text;
   private playerRoleText!: Phaser.GameObjects.Text;
   private playerStageRing!: Phaser.GameObjects.Ellipse;
+  private playerSpeakingRing!: Phaser.GameObjects.Arc;
   private playerBaseScale = 1;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
@@ -427,6 +428,15 @@ export class Room extends Phaser.Scene {
       .ellipse(spawn[0], spawn[1], 96, 36, 0xf0b429, 0.16)
       .setStrokeStyle(3, 0xf0b429, 0.95)
       .setDepth(spawn[1] - 1)
+      .setVisible(false);
+    // Active-speaker ring — same shape/color net/remotePlayers.ts uses
+    // for everyone else's (thin green ring around the torso, distinct
+    // from the gold stage ring), toggled off voiceSpatial's own
+    // localIsActiveSpeaker right alongside the stage ring below.
+    this.playerSpeakingRing = this.add
+      .circle(spawn[0], spawn[1] - this.player.displayHeight / 2, 26, undefined, 0)
+      .setStrokeStyle(2, 0x4ade80, 0.9)
+      .setDepth(100000)
       .setVisible(false);
     this.refreshPlayerNameTagPositions();
 
@@ -831,6 +841,7 @@ export class Room extends Phaser.Scene {
   // "activeTitleChanged" listener in create()).
   private refreshPlayerNameTagPositions() {
     this.playerStageRing.setPosition(this.player.x, this.player.y).setDepth(this.player.y - 1);
+    this.playerSpeakingRing.setPosition(this.player.x, this.player.y - this.player.displayHeight / 2);
     const headY = this.player.y - this.player.displayHeight - 4;
     this.playerNameText.setPosition(this.player.x, headY);
     let nextY = headY;
@@ -996,6 +1007,7 @@ export class Room extends Phaser.Scene {
     this.remotePlayers.update();
     this.voiceSpatial.update(this.player.x, this.player.y, uiOpen);
     this.playerStageRing.setVisible(this.voiceSpatial.localIsStageSpeaker);
+    this.playerSpeakingRing.setVisible(this.voiceSpatial.localIsActiveSpeaker);
 
     if (this.localChatBubble) {
       if (time > this.localChatBubbleExpiresAt) {

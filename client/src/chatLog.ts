@@ -30,7 +30,10 @@ export class ChatLogController {
   // sent anywhere. Keyed by sessionId (ephemeral, resets on reconnect/
   // door transition, same lifecycle as remote sprites themselves —
   // muting someone doesn't persist across scenes, matching how
-  // presence itself doesn't).
+  // presence itself doesn't). Spatial voice chat (see
+  // net/voiceSpatial.ts's recomputeSpatialAudio()) reuses this exact
+  // set for voice too, rather than a second parallel list — muting a
+  // name here silences both their chat bubbles and their voice.
   private muted = new Set<string>();
   private collapsed = false;
 
@@ -122,6 +125,7 @@ export class ChatLogController {
           el("span", { text: `${formatTime(m.ts)} `, style: { color: "var(--text-muted)" } }),
           el("span", {
             text: m.name.toUpperCase(),
+            attrs: { title: isMuted ? "Click to unmute this player's chat and voice" : "Click to mute this player's chat and voice" },
             style: { color: m.stage ? "var(--accent-gold)" : "var(--text-primary)", fontWeight: "700", cursor: "pointer" },
             on: { click: () => this.toggleMute(m.sessionId) },
           }),
