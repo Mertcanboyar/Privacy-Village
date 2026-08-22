@@ -218,6 +218,14 @@ export class NetClient {
     return { status: this.status, lastError: this.lastError };
   }
 
+  /** Null until attemptConnect() resolves — voice.ts polls this to know
+   * when it's safe to mint a LiveKit token (see that file's
+   * connectToScene(), which uses this as the LiveKit participant
+   * identity so position↔track pairing needs no separate join table). */
+  getSessionId(): string | null {
+    return this.sessionId;
+  }
+
   private setStatus(status: ConnectionStatus, lastError: string | null = null) {
     if (this.status === status && this.lastError === lastError) return;
     this.status = status;

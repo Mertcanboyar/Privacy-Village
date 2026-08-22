@@ -356,6 +356,64 @@ this repo needs to change for it to take effect, and section F's
 
 ---
 
+## I. Optional: spatial voice chat (LiveKit)
+
+Proximity voice — players hear nearby players' voices, louder when
+close, panned left/right by direction. Without these env vars set, the
+mic button shows a "voice unavailable" state and the game plays exactly
+as it does today — this section is optional, same convention as E/F/G/H.
+
+1. Go to **[cloud.livekit.io](https://cloud.livekit.io)**, sign in (or
+   create an account), and create a new project.
+2. In the project dashboard, go to **Settings** → **Keys** and either
+   use the default key pair or create a new one. Copy both the **API
+   Key** and **API Secret** — the secret is only shown once.
+3. Also from the project dashboard, copy the **WebSocket URL**, shaped
+   like:
+   ```
+   wss://your-project-name.livekit.cloud
+   ```
+4. In Vercel, open your **privacy-village** project → **Settings** →
+   **Environment Variables**, and add:
+   - Name:
+     ```
+     LIVEKIT_API_KEY
+     ```
+     Value: the API Key from step 2.
+   - Name:
+     ```
+     LIVEKIT_API_SECRET
+     ```
+     Value: the API Secret from step 2.
+   - Name:
+     ```
+     VITE_LIVEKIT_URL
+     ```
+     Value: the WebSocket URL from step 3.
+
+   `LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET` are **runtime** variables read
+   by `client/api/livekit-token.ts` — like `RESEND_API_KEY` in section
+   E, changing them takes effect on the very next request, no redeploy
+   needed. `VITE_LIVEKIT_URL` is a **build-time** variable — like
+   `VITE_WS_URL` in step B, changing it **does** require a redeploy
+   (Vercel → **Deployments** → latest → **Redeploy**, or push a commit).
+5. One-time project setting worth confirming: in the LiveKit Cloud
+   dashboard, make sure **Recording**/**Egress** is left off for this
+   project — voice is never recorded or stored, and this repo's
+   `/privacy` notice says so explicitly.
+6. Try it on the live site: press `V` (hold) or `M` (toggle) near
+   another player — you should see a one-line permission explanation
+   the first time, then your browser's own microphone permission
+   prompt. Confirm the mic button in the HUD reflects muted/open-mic/
+   held state, and that walking closer to another speaking player makes
+   them louder and pans them toward the side they're standing on.
+
+For local development, add the same three values to a `.env.local` file
+in `client/` (`LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `VITE_LIVEKIT_URL`
+— `vercel dev` and `vite dev` both pick these up automatically).
+
+---
+
 ## Verification checklist
 
 Run through these on the live URL (Vercel URL, or your custom domain if
@@ -403,6 +461,14 @@ you set one up) once everything above is deployed:
       test user → **Send magic link**) and confirm it arrives from
       `noreply@privacyvillage.org` with the Division-voice template
       styling — not Supabase's plain default look.
+- [ ] **Voice chat works (if you set up section I).** Two devices (or
+      two browser windows), both in the same scene, standing close
+      together — press `V`/`M` on one and confirm the other hears it,
+      louder up close and panned toward the speaker's side; walk apart
+      and confirm it fades to silent. Without `LIVEKIT_API_KEY`/
+      `LIVEKIT_API_SECRET`/`VITE_LIVEKIT_URL` set, confirm the mic
+      button shows a clear "voice unavailable" state and the game is
+      otherwise fully playable.
 - [ ] **"Just exploring" is untouched.** Reload the title screen and
       click **just exploring →** instead. You should land directly in
       avatar creation with an empty name field — no email prompt, no
