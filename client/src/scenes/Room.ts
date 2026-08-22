@@ -434,15 +434,17 @@ export class Room extends Phaser.Scene {
     // fresh RemotePlayerController, whose predecessor was already torn
     // down by normal Phaser scene teardown.
     this.remotePlayers = new RemotePlayerController(this);
-    this.voiceSpatial = new VoiceSpatialController(this, this.roomName);
+    // Local room chat — "local" for free, since a door transition already
+    // disconnects from this scene's SceneRoom and joins the next one (see
+    // the comment above); a chat message never crosses that boundary.
+    // Constructed before VoiceSpatialController since that reuses this
+    // same per-player mute list for voice (see voiceSpatial.ts).
+    this.chatLog = new ChatLogController(this);
+    this.voiceSpatial = new VoiceSpatialController(this, this.roomName, this.remotePlayers, this.chatLog);
     this.contactExchange = new ContactExchangeController(this, this.remotePlayers);
     net.onPlayerAdd((p) => this.remotePlayers.spawn(p));
     net.onPlayerChange((p) => this.remotePlayers.applySnapshot(p));
     net.onPlayerRemove((sessionId) => this.remotePlayers.remove(sessionId));
-    // Local room chat — "local" for free, since a door transition already
-    // disconnects from this scene's SceneRoom and joins the next one (see
-    // the comment above); a chat message never crosses that boundary.
-    this.chatLog = new ChatLogController(this);
     net.onChat((sessionId, text, stage) => {
       if (this.chatLog.isMuted(sessionId)) return;
       this.remotePlayers.showBubble(sessionId, text, stage);

@@ -199,6 +199,21 @@ export class RemotePlayerController {
     return this.sprites.get(sessionId)?.name;
   }
 
+  /** Spatial voice chat (see net/voiceSpatial.ts) — every remote
+   * sprite's current rendered position, keyed by sessionId (which
+   * doubles as the LiveKit participant identity — see voice.ts). Reads
+   * image.x/y (the lerped, on-screen position — see update() below),
+   * not the raw network-authoritative targetX/targetY, so audio panning
+   * stays visually consistent with what's actually on screen frame to
+   * frame. */
+  getAllPositions(): { sessionId: string; x: number; y: number }[] {
+    const positions: { sessionId: string; x: number; y: number }[] = [];
+    for (const [sessionId, remote] of this.sprites) {
+      positions.push({ sessionId, x: remote.image.x, y: remote.image.y });
+    }
+    return positions;
+  }
+
   /** §4 "Contact Exchange" — nearest remote sprite within `radius` of
    * (x, y), or null if none. Room.ts polls this every frame (same shape
    * as npc.ts's own proximity+[E] loop) to show the exchange prompt. */

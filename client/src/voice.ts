@@ -287,6 +287,22 @@ class VoiceManager extends Phaser.Events.EventEmitter {
     room.on(RoomEvent.TrackUnpublished, (pub, participant: Participant) => {
       if (pub.source === Track.Source.Microphone) this.emit("participantMicStateChanged", participant.identity, null);
     });
+    // Forwarded raw (not pre-processed like the events above) — building
+    // the Web Audio spatial graph needs the actual RemoteTrack/
+    // RemoteTrackPublication objects, so voiceSpatial.ts is the one
+    // consumer that legitimately reaches past this module's usual
+    // "downstream code never touches LiveKit objects" boundary. Attached
+    // here (wireRoomEvents runs before room.connect(), see
+    // connectToScene()) rather than voiceSpatial subscribing post-
+    // connect, so nothing already-subscribed at join time is missed.
+    room.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
+      if (pub.source !== Track.Source.Microphone) return;
+      this.emit("trackSubscribed", participant.identity, track);
+    });
+    room.on(RoomEvent.TrackUnsubscribed, (_track, pub, participant) => {
+      if (pub.source !== Track.Source.Microphone) return;
+      this.emit("trackUnsubscribed", participant.identity);
+    });
     room.on(RoomEvent.Disconnected, () => {
       if (this.room !== room) return; // already superseded, ignore stale event
       this.flushVoiceMinutes();
